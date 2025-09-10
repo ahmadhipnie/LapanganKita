@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'LapanganKita',
-      initialRoute: AppRoutes.HOME,
+      initialRoute: AppRoutes.LOGIN,
       getPages: AppPages.pages,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
