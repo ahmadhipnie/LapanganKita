@@ -166,7 +166,9 @@ class LoginView extends GetView<LoginController> {
                               children: [
                                 const Text("Don't have an account? "),
                                 GestureDetector(
-                                  onTap: () {},
+                                  onTap: () {
+                                    Get.toNamed('/register');
+                                  },
                                   child: const Text(
                                     'Sign Up',
                                     style: TextStyle(
