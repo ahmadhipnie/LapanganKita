@@ -19,10 +19,9 @@ flutter_native_splash:
   web: false
 
   color: "#F5F5F5"
-  image:
-    assets/logo/logo-app.png
+  image: assets/logo/logo-app.png
 
-    #background_image: "assets/background.png"
+  #background_image: "assets/background.png"
 
   # Optional parameters are listed below.  To enable a parameter, uncomment the line by removing
   # the leading # character.
