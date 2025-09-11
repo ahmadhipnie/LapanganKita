@@ -7,7 +7,7 @@ class FieldAddView extends GetView<FieldAddController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Lapangan'),
+        title: const Text('Add Field'),
         backgroundColor: const Color(0xFF2563EB),
         foregroundColor: Colors.white,
       ),
@@ -36,7 +36,7 @@ class FieldAddView extends GetView<FieldAddController> {
                   Column(
                     children: [
                       const Text(
-                        'Tambah Lapangan',
+                        'Add New Field',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -63,7 +63,7 @@ class FieldAddView extends GetView<FieldAddController> {
                               TextFormField(
                                 controller: controller.nameController,
                                 decoration: const InputDecoration(
-                                  labelText: 'Nama Lapangan',
+                                  labelText: 'Field Name',
                                   border: OutlineInputBorder(),
                                 ),
                                 validator: (v) =>
@@ -77,7 +77,7 @@ class FieldAddView extends GetView<FieldAddController> {
                                       controller: controller.openHourController,
                                       readOnly: true,
                                       decoration: const InputDecoration(
-                                        labelText: 'Jam Buka',
+                                        labelText: 'Open Hour',
                                         border: OutlineInputBorder(),
                                         suffixIcon: Icon(Icons.access_time),
                                       ),
@@ -95,7 +95,7 @@ class FieldAddView extends GetView<FieldAddController> {
                                           controller.closeHourController,
                                       readOnly: true,
                                       decoration: const InputDecoration(
-                                        labelText: 'Jam Tutup',
+                                        labelText: 'Close Hour',
                                         border: OutlineInputBorder(),
                                         suffixIcon: Icon(Icons.access_time),
                                       ),
@@ -113,7 +113,7 @@ class FieldAddView extends GetView<FieldAddController> {
                                 controller: controller.priceController,
                                 keyboardType: TextInputType.number,
                                 decoration: const InputDecoration(
-                                  labelText: 'Harga per Jam',
+                                  labelText: 'Price per Hour',
                                   border: OutlineInputBorder(),
                                 ),
                                 validator: (v) =>
@@ -146,7 +146,7 @@ class FieldAddView extends GetView<FieldAddController> {
                                 onChanged: (v) =>
                                     controller.fieldType.value = v ?? '',
                                 decoration: const InputDecoration(
-                                  labelText: 'Jenis Lapangan',
+                                  labelText: 'Field Type',
                                   border: OutlineInputBorder(),
                                 ),
                                 validator: (v) =>
@@ -157,7 +157,7 @@ class FieldAddView extends GetView<FieldAddController> {
                                 controller: controller.descController,
                                 maxLines: 3,
                                 decoration: const InputDecoration(
-                                  labelText: 'Deskripsi',
+                                  labelText: 'Description',
                                   border: OutlineInputBorder(),
                                 ),
                                 validator: (v) =>
@@ -165,7 +165,7 @@ class FieldAddView extends GetView<FieldAddController> {
                               ),
                               const SizedBox(height: 16),
                               const Text(
-                                'Foto Lapangan',
+                                'Field Photos',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 8),

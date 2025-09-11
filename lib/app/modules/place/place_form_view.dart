@@ -14,7 +14,13 @@ class PlaceFormView extends GetView<PlaceFormController> {
             Container(
               width: double.infinity,
               height: 450,
-              decoration: const BoxDecoration(color: Color(0xFF2563EB)),
+              decoration: const BoxDecoration(
+                color: Color(0xFF2563EB),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
             ),
             // Form content
             SingleChildScrollView(

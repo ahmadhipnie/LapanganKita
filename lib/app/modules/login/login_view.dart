@@ -6,6 +6,7 @@ class LoginView extends GetView<LoginController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(backgroundColor: const Color(0xFF2563EB)),
       backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(
         child: Stack(
