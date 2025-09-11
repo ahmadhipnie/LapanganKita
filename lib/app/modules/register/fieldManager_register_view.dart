@@ -239,6 +239,7 @@ class FieldManagerRegisterView extends StatelessWidget {
                                         'Success',
                                         'Registration form valid!',
                                       );
+                                      Get.toNamed('/place/form');
                                     }
                                   },
                                   child: const Text(

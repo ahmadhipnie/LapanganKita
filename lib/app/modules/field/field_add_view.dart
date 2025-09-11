@@ -1,0 +1,280 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'field_add_controller.dart';
+
+class FieldAddView extends GetView<FieldAddController> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tambah Lapangan'),
+        backgroundColor: const Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+      ),
+      backgroundColor: const Color(0xFFF7F8FA),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Blue background
+            Container(
+              width: double.infinity,
+              height: 220,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2563EB),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
+            ),
+            // Form content
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 32),
+                  // Title
+                  Column(
+                    children: [
+                      const Text(
+                        'Tambah Lapangan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Form(
+                          key: controller.formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              TextFormField(
+                                controller: controller.nameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nama Lapangan',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: controller.openHourController,
+                                      readOnly: true,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Jam Buka',
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: Icon(Icons.access_time),
+                                      ),
+                                      onTap: () =>
+                                          controller.pickOpenHour(context),
+                                      validator: (v) => v == null || v.isEmpty
+                                          ? 'Required'
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller:
+                                          controller.closeHourController,
+                                      readOnly: true,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Jam Tutup',
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: Icon(Icons.access_time),
+                                      ),
+                                      onTap: () =>
+                                          controller.pickCloseHour(context),
+                                      validator: (v) => v == null || v.isEmpty
+                                          ? 'Required'
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: controller.priceController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Harga per Jam',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: controller.maxPersonController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Max Person',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<String>(
+                                value: controller.fieldType.value.isEmpty
+                                    ? null
+                                    : controller.fieldType.value,
+                                items: controller.fieldTypeList
+                                    .map(
+                                      (type) => DropdownMenuItem(
+                                        value: type,
+                                        child: Text(type),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) =>
+                                    controller.fieldType.value = v ?? '',
+                                decoration: const InputDecoration(
+                                  labelText: 'Jenis Lapangan',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: controller.descController,
+                                maxLines: 3,
+                                decoration: const InputDecoration(
+                                  labelText: 'Deskripsi',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Foto Lapangan',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              Obx(
+                                () => Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    ...controller.images.map(
+                                      (img) => Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: Image.file(
+                                              img,
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.7,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                Icons.close,
+                                                color: Colors.red,
+                                              ),
+                                              onPressed: () =>
+                                                  controller.removeImage(img),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: controller.pickImages,
+                                      child: Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: Color(0xFF2563EB),
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.add_a_photo,
+                                          size: 32,
+                                          color: Color(0xFF2563EB),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                height: 48,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF2563EB),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    if (controller.formKey.currentState
+                                            ?.validate() ??
+                                        false) {
+                                      // TODO: Implement submit logic
+                                      Get.snackbar(
+                                        'Success',
+                                        'Lapangan berhasil disimpan!',
+                                      );
+                                    }
+                                  },
+                                  child: const Text(
+                                    'Simpan',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
