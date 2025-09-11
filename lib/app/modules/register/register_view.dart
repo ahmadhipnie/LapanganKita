@@ -60,7 +60,7 @@ class RegisterView extends GetView<RegisterController> {
                     padding: const EdgeInsets.symmetric(vertical: 18),
                   ),
                   onPressed: () {
-                    // TODO: Navigate to field manager register form
+                    Get.toNamed('/register/field_manager');
                   },
                   child: const Text(
                     'Field Manager',
