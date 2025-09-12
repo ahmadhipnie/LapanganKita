@@ -73,7 +73,7 @@ class OTPController extends GetxController {
       // TODO: Implement actual OTP verification API call
       // print('OTP Verified: $completeOTP');
 
-      Get.offAllNamed('/container-login');
+      Get.offAllNamed('/customer/navigation');
     } catch (e) {
       Get.snackbar('Error', 'Verification failed: $e');
     } finally {
