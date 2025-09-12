@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'fieldManager_register_controller.dart';
+import '../login/login_controller.dart';
 
-class FieldManagerRegisterView extends StatelessWidget {
-  final controller = Get.put(FieldManagerRegisterController());
-
+class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2563EB),
+        automaticallyImplyLeading: false,
+      ),
       backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(
         child: Stack(
@@ -15,8 +18,14 @@ class FieldManagerRegisterView extends StatelessWidget {
             // Blue background
             Container(
               width: double.infinity,
-              height: 450,
-              decoration: const BoxDecoration(color: Color(0xFF2563EB)),
+              height: 220,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2563EB),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
             ),
             // Form content
             SingleChildScrollView(
@@ -46,7 +55,10 @@ class FieldManagerRegisterView extends StatelessWidget {
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => Get.offAllNamed('/login'),
+                            onTap: () {
+                              Get.delete<LoginController>();
+                              Get.offAllNamed('/login');
+                            },
                             child: const Text(
                               'Log In',
                               style: TextStyle(
@@ -239,6 +251,7 @@ class FieldManagerRegisterView extends StatelessWidget {
                                         'Success',
                                         'Registration form valid!',
                                       );
+                                      Get.toNamed('/place/form');
                                     }
                                   },
                                   child: const Text(
