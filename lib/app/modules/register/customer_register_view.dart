@@ -247,9 +247,17 @@ class CustomerRegisterView extends GetView<CustomerRegisterController> {
                                             ?.validate() ??
                                         false) {
                                       // TODO: Implement register action
+                                      Future.delayed(Duration(seconds: 3));
+                                      Get.toNamed('/otp');
+                                      
                                       Get.snackbar(
                                         'Success',
                                         'Registration form valid!',
+                                      );
+                                    } else {
+                                      Get.snackbar(
+                                        'Error',
+                                        'Registration form not valid!',
                                       );
                                     }
                                   },
