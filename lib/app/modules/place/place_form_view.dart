@@ -215,6 +215,258 @@ class PlaceFormView extends GetView<PlaceFormController> {
                                   ),
                                 ),
                               ),
+
+                              // Addon Toggle
+                              const SizedBox(height: 16),
+                              Obx(
+                                () => SwitchListTile(
+                                  value: controller.isAddOnChecked.value,
+                                  onChanged: (val) =>
+                                      controller.isAddOnChecked.value = val,
+                                  title: const Text('Add Add-Ons?'),
+                                  activeColor: Color(0xFF2563EB),
+                                ),
+                              ),
+
+                              // Addon Form
+                              Obx(
+                                () => controller.isAddOnChecked.value
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 8),
+                                          const Text(
+                                            'Form Add On',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller:
+                                                controller.addOnNameController,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Add On Name',
+                                              border: OutlineInputBorder(),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller:
+                                                controller.addOnPriceController,
+                                            keyboardType: TextInputType.number,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Price per Hour',
+                                              border: OutlineInputBorder(),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller:
+                                                controller.addOnQtyController,
+                                            keyboardType: TextInputType.number,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Quantity',
+                                              border: OutlineInputBorder(),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller:
+                                                controller.addOnDescController,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Description',
+                                              border: OutlineInputBorder(),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Obx(
+                                                () =>
+                                                    controller
+                                                            .addOnImage
+                                                            .value !=
+                                                        null
+                                                    ? Stack(
+                                                        alignment:
+                                                            Alignment.topRight,
+                                                        children: [
+                                                          ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                            child: Image.file(
+                                                              controller
+                                                                  .addOnImage
+                                                                  .value!,
+                                                              width: 80,
+                                                              height: 80,
+                                                              fit: BoxFit.cover,
+                                                            ),
+                                                          ),
+                                                          GestureDetector(
+                                                            onTap: () =>
+                                                                controller
+                                                                        .addOnImage
+                                                                        .value =
+                                                                    null,
+                                                            child: Container(
+                                                              decoration:
+                                                                  const BoxDecoration(
+                                                                    color: Colors
+                                                                        .black54,
+                                                                    shape: BoxShape
+                                                                        .circle,
+                                                                  ),
+                                                              child: const Icon(
+                                                                Icons.close,
+                                                                color: Colors
+                                                                    .white,
+                                                                size: 20,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      )
+                                                    : GestureDetector(
+                                                        onTap: controller
+                                                            .pickAddOnImage,
+                                                        child: Container(
+                                                          width: 80,
+                                                          height: 80,
+                                                          decoration: BoxDecoration(
+                                                            border: Border.all(
+                                                              color:
+                                                                  Colors.grey,
+                                                            ),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                          child: const Icon(
+                                                            Icons.add_a_photo,
+                                                            size: 28,
+                                                            color: Colors.grey,
+                                                          ),
+                                                        ),
+                                                      ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              ElevatedButton.icon(
+                                                onPressed: controller.addAddOn,
+                                                icon: const Icon(
+                                                  Icons.add,
+                                                  color: Colors.white,
+                                                ),
+                                                label: const Text(
+                                                  'Add Add On',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Color(
+                                                    0xFF2563EB,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          // List Addons
+                                          Obx(
+                                            () => controller.addOns.isNotEmpty
+                                                ? Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      const Text(
+                                                        'Addons:',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      ...List.generate(
+                                                        controller
+                                                            .addOns
+                                                            .length,
+                                                        (idx) {
+                                                          final addon =
+                                                              controller
+                                                                  .addOns[idx];
+                                                          return Card(
+                                                            margin:
+                                                                const EdgeInsets.only(
+                                                                  bottom: 8,
+                                                                ),
+                                                            child: ListTile(
+                                                              leading:
+                                                                  addon.image !=
+                                                                      null
+                                                                  ? ClipRRect(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                            6,
+                                                                          ),
+                                                                      child: Image.file(
+                                                                        addon
+                                                                            .image!,
+                                                                        width:
+                                                                            40,
+                                                                        height:
+                                                                            40,
+                                                                        fit: BoxFit
+                                                                            .cover,
+                                                                      ),
+                                                                    )
+                                                                  : const Icon(
+                                                                      Icons
+                                                                          .add_box_outlined,
+                                                                    ),
+                                                              title: Text(
+                                                                addon.name,
+                                                              ),
+                                                              subtitle: Text(
+                                                                'Price/Hour: Rp${addon.pricePerHour}\nQuantity: ${addon.quantity}\n${addon.description}',
+                                                              ),
+                                                              isThreeLine: true,
+                                                              trailing: IconButton(
+                                                                icon: const Icon(
+                                                                  Icons.delete,
+                                                                  color: Colors
+                                                                      .red,
+                                                                ),
+                                                                onPressed: () =>
+                                                                    controller
+                                                                        .removeAddOn(
+                                                                          idx,
+                                                                        ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ],
+                                                  )
+                                                : const SizedBox(),
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox(),
+                              ),
                             ],
                           ),
                         ),
