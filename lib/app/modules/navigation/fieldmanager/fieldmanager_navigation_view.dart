@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'fieldmanager_navigation_controller.dart';
 
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_booking_view.dart';
-import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_kelola_view.dart';
+import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_home_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_history_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_navigation_profile_view.dart';
 
@@ -12,7 +12,7 @@ class FieldManagerNavigationView
   FieldManagerNavigationView({super.key});
 
   final List<Widget> _pages = [
-    FieldManagerKelolaView(),
+    FieldManagerHomeView(),
     FieldManagerBookingView(),
     FieldManagerHistoryView(),
     FieldManagerNavigationProfileView(),
@@ -30,10 +30,7 @@ class FieldManagerNavigationView
           selectedItemColor: const Color(0xff2563EB),
           unselectedItemColor: Colors.grey,
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Kelola',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
             BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today),
               label: 'Booking',

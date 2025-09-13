@@ -1,11 +1,11 @@
 import 'package:get/get.dart';
 
-enum FieldManagerBottomNavItem { kelola, booking, history, profile }
+enum FieldManagerBottomNavItem { home, booking, history, profile }
 
 class FieldManagerNavigationController extends GetxController {
   final RxInt currentIndex = 0.obs;
   final Rx<FieldManagerBottomNavItem> currentTab =
-      FieldManagerBottomNavItem.kelola.obs;
+      FieldManagerBottomNavItem.home.obs;
 
   void changeTab(int index) {
     currentIndex.value = index;
@@ -21,7 +21,7 @@ class FieldManagerNavigationController extends GetxController {
   void changeTabByName(String tabName) {
     final tab = FieldManagerBottomNavItem.values.firstWhere(
       (tab) => tab.toString().split('.').last == tabName,
-      orElse: () => FieldManagerBottomNavItem.kelola,
+      orElse: () => FieldManagerBottomNavItem.home,
     );
     changeTabByEnum(tab);
   }
