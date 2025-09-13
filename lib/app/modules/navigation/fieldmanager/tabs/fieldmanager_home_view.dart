@@ -1,33 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../routes/app_routes.dart';
+import 'fieldmanager_home_controller.dart';
 
 class FieldManagerHomeView extends StatelessWidget {
   FieldManagerHomeView({super.key});
 
-  final List<Map<String, dynamic>> dummyFields = [
-    {
-      'name': 'Lapangan Futsal A',
-      'type': 'Futsal',
-      'price': 150000,
-      'status': 'Tersedia',
-    },
-    {
-      'name': 'Lapangan Badminton B',
-      'type': 'Badminton',
-      'price': 100000,
-      'status': 'Tersedia',
-    },
-    {
-      'name': 'Lapangan Basket C',
-      'type': 'Basket',
-      'price': 200000,
-      'status': 'Tidak Tersedia',
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final c = Get.put(FieldManagerHomeController());
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(
@@ -49,55 +30,57 @@ class FieldManagerHomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 // Balance Card
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 3,
-                  color: const Color(0xFF2563EB),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Balance',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
+                Obx(
+                  () => Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 3,
+                    color: const Color(0xFF2563EB),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Balance',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 6),
-                            Text(
-                              'Rp 2.500.000',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                              const SizedBox(height: 6),
+                              Text(
+                                'Rp ${c.balance.value.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => '.')}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF2563EB),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                            ],
                           ),
-                          onPressed: () {
-                            Get.snackbar(
-                              'Withdraw',
-                              'Fitur withdraw coming soon!',
-                            );
-                          },
-                          child: const Text('Withdraw'),
-                        ),
-                      ],
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF2563EB),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () {
+                              Get.snackbar(
+                                'Withdraw',
+                                'Fitur withdraw coming soon!',
+                              );
+                            },
+                            child: const Text('Withdraw'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -115,84 +98,127 @@ class FieldManagerHomeView extends StatelessWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.refresh, color: Color(0xFF2563EB)),
-                      onPressed: () {
-                        Get.snackbar('Refresh', 'Data dummy di-refresh!');
-                      },
+                      onPressed: c.refreshFields,
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: dummyFields.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) {
-                    final field = dummyFields[i];
-                    return Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 1,
-                      child: ListTile(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              title: Text(field['name']),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Tipe: ${field['type']}'),
-                                  const SizedBox(height: 8),
-                                  Text('Harga per Jam: Rp${field['price']}'),
-                                  const SizedBox(height: 8),
-                                  Text('Status: ${field['status']}'),
-                                  const SizedBox(height: 8),
-                                  const Divider(),
-                                  const Text('Deskripsi:'),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Lapangan ${field['name']} adalah lapangan ${field['type']} yang nyaman dan berkualitas.',
+                Obx(
+                  () => ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: c.fields.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, i) {
+                      final field = c.fields[i];
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 1,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: Text(field['name']),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Tipe: ${field['type']}'),
+                                    const SizedBox(height: 8),
+                                    Text('Harga per Jam: Rp${field['price']}'),
+                                    const SizedBox(height: 8),
+                                    Text('Status: ${field['status']}'),
+                                    const SizedBox(height: 8),
+                                    const Divider(),
+                                    const Text('Deskripsi:'),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Lapangan ${field['name']} adalah lapangan ${field['type']} yang nyaman dan berkualitas.',
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(),
+                                    child: const Text('Tutup'),
                                   ),
                                 ],
                               ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(),
-                                  child: const Text('Tutup'),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 12,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Gambar lapangan horizontal di atas
+                                Container(
+                                  height: 90,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: field['imageUrl'] != null
+                                      ? Image.network(
+                                          field['imageUrl'],
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Center(
+                                          child: Icon(
+                                            Icons.image,
+                                            color: Colors.grey[500],
+                                            size: 40,
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(height: 10),
+                                // Nama lapangan
+                                Text(
+                                  field['name'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 6),
+                                // Info lain di bawah nama
+                                Text(
+                                  '${field['type']} • Rp${field['price']}/jam',
+                                  style: const TextStyle(color: Colors.black54),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  field['status'],
+                                  style: TextStyle(
+                                    color: field['status'] == 'Tersedia'
+                                        ? Colors.green
+                                        : Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
-                          );
-                        },
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF2563EB),
-                          child: Text(
-                            field['type'][0],
-                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
-                        title: Text(field['name']),
-                        subtitle: Text(
-                          '${field['type']} • Rp${field['price']}/jam',
-                        ),
-                        trailing: Text(
-                          field['status'],
-                          style: TextStyle(
-                            color: field['status'] == 'Tersedia'
-                                ? Colors.green
-                                : Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: 80),
               ],
