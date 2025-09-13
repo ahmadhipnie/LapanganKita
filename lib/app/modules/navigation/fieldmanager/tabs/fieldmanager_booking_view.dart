@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'fieldmanager_booking_controller.dart';
+import '../tabs_controller/fieldmanager_booking_controller.dart';
 
 class FieldManagerBookingView extends StatelessWidget {
   const FieldManagerBookingView({super.key});

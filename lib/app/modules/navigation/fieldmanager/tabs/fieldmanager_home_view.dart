@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../routes/app_routes.dart';
-import 'fieldmanager_home_controller.dart';
+import '../tabs_controller/fieldmanager_home_controller.dart';
 
 class FieldManagerHomeView extends StatelessWidget {
   FieldManagerHomeView({super.key});

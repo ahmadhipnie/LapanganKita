@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'fieldmanager_history_controller.dart';
+import '../tabs_controller/fieldmanager_history_controller.dart';
 
 class FieldManagerHistoryView extends StatelessWidget {
   const FieldManagerHistoryView({super.key});

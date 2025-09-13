@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_profile_view.dart';
 import 'fieldmanager_navigation_controller.dart';
 
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_booking_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_home_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_history_view.dart';
-import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_navigation_profile_view.dart';
 
 class FieldManagerNavigationView
     extends GetView<FieldManagerNavigationController> {
@@ -15,7 +15,7 @@ class FieldManagerNavigationView
     FieldManagerHomeView(),
     FieldManagerBookingView(),
     FieldManagerHistoryView(),
-    FieldManagerNavigationProfileView(),
+    FieldManagerProfileView(),
   ];
 
   @override

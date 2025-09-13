@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:flutter/material.dart';
 
 class FieldManagerHomeController extends GetxController {
   RxList<Map<String, dynamic>> fields = <Map<String, dynamic>>[
