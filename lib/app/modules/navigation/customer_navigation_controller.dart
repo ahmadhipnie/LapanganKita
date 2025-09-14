@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
 
-enum BottomNavItem { home, booking, community, history, profile}
+enum BottomNavItem { home, booking, community, history, profile }
 
-class CustomerNavigationController  extends GetxController{
+class CustomerNavigationController extends GetxController {
   final RxInt currentIndex = 0.obs;
   final Rx<BottomNavItem> currentTab = BottomNavItem.home.obs;
 
@@ -12,20 +12,14 @@ class CustomerNavigationController  extends GetxController{
     currentTab.value = BottomNavItem.values[index];
   }
 
-  // Method untuk ganti tab by enum
-  void changeTabByEnum(BottomNavItem tab) {
-    final index = BottomNavItem.values.indexOf(tab);
-    currentIndex.value = index;
-    currentTab.value = tab;
-  }
-
-  // Method untuk ganti tab by name
-  void changeTabByName(String tabName) {
-    final tab = BottomNavItem.values.firstWhere(
-      (tab) => tab.toString().split('.').last == tabName,
-      orElse: () => BottomNavItem.home,
-    );
-    changeTabByEnum(tab);
+  @override
+  void onInit() {
+    super.onInit();
+    // Check jika ada arguments untuk initial tab
+    final arguments = Get.arguments;
+    if (arguments != null && arguments['initialTab'] != null) {
+      currentIndex.value = arguments['initialTab'];
+    }
   }
 
   // Get current tab name
