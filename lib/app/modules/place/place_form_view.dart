@@ -6,6 +6,10 @@ class PlaceFormView extends GetView<PlaceFormController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2563EB),
+        automaticallyImplyLeading: false,
+      ),
       backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(
         child: Stack(
