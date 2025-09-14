@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../navigation/customer_navigation_controller.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
+  const LoginView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,9 +147,10 @@ class LoginView extends GetView<LoginController> {
                                 onPressed: () {
                                   if (controller.formKey.currentState
                                           ?.validate() ??
-                                      false) {
+                                      false) {                     
+                                    Get.offAllNamed('/customer/navigation');
                                     // TODO: Implement login action
-                                    Get.offAllNamed('/fieldmanager/navigation');
+//                                     Get.offAllNamed('/fieldmanager/navigation');
                                     Get.snackbar(
                                       'Success',
                                       'Validation passed!',
