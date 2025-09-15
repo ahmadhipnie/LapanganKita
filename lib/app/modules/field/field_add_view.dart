@@ -247,6 +247,7 @@ class FieldAddView extends GetView<FieldAddController> {
                                             ?.validate() ??
                                         false) {
                                       // TODO: Implement submit logic
+                                      Get.toNamed('/fieldmanager/navigation');
                                       Get.snackbar(
                                         'Success',
                                         'Lapangan berhasil disimpan!',
