@@ -119,17 +119,69 @@ class FieldManagerHomeView extends StatelessWidget {
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () {
-                            showDialog(
+                            showModalBottomSheet(
                               context: context,
-                              builder: (ctx) => AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(24),
                                 ),
-                                title: Text(field['name']),
-                                content: Column(
+                              ),
+                              builder: (ctx) => Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    Center(
+                                      child: Container(
+                                        width: 40,
+                                        height: 4,
+                                        margin: const EdgeInsets.only(
+                                          bottom: 16,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[300],
+                                          borderRadius: BorderRadius.circular(
+                                            2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Gambar lapangan di atas
+                                    Container(
+                                      width: double.infinity,
+                                      height: 120,
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[300],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child:
+                                          field['imageUrl'] != null &&
+                                              field['imageUrl']
+                                                  .toString()
+                                                  .isNotEmpty
+                                          ? Image.network(
+                                              field['imageUrl'],
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Center(
+                                              child: Icon(
+                                                Icons.image,
+                                                color: Colors.grey[500],
+                                                size: 48,
+                                              ),
+                                            ),
+                                    ),
+                                    Text(
+                                      field['name'],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
                                     Text('Tipe: ${field['type']}'),
                                     const SizedBox(height: 8),
                                     Text('Harga per Jam: Rp${field['price']}'),
@@ -142,14 +194,36 @@ class FieldManagerHomeView extends StatelessWidget {
                                     Text(
                                       'Lapangan ${field['name']} adalah lapangan ${field['type']} yang nyaman dan berkualitas.',
                                     ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(Icons.edit),
+                                            label: const Text('Edit'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Color(
+                                                0xFF2563EB,
+                                              ),
+                                              foregroundColor: Colors.white,
+                                            ),
+                                            onPressed: () {
+                                              // TODO: Navigasi ke halaman edit lapangan
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            child: const Text('Tutup'),
+                                            onPressed: () =>
+                                                Navigator.of(ctx).pop(),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(ctx).pop(),
-                                    child: const Text('Tutup'),
-                                  ),
-                                ],
                               ),
                             );
                           },
