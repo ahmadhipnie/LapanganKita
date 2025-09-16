@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
@@ -58,8 +59,8 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
                           padding: const EdgeInsets.only(bottom: 16),
                           child: CourtCard(
                             key: ValueKey('${court.name}_$index'),
-                            image: controller.getTimestampedImageUrl(
-                              court.imageUrl,
+                            image: _buildCachedImage(
+                              controller.getTimestampedImageUrl(court.imageUrl),
                             ),
                             title: court.name,
                             location: court.location,
@@ -81,6 +82,61 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
           );
         }),
       ),
+    );
+  }
+
+  Widget _buildCachedImage(String imageUrl) {
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      imageBuilder: (context, imageProvider) => Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+          ),
+          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+        ),
+      ),
+      placeholder: (context, url) => Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+          ),
+          color: Colors.grey[300],
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      errorWidget: (context, url, error) => Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+          ),
+          color: Colors.grey[300],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.broken_image, size: 50, color: Colors.grey),
+            const SizedBox(height: 8),
+            Text(
+              'Maybe image is not found or crash ><',
+              style: TextStyle(
+                color: Colors.red[300],
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+      fadeInDuration: const Duration(milliseconds: 300),
+      fadeOutDuration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      height: 200,
+      fit: BoxFit.cover,
     );
   }
 
