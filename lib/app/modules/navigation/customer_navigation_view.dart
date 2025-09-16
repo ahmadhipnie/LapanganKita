@@ -5,7 +5,6 @@ import 'package:lapangan_kita/app/modules/community/customer_community_view.dart
 import 'package:lapangan_kita/app/modules/history/customer_history_view.dart';
 import 'package:lapangan_kita/app/modules/home/customer_home_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/customer_navigation_controller.dart';
-import 'package:lapangan_kita/app/modules/profile/customer_profile_view.dart';
 
 class CustomerNavigationView extends GetView<CustomerNavigationController> {
   CustomerNavigationView({super.key});
@@ -15,7 +14,6 @@ class CustomerNavigationView extends GetView<CustomerNavigationController> {
     CustomerBookingView(), // index 1
     CustomerCommunityView(), // index 2
     CustomerHistoryView(), // index 3
-    CustomerProfileView(), // index 4
   ];
 
   @override
@@ -40,10 +38,9 @@ class CustomerNavigationView extends GetView<CustomerNavigationController> {
               label: 'Community',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history),
-              label: 'History',
+              icon: Icon(Icons.calendar_month_outlined),
+              label: 'My Booking',
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
         ),
       ),
