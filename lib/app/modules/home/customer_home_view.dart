@@ -21,7 +21,7 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              // Handle profile icon press
+              Get.toNamed('/customer/profile');
             },
           ),
         ],

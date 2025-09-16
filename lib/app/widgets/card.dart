@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class CourtCard extends StatelessWidget {
-  final String image;
+  final Widget? image;
   final VoidCallback onTap;
   final VoidCallback? onFavorite;
   final String title;
@@ -14,7 +14,7 @@ class CourtCard extends StatelessWidget {
 
   const CourtCard({
     super.key,
-    required this.image,
+    this.image,
     required this.onTap,
     this.onFavorite,
     required this.title,
@@ -46,53 +46,7 @@ class CourtCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                fit: BoxFit.cover,
-                height: 280,
-                image,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: double.infinity,
-                    height: 280,
-                    color: Colors.transparent,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 280,
-                    color: Colors.grey[300],
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Maybe image is not found or crash ><',
-                          style: TextStyle(
-                            color: Colors.red[300],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
+            image ?? SizedBox.shrink(),
             // Court Name
             Padding(
               padding: const EdgeInsets.all(16),
