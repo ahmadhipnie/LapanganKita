@@ -158,10 +158,16 @@ class FieldManagerHomeView extends StatelessWidget {
                                       ),
                                       clipBehavior: Clip.antiAlias,
                                       child:
-                                          field['imageUrl'] != null &&
+                                          (field['imageUrl'] != null &&
                                               field['imageUrl']
                                                   .toString()
-                                                  .isNotEmpty
+                                                  .isNotEmpty &&
+                                              (field['imageUrl']
+                                                      .toString()
+                                                      .startsWith('http') ||
+                                                  field['imageUrl']
+                                                      .toString()
+                                                      .startsWith('https')))
                                           ? Image.network(
                                               field['imageUrl'],
                                               fit: BoxFit.cover,
@@ -183,6 +189,12 @@ class FieldManagerHomeView extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 8),
                                     Text('Tipe: ${field['type']}'),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Open Hour: ${field['openHour']} - ${field['closeHour']}',
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text('Max Person: ${field['maxPerson']}'),
                                     const SizedBox(height: 8),
                                     Text('Harga per Jam: Rp${field['price']}'),
                                     const SizedBox(height: 8),
@@ -208,7 +220,11 @@ class FieldManagerHomeView extends StatelessWidget {
                                               foregroundColor: Colors.white,
                                             ),
                                             onPressed: () {
-                                              // TODO: Navigasi ke halaman edit lapangan
+                                              Navigator.of(ctx).pop();
+                                              Get.toNamed(
+                                                '/fieldmanager/edit-field',
+                                                arguments: field,
+                                              );
                                             },
                                           ),
                                         ),
@@ -245,7 +261,17 @@ class FieldManagerHomeView extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   clipBehavior: Clip.antiAlias,
-                                  child: field['imageUrl'] != null
+                                  child:
+                                      (field['imageUrl'] != null &&
+                                          field['imageUrl']
+                                              .toString()
+                                              .isNotEmpty &&
+                                          (field['imageUrl']
+                                                  .toString()
+                                                  .startsWith('http') ||
+                                              field['imageUrl']
+                                                  .toString()
+                                                  .startsWith('https')))
                                       ? Image.network(
                                           field['imageUrl'],
                                           fit: BoxFit.cover,

@@ -16,4 +16,5 @@ abstract class AppRoutes {
   static const CUSTOMER_HISTORY = '/customer/history';
   static const CUSTOMER_PROFILE = '/customer/profile';
   static const FIELD_MANAGER_NAVIGATION = '/fieldmanager/navigation';
+  static const EDIT_FIELD_FIELDMANAGER = '/fieldmanager/edit-field';
 }
