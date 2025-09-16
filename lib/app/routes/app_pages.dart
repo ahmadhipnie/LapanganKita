@@ -1,3 +1,5 @@
+import 'package:lapangan_kita/app/modules/edit_profile_fieldmanager/edit_profile_fieldmanager_view.dart';
+import 'package:lapangan_kita/app/bindings/edit_profile_fieldmanager_binding.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/fieldmanager_navigation_view.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_navigation_binding.dart';
 import 'package:get/get.dart';
@@ -105,6 +107,11 @@ class AppPages {
       name: AppRoutes.CUSTOMER_PROFILE,
       page: () => CustomerProfileView(),
       binding: CustomerProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.EDIT_PROFILE_FIELD_MANAGER,
+      page: () => EditProfileFieldmanagerView(),
+      binding: EditProfileFieldmanagerBinding(),
     ),
   ];
 }

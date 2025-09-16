@@ -9,27 +9,27 @@ class FieldManagerBookingView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Detail Booking'),
+        title: const Text('Booking Details'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Customer: ${b['customer']}'),
-            Text('Lapangan: ${b['field']}'),
-            Text('Tanggal: ${b['date']}'),
-            Text('Jam: ${b['start']} - ${b['end']}'),
+            Text('Field: ${b['field']}'),
+            Text('Date: ${b['date']}'),
+            Text('Time: ${b['start']} - ${b['end']}'),
             Text('Status: ${b['status']}'),
             const SizedBox(height: 8),
             const Divider(),
-            const Text('Catatan:'),
+            const Text('Notes:'),
             const SizedBox(height: 4),
-            Text('Tidak ada catatan khusus.'),
+            Text('No special notes.'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Tutup'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -45,14 +45,16 @@ class FieldManagerBookingView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${action == 'Diterima' ? 'ACC' : 'Tolak'} Booking'),
+        title: Text(action == 'Diterima' ? 'Accept Booking' : 'Reject Booking'),
         content: Text(
-          'Yakin ingin ${action == 'Diterima' ? 'menerima' : 'menolak'} booking ini?',
+          action == 'Diterima'
+              ? 'Are you sure you want to accept this booking?'
+              : 'Are you sure you want to reject this booking?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -61,12 +63,14 @@ class FieldManagerBookingView extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Booking ${action == 'Diterima' ? 'diterima' : 'ditolak'}',
+                    action == 'Diterima'
+                        ? 'Booking accepted'
+                        : 'Booking rejected',
                   ),
                 ),
               );
             },
-            child: Text(action == 'Diterima' ? 'ACC' : 'Tolak'),
+            child: Text(action == 'Diterima' ? 'Accept' : 'Reject'),
           ),
         ],
       ),
@@ -96,7 +100,7 @@ class FieldManagerBookingView extends StatelessWidget {
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: 'Cari customer/lapangan...',
+                        hintText: 'Search customer/field...',
                         prefixIcon: const Icon(Icons.search, size: 20),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 12,
@@ -129,19 +133,19 @@ class FieldManagerBookingView extends StatelessWidget {
                           items: const [
                             DropdownMenuItem(
                               value: 'Semua',
-                              child: Text('Semua'),
+                              child: Text('All'),
                             ),
                             DropdownMenuItem(
                               value: 'Menunggu',
-                              child: Text('Menunggu'),
+                              child: Text('Pending'),
                             ),
                             DropdownMenuItem(
                               value: 'Diterima',
-                              child: Text('Diterima'),
+                              child: Text('Accepted'),
                             ),
                             DropdownMenuItem(
                               value: 'Ditolak',
-                              child: Text('Ditolak'),
+                              child: Text('Rejected'),
                             ),
                           ],
                           onChanged: (val) =>
@@ -163,7 +167,7 @@ class FieldManagerBookingView extends StatelessWidget {
           Obx(
             () => Expanded(
               child: c.filteredBookings.isEmpty
-                  ? const Center(child: Text('Tidak ada booking'))
+                  ? const Center(child: Text('No bookings'))
                   : ListView.separated(
                       itemCount: c.filteredBookings.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -206,7 +210,14 @@ class FieldManagerBookingView extends StatelessWidget {
                                           ),
                                         ),
                                         child: Text(
-                                          b['status'],
+                                          // Status label in English
+                                          b['status'] == 'Menunggu'
+                                              ? 'Pending'
+                                              : b['status'] == 'Diterima'
+                                              ? 'Accepted'
+                                              : b['status'] == 'Ditolak'
+                                              ? 'Rejected'
+                                              : b['status'],
                                           style: TextStyle(
                                             color: c.statusColor(b['status']),
                                             fontWeight: FontWeight.bold,
@@ -217,8 +228,8 @@ class FieldManagerBookingView extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 8),
                                   Text('Customer: ${b['customer']}'),
-                                  Text('Tanggal: ${b['date']}'),
-                                  Text('Jam: ${b['start']} - ${b['end']}'),
+                                  Text('Date: ${b['date']}'),
+                                  Text('Time: ${b['start']} - ${b['end']}'),
                                   const SizedBox(height: 12),
                                   if (b['status'] == 'Menunggu')
                                     Row(
@@ -235,7 +246,7 @@ class FieldManagerBookingView extends StatelessWidget {
                                               'Diterima',
                                             ),
                                             child: const Text(
-                                              'ACC',
+                                              'Accept',
                                               style: TextStyle(
                                                 color: Colors.white,
                                               ),
@@ -255,7 +266,7 @@ class FieldManagerBookingView extends StatelessWidget {
                                               'Ditolak',
                                             ),
                                             child: const Text(
-                                              'Tolak',
+                                              'Reject',
                                               style: TextStyle(
                                                 color: Colors.white,
                                               ),

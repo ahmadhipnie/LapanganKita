@@ -147,10 +147,10 @@ class LoginView extends GetView<LoginController> {
                                 onPressed: () {
                                   if (controller.formKey.currentState
                                           ?.validate() ??
-                                      false) {                     
-                                    Get.offAllNamed('/customer/navigation');
+                                      false) {
+                                    // Get.offAllNamed('/customer/navigation');
                                     // TODO: Implement login action
-//                                     Get.offAllNamed('/fieldmanager/navigation');
+                                    Get.offAllNamed('/fieldmanager/navigation');
                                     Get.snackbar(
                                       'Success',
                                       'Validation passed!',

@@ -104,44 +104,9 @@ class FieldManagerProfileView extends StatelessWidget {
                         title: const Text('My Account'),
                         subtitle: const Text('Make changes to your account'),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () {},
-                      ),
-                      const Divider(height: 0),
-                      ListTile(
-                        leading: const Icon(
-                          Icons.account_balance_wallet_outlined,
-                          color: Color(0xFF2563EB),
-                        ),
-                        title: const Text('Saved Beneficiary'),
-                        subtitle: const Text('Manage your saved account'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {},
-                      ),
-                      const Divider(height: 0),
-                      Obx(
-                        () => SwitchListTile.adaptive(
-                          secondary: const Icon(
-                            Icons.fingerprint,
-                            color: Color(0xFF2563EB),
-                          ),
-                          title: const Text('Face ID / Touch ID'),
-                          subtitle: const Text('Manage your device security'),
-                          value: c.faceIdEnabled.value,
-                          onChanged: (val) => c.faceIdEnabled.value = val,
-                        ),
-                      ),
-                      const Divider(height: 0),
-                      ListTile(
-                        leading: const Icon(
-                          Icons.security_outlined,
-                          color: Color(0xFF2563EB),
-                        ),
-                        title: const Text('Two-Factor Authentication'),
-                        subtitle: const Text(
-                          'Further secure your account for safety',
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {},
+                        onTap: () {
+                          Get.toNamed('/fieldmanager/edit-profile');
+                        },
                       ),
                       const Divider(height: 0),
                       ListTile(

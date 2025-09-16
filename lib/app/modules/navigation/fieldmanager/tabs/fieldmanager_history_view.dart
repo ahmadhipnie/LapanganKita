@@ -13,29 +13,29 @@ class FieldManagerHistoryView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Detail Riwayat'),
+        title: const Text('History Details'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Customer: ${b['customer']}'),
-            Text('Lapangan: ${b['field']}'),
-            Text('Tanggal: ${b['date']}'),
-            Text('Jam: ${b['start']} - ${b['end']}'),
+            Text('Field: ${b['field']}'),
+            Text('Date: ${b['date']}'),
+            Text('Time: ${b['start']} - ${b['end']}'),
             Text('Status: ${b['status']}'),
             Text('Total: Rp${b['total']}'),
-            Text('Pembayaran: ${b['payment']}'),
+            Text('Payment: ${b['payment']}'),
             const SizedBox(height: 8),
             const Divider(),
-            const Text('Catatan:'),
+            const Text('Notes:'),
             const SizedBox(height: 4),
-            Text('Tidak ada catatan khusus.'),
+            Text('No special notes.'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Tutup'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -65,7 +65,7 @@ class FieldManagerHistoryView extends StatelessWidget {
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: 'Cari customer/lapangan...',
+                        hintText: 'Search customer/field...',
                         prefixIcon: const Icon(Icons.search, size: 20),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 12,
@@ -98,19 +98,19 @@ class FieldManagerHistoryView extends StatelessWidget {
                           items: const [
                             DropdownMenuItem(
                               value: 'Semua',
-                              child: Text('Semua'),
+                              child: Text('All'),
                             ),
                             DropdownMenuItem(
                               value: 'Selesai',
-                              child: Text('Selesai'),
+                              child: Text('Completed'),
                             ),
                             DropdownMenuItem(
                               value: 'Batal',
-                              child: Text('Batal'),
+                              child: Text('Cancelled'),
                             ),
                             DropdownMenuItem(
                               value: 'Ditolak',
-                              child: Text('Ditolak'),
+                              child: Text('Rejected'),
                             ),
                           ],
                           onChanged: (val) =>
@@ -132,7 +132,7 @@ class FieldManagerHistoryView extends StatelessWidget {
           Obx(
             () => Expanded(
               child: c.filteredHistory.isEmpty
-                  ? const Center(child: Text('Belum ada riwayat booking'))
+                  ? const Center(child: Text('No booking history yet'))
                   : ListView.separated(
                       itemCount: c.filteredHistory.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -175,7 +175,14 @@ class FieldManagerHistoryView extends StatelessWidget {
                                           ),
                                         ),
                                         child: Text(
-                                          b['status'],
+                                          // Status label in English
+                                          b['status'] == 'Selesai'
+                                              ? 'Completed'
+                                              : b['status'] == 'Batal'
+                                              ? 'Cancelled'
+                                              : b['status'] == 'Ditolak'
+                                              ? 'Rejected'
+                                              : b['status'],
                                           style: TextStyle(
                                             color: c.statusColor(b['status']),
                                             fontWeight: FontWeight.bold,
@@ -186,8 +193,8 @@ class FieldManagerHistoryView extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 8),
                                   Text('Customer: ${b['customer']}'),
-                                  Text('Tanggal: ${b['date']}'),
-                                  Text('Jam: ${b['start']} - ${b['end']}'),
+                                  Text('Date: ${b['date']}'),
+                                  Text('Time: ${b['start']} - ${b['end']}'),
                                   Text('Total: Rp${b['total']}'),
                                 ],
                               ),

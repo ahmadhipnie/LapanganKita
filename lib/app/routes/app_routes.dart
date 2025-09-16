@@ -1,4 +1,5 @@
 abstract class AppRoutes {
+  static const EDIT_PROFILE_FIELD_MANAGER = '/fieldmanager/edit-profile';
   static const HOME = '/home';
   static const LOGIN = '/login';
   static const ONBOARDING = '/onboarding';
