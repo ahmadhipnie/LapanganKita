@@ -108,7 +108,9 @@ class CustomerProfileView extends GetView<CustomerProfileController> {
                         title: const Text('My Account'),
                         subtitle: const Text('Make changes to your account'),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () {},
+                        onTap: () {
+                          Get.toNamed('/fieldmanager/edit-profile');
+                        },
                       ),
                       const Divider(height: 0),
                       ListTile(
