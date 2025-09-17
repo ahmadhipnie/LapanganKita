@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:lapangan_kita/app/widgets/card.dart';
 
 class CustomerBookingView extends GetView<CustomerBookingController> {
@@ -10,7 +11,9 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.neutralColor,
       appBar: AppBar(
+        backgroundColor: AppColors.neutralColor,
         actionsPadding: const EdgeInsets.only(right: 16),
         title: const Text(
           'Available Courts',
@@ -69,7 +72,10 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
                             price: court.price,
                             suffixText: ' / hour',
                             onTap: () {
-                              Get.toNamed('/court-detail', arguments: court);
+                              Get.toNamed(
+                                '/customer/booking/detail',
+                                arguments: court,
+                              );
                             },
                           ),
                         );
@@ -241,7 +247,7 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
               ),
             ),
             IconButton(
-              hoverColor: Color(0xff2563EB),
+              hoverColor: AppColors.primary,
               icon: const Icon(Icons.filter_list),
               onPressed: () => _showFilterDialog(builderContext),
             ),
@@ -261,9 +267,9 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
       selected: isSelected,
       onSelected: onSelected,
       backgroundColor: Colors.grey[200],
-      selectedColor: Colors.blue[200],
+      selectedColor: AppColors.secondary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.blue[800] : Colors.grey[800],
+        color: isSelected ? Colors.white : Colors.grey[800],
       ),
     );
   }

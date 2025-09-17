@@ -7,6 +7,11 @@ class Court {
   final List<String> types;
   final double price;
   final String imageUrl;
+  final String description;
+  final Map<String, String> openingHours; // Hari: jam buka-tutup
+  final List<Equipment> equipment;
+  final double latitude;
+  final double longitude;
 
   Court({
     required this.name,
@@ -14,7 +19,21 @@ class Court {
     required this.types,
     required this.price,
     required this.imageUrl,
+    required this.description,
+    required this.openingHours,
+    required this.equipment,
+    required this.latitude,
+    required this.longitude,
   });
+}
+
+class Equipment {
+  final String name;
+  final String description;
+  final double price;
+  int quantity;
+
+  Equipment( {required this.name, required this.price, required this.description, this.quantity = 0});
 }
 
 class CustomerBookingController extends GetxController {
@@ -45,6 +64,16 @@ class CustomerBookingController extends GetxController {
       imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
       price: 240000,
       types: ['Tennis'],
+      description:
+          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
+      openingHours: {'monday-sunday': '06:00 - 22:00'},
+      equipment: [
+        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
+        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
+        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      ],
+      latitude: -6.2088,
+      longitude: 106.8456,
     ),
     Court(
       name: 'Outdoor Tennis Court',
@@ -52,6 +81,16 @@ class CustomerBookingController extends GetxController {
       types: ['Tennis'],
       price: 200000,
       imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+      description:
+          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
+      openingHours: {'monday-sunday': '06:00 - 22:00'},
+     equipment: [
+        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
+        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
+        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      ],
+      latitude: -6.2088,
+      longitude: 106.8456,
     ),
     Court(
       name: 'Padel Court',
@@ -59,6 +98,16 @@ class CustomerBookingController extends GetxController {
       types: ['Padel'],
       price: 220000,
       imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc',
+      description:
+          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
+      openingHours: {'monday-sunday': '06:00 - 22:00'},
+     equipment: [
+        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
+        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
+        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      ],
+      latitude: -6.2088,
+      longitude: 106.8456,
     ),
     Court(
       name: 'Multi Sport Court',
@@ -66,6 +115,16 @@ class CustomerBookingController extends GetxController {
       types: ['Tennis', 'Padel'],
       price: 300000,
       imageUrl: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211',
+      description:
+          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
+      openingHours: {'monday-sunday': '06:00 - 22:00'},
+      equipment: [
+        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
+        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
+        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      ],
+      latitude: -6.2088,
+      longitude: 106.8456,
     ),
     Court(
       name: 'Premium Futsal Court',
@@ -73,6 +132,16 @@ class CustomerBookingController extends GetxController {
       types: ['Futsal'],
       price: 100000,
       imageUrl: 'https://images.unsplash.com/photo-1520877880798-5ee004e3f11e',
+      description:
+          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
+      openingHours: {'monday-sunday': '06:00 - 22:00'},
+      equipment: [
+        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
+        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
+        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      ],
+      latitude: -6.2088,
+      longitude: 106.8456,
     ),
     Court(
       name: 'Basketball Court',
@@ -80,6 +149,16 @@ class CustomerBookingController extends GetxController {
       types: ['Basketball'],
       price: 180000,
       imageUrl: 'https://images.unsplash.com/photo-1549060279-7e168fce7090',
+      description:
+          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
+      openingHours: {'monday-sunday': '06:00 - 22:00'},
+    equipment: [
+        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
+        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
+        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      ],
+      latitude: -6.2088,
+      longitude: 106.8456,
     ),
   ];
 
