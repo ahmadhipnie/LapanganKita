@@ -157,28 +157,10 @@ class FieldManagerHomeView extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       clipBehavior: Clip.antiAlias,
-                                      child:
-                                          (field['imageUrl'] != null &&
-                                              field['imageUrl']
-                                                  .toString()
-                                                  .isNotEmpty &&
-                                              (field['imageUrl']
-                                                      .toString()
-                                                      .startsWith('http') ||
-                                                  field['imageUrl']
-                                                      .toString()
-                                                      .startsWith('https')))
-                                          ? Image.network(
-                                              field['imageUrl'],
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Center(
-                                              child: Icon(
-                                                Icons.image,
-                                                color: Colors.grey[500],
-                                                size: 48,
-                                              ),
-                                            ),
+                                      child: Image.asset(
+                                        'assets/images/gbk.jpeg',
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                     Text(
                                       field['name'],
@@ -261,28 +243,10 @@ class FieldManagerHomeView extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   clipBehavior: Clip.antiAlias,
-                                  child:
-                                      (field['imageUrl'] != null &&
-                                          field['imageUrl']
-                                              .toString()
-                                              .isNotEmpty &&
-                                          (field['imageUrl']
-                                                  .toString()
-                                                  .startsWith('http') ||
-                                              field['imageUrl']
-                                                  .toString()
-                                                  .startsWith('https')))
-                                      ? Image.network(
-                                          field['imageUrl'],
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Center(
-                                          child: Icon(
-                                            Icons.image,
-                                            color: Colors.grey[500],
-                                            size: 40,
-                                          ),
-                                        ),
+                                  child: Image.asset(
+                                    'assets/images/gbk.jpeg',
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                                 const SizedBox(height: 10),
                                 // Nama lapangan
