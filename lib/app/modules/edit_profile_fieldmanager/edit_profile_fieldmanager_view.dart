@@ -78,7 +78,7 @@ class EditProfileFieldmanagerView
             onTap: () => Get.to(
               () => EditFieldView(
                 title: 'Gender',
-                hint: 'Pilih Jenis Kelamin',
+                hint: 'Choose your gender',
                 helperText: 'Specify your gender',
                 controller: controller.genderController,
                 isGender: true,
@@ -143,7 +143,7 @@ class EditProfileFieldmanagerView
             onTap: () => Get.to(
               () => EditFieldView(
                 title: 'Bank Type',
-                hint: 'Pilih Jenis Bank',
+                hint: 'Choose your bank type',
                 helperText: 'Enter your bank type',
                 controller: controller.bankTypeController,
                 isBankType: true,

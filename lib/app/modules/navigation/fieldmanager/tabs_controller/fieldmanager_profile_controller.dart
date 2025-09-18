@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 class FieldManagerProfileController extends GetxController {
   RxBool faceIdEnabled = false.obs;
   // Dummy user data
-  final RxString name = 'Itunoluwa Abidaye'.obs;
-  final RxString username = '@itunoluwa'.obs;
+  final RxString name = 'Budi sakti'.obs;
+  final RxString email = 'budi@gmail.com'.obs;
   final RxString avatarUrl = ''.obs;
 
   void toggleFaceId(bool value) {

@@ -69,7 +69,7 @@ class FieldManagerProfileView extends StatelessWidget {
                               const SizedBox(height: 4),
                               Obx(
                                 () => Text(
-                                  c.username.value,
+                                  c.email.value,
                                   style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 14,
@@ -81,7 +81,9 @@ class FieldManagerProfileView extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit, color: Colors.white),
-                          onPressed: () {},
+                          onPressed: () {
+                            Get.toNamed('/fieldmanager/edit-profile');
+                          },
                         ),
                       ],
                     ),
@@ -133,6 +135,7 @@ class FieldManagerProfileView extends StatelessWidget {
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
                                   ),
                                   onPressed: () {
                                     Navigator.of(ctx).pop();
