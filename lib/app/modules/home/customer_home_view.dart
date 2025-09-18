@@ -2,6 +2,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/home/customer_home_controller.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CustomerHomeView extends GetView<CustomerHomeController> {
@@ -10,7 +11,9 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.neutralColor,
       appBar: AppBar(
+        backgroundColor: AppColors.neutralColor,
         actionsPadding: const EdgeInsets.only(right: 16),
         title: const Text(
           'LapanganKita',
@@ -168,13 +171,13 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
       () => AnimatedSmoothIndicator(
         activeIndex: controller.currentIndex.value,
         count: controller.imgList.length,
-        effect: const SlideEffect(
+        effect: SlideEffect(
           radius: 5,
           spacing: 8,
           dotWidth: 16,
           dotHeight: 6,
-          activeDotColor: Color(0xFF2563EB),
-          dotColor: Color(0xFFA6A0AD),
+          activeDotColor: AppColors.secondary,
+          dotColor: Colors.grey.shade300,
           paintStyle: PaintingStyle.fill,
         ),
       ),

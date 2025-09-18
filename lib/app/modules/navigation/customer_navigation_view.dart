@@ -5,6 +5,7 @@ import 'package:lapangan_kita/app/modules/community/customer_community_view.dart
 import 'package:lapangan_kita/app/modules/history/customer_history_view.dart';
 import 'package:lapangan_kita/app/modules/home/customer_home_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/customer_navigation_controller.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 class CustomerNavigationView extends GetView<CustomerNavigationController> {
   CustomerNavigationView({super.key});
@@ -19,14 +20,16 @@ class CustomerNavigationView extends GetView<CustomerNavigationController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.neutralColor,
       body: Obx(() => _pages[controller.currentIndex.value]),
       bottomNavigationBar: Obx(
         () => BottomNavigationBar(
           currentIndex: controller.currentIndex.value,
           onTap: controller.changeTab,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: Color(0xff2563EB),
-          unselectedItemColor: Colors.grey,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: Colors.grey[500],
+          backgroundColor: AppColors.neutralColor,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
             BottomNavigationBarItem(
