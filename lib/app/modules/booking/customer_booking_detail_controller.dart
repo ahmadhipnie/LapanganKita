@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
+import 'package:lapangan_kita/app/modules/booking/customer_booking_model.dart';
+import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
+import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
 
 class CustomerBookingDetailController extends GetxController {
   final Court court = Get.arguments;
@@ -141,23 +143,64 @@ class CustomerBookingDetailController extends GetxController {
     totalPrice.value = basePrice + equipmentPrice;
   }
 
+  // Di method bookNow() pada CustomerBookingDetailController
   void bookNow() {
     if (selectedStartTime.value.isEmpty) {
       Get.snackbar('Error', 'Please select start time');
       return;
     }
 
-    // Logic booking disini
-    Get.toNamed(
-      '/booking-confirmation',
-      arguments: {
-        'court': court,
-        'date': selectedDate.value,
-        'startTime': selectedStartTime.value,
-        'duration': selectedDuration.value,
-        'equipment': selectedEquipment,
-        'totalPrice': totalPrice.value,
-      },
-    );
+    try {
+      // Generate booking ID
+      final bookingId = 'BK${DateTime.now().millisecondsSinceEpoch}';
+
+      // Hitung total equipment price
+      double equipmentTotal = 0;
+      selectedEquipment.forEach((name, quantity) {
+        if (quantity > 0) {
+          final equipment = court.equipment.firstWhere(
+            (e) => e.name == name,
+            orElse: () => Equipment(name: name, price: 0, description: ''),
+          );
+          equipmentTotal += equipment.price * quantity;
+        }
+      });
+
+      // Buat booking history
+      final bookingHistory = BookingHistory(
+        id: bookingId,
+        courtName: court.name,
+        courtImageUrl: court.imageUrl,
+        location: court.location,
+        date: selectedDate.value,
+        startTime: selectedStartTime.value,
+        duration: int.parse(selectedDuration.value),
+        totalAmount: totalPrice.value,
+        status: 'pending',
+        equipment: Map.from(selectedEquipment),
+        courtPrice: court.price,
+        equipmentTotal: equipmentTotal,
+      );
+
+      // Simpan ke history controller - gunakan Get.find dengan tag jika perlu
+      final historyController = Get.find<CustomerHistoryController>();
+      historyController.addBooking(bookingHistory);
+
+      // Redirect ke halaman history
+      Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 3});
+
+      Get.snackbar(
+        'Success',
+        'Booking created successfully. ID: $bookingId',
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to create booking: $e',
+        snackPosition: SnackPosition.TOP,
+      );
+    }
   }
 }
