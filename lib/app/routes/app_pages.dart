@@ -118,7 +118,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.CUSTOMER_BOOKING_DETAIL,
       page: () => CustomerBookingDetailView(),
-      binding: CustomerBookingDetailBinding(),
+      binding: CustomerBookingDetailBinding()
     ),
   ];
 }

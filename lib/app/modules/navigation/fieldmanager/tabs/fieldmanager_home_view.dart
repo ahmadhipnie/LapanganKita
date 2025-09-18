@@ -157,22 +157,10 @@ class FieldManagerHomeView extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       clipBehavior: Clip.antiAlias,
-                                      child:
-                                          field['imageUrl'] != null &&
-                                              field['imageUrl']
-                                                  .toString()
-                                                  .isNotEmpty
-                                          ? Image.network(
-                                              field['imageUrl'],
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Center(
-                                              child: Icon(
-                                                Icons.image,
-                                                color: Colors.grey[500],
-                                                size: 48,
-                                              ),
-                                            ),
+                                      child: Image.asset(
+                                        'assets/images/gbk.jpeg',
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                     Text(
                                       field['name'],
@@ -183,6 +171,12 @@ class FieldManagerHomeView extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 8),
                                     Text('Tipe: ${field['type']}'),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Open Hour: ${field['openHour']} - ${field['closeHour']}',
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text('Max Person: ${field['maxPerson']}'),
                                     const SizedBox(height: 8),
                                     Text('Harga per Jam: Rp${field['price']}'),
                                     const SizedBox(height: 8),
@@ -208,7 +202,11 @@ class FieldManagerHomeView extends StatelessWidget {
                                               foregroundColor: Colors.white,
                                             ),
                                             onPressed: () {
-                                              // TODO: Navigasi ke halaman edit lapangan
+                                              Navigator.of(ctx).pop();
+                                              Get.toNamed(
+                                                '/fieldmanager/edit-field',
+                                                arguments: field,
+                                              );
                                             },
                                           ),
                                         ),
@@ -245,18 +243,10 @@ class FieldManagerHomeView extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   clipBehavior: Clip.antiAlias,
-                                  child: field['imageUrl'] != null
-                                      ? Image.network(
-                                          field['imageUrl'],
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Center(
-                                          child: Icon(
-                                            Icons.image,
-                                            color: Colors.grey[500],
-                                            size: 40,
-                                          ),
-                                        ),
+                                  child: Image.asset(
+                                    'assets/images/gbk.jpeg',
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                                 const SizedBox(height: 10),
                                 // Nama lapangan
