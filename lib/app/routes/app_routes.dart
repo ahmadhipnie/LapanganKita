@@ -12,6 +12,7 @@ abstract class AppRoutes {
   static const CUSTOMER_NAVIGATION = '/customer/navigation';
   static const CUSTOMER_HOME = '/customer/home';
   static const CUSTOMER_BOOKING = '/customer/booking';
+  static const CUSTOMER_BOOKING_DETAIL = '/customer/booking/detail';
   static const CUSTOMER_COMMUNITY = '/customer/community';
   static const CUSTOMER_HISTORY = '/customer/history';
   static const CUSTOMER_PROFILE = '/customer/profile';

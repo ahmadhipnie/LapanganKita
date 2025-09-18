@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'edit_profile_fieldmanager_controller.dart';
 import 'edit_fields/edit_field_view.dart';
 
 class EditProfileFieldmanagerView
     extends GetView<EditProfileFieldmanagerController> {
-  const EditProfileFieldmanagerView({Key? key}) : super(key: key);
+  const EditProfileFieldmanagerView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.neutralColor,
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: ListView(
@@ -31,7 +33,7 @@ class EditProfileFieldmanagerView
                   onPressed: () {},
                   child: const Text(
                     'Edit',
-                    style: TextStyle(color: Color(0xFF2563EB)),
+                    style: TextStyle(color: AppColors.secondary),
                   ),
                 ),
               ],
@@ -164,7 +166,7 @@ class EditProfileFieldmanagerView
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF2563EB)),
+      leading: Icon(icon, color: AppColors.secondary),
       title: Text(title),
       subtitle: Text(value.isNotEmpty ? value : '-'),
       trailing: const Icon(Icons.chevron_right),

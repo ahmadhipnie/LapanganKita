@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 class CourtCard extends StatelessWidget {
   final Widget? image;
@@ -37,6 +38,7 @@ class CourtCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.white,
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 3,
@@ -97,9 +99,12 @@ class CourtCard extends StatelessWidget {
                           return Chip(
                             label: Text(
                               type,
-                              style: const TextStyle(fontSize: 12),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
                             ),
-                            backgroundColor: Colors.blue[50],
+                            backgroundColor: AppColors.secondary,
                             visualDensity: VisualDensity.compact,
                           );
                         }).toList() ??

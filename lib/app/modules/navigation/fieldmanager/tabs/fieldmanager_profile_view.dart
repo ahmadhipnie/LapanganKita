@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 import '../tabs_controller/fieldmanager_profile_controller.dart';
 
@@ -10,7 +11,7 @@ class FieldManagerProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Get.put(FieldManagerProfileController());
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: AppColors.neutralColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
