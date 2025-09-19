@@ -59,7 +59,7 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final court = filteredCourts[index];
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.only(bottom: 8),
                           child: CourtCard(
                             key: ValueKey('${court.name}_$index'),
                             image: _buildCachedImage(
