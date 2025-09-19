@@ -5,7 +5,7 @@ import 'package:lapangan_kita/app/bindings/edit_profile_fieldmanager_binding.dar
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/fieldmanager_navigation_view.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_navigation_binding.dart';
 import 'package:get/get.dart';
-import 'package:lapangan_kita/app/bindings/customer_booking.dart';
+import 'package:lapangan_kita/app/bindings/customer_booking_binding.dart';
 import 'package:lapangan_kita/app/bindings/customer_community_binding.dart';
 import 'package:lapangan_kita/app/bindings/customer_history_binding.dart';
 import 'package:lapangan_kita/app/bindings/customer_home_binding.dart';
