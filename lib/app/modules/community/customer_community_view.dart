@@ -44,9 +44,9 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
 
   Widget _buildPostCard(CommunityPost post) {
     return Card(
-      color: AppColors.neutralColor,
+      color: Colors.white,
       margin: EdgeInsets.only(bottom: 16),
-      elevation: 6,
+      elevation: 2,
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
