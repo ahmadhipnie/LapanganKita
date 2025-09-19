@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
           : AppRoutes.ONBOARDING,
       getPages: AppPages.pages,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         useMaterial3: true,
       ),
     );

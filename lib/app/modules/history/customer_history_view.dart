@@ -12,6 +12,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.neutralColor,
       appBar: AppBar(
         centerTitle: false,
         title: Column(
@@ -24,31 +25,24 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
             ),
           ],
         ),
-
         backgroundColor: AppColors.neutralColor,
       ),
-      backgroundColor: AppColors.neutralColor,
       body: SafeArea(
         child: Obx(() {
           if (controller.isLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
-
           return RefreshIndicator(
             onRefresh: () => controller.refreshData(),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 // Filter Row
-                SliverToBoxAdapter(
-                  
-                  child: _buildFilterRow()),
-
+                SliverToBoxAdapter(child: _buildFilterRow()),
                 // Content
                 Obx(() {
                   if (controller.bookings.isEmpty) {
                     return SliverFillRemaining(
-
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -86,7 +80,6 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
 
                   if (filteredBookings.isEmpty) {
                     return SliverFillRemaining(
-
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -114,9 +107,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                       ),
                     );
                   }
-
                   return SliverList(
-                    
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final booking = filteredBookings[index];
                       return Padding(
@@ -214,8 +205,9 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
 
   Widget _buildBookingCard(BookingHistory booking) {
     return Card(
-      color: AppColors.neutralColor,
+      color: Colors.white,
       margin: EdgeInsets.zero,
+      elevation: 2,
       child: Stack(
         children: [
           Padding(
