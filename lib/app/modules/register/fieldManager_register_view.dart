@@ -4,6 +4,8 @@ import 'fieldManager_register_controller.dart';
 import '../login/login_controller.dart';
 
 class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
+  const FieldManagerRegisterView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +110,7 @@ class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
-                                value: controller.gender.value.isEmpty
+                                initialValue: controller.gender.value.isEmpty
                                     ? null
                                     : controller.gender.value,
                                 items: const [
@@ -190,7 +192,7 @@ class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
-                                value: controller.bank.value.isEmpty
+                                initialValue: controller.bank.value.isEmpty
                                     ? null
                                     : controller.bank.value,
                                 items: controller.bankList

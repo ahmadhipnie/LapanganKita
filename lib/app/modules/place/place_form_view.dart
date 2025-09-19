@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'place_form_controller.dart';
 
 class PlaceFormView extends GetView<PlaceFormController> {
+  const PlaceFormView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -228,7 +230,7 @@ class PlaceFormView extends GetView<PlaceFormController> {
                                   onChanged: (val) =>
                                       controller.isAddOnChecked.value = val,
                                   title: const Text('Add Add-Ons?'),
-                                  activeColor: Color(0xFF2563EB),
+                                  activeThumbColor: Color(0xFF2563EB),
                                 ),
                               ),
 

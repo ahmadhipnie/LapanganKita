@@ -4,7 +4,7 @@ import '../../../../routes/app_routes.dart';
 import '../tabs_controller/fieldmanager_home_controller.dart';
 
 class FieldManagerHomeView extends StatelessWidget {
-  FieldManagerHomeView({super.key});
+  const FieldManagerHomeView({super.key});
 
   @override
   Widget build(BuildContext context) {

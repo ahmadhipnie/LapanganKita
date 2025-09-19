@@ -4,6 +4,8 @@ import 'customer_register_controller.dart';
 import '../login/login_controller.dart';
 
 class CustomerRegisterView extends GetView<CustomerRegisterController> {
+  const CustomerRegisterView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +110,7 @@ class CustomerRegisterView extends GetView<CustomerRegisterController> {
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
-                                value: controller.gender.value.isEmpty
+                                initialValue: controller.gender.value.isEmpty
                                     ? null
                                     : controller.gender.value,
                                 items: const [
@@ -190,7 +192,7 @@ class CustomerRegisterView extends GetView<CustomerRegisterController> {
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
-                                value: controller.bank.value.isEmpty
+                                initialValue: controller.bank.value.isEmpty
                                     ? null
                                     : controller.bank.value,
                                 items: controller.bankList
@@ -249,7 +251,7 @@ class CustomerRegisterView extends GetView<CustomerRegisterController> {
                                       // TODO: Implement register action
                                       Future.delayed(Duration(seconds: 3));
                                       Get.toNamed('/otp');
-                                      
+
                                       Get.snackbar(
                                         'Success',
                                         'Registration form valid!',

@@ -135,7 +135,7 @@ class EditFieldFieldmanagerView
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
-                                value: controller.fieldType.value.isEmpty
+                                initialValue: controller.fieldType.value.isEmpty
                                     ? null
                                     : controller.fieldType.value,
                                 items: controller.fieldTypeList
