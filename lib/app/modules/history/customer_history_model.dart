@@ -1,10 +1,10 @@
-import 'package:intl/intl.dart';
 
 class BookingHistory {
   final String id;
   final String courtName;
   final String courtImageUrl;
   final String location;
+  final List<String> types;
   final DateTime date;
   final String startTime;
   final int duration;
@@ -19,6 +19,7 @@ class BookingHistory {
     required this.courtName,
     required this.courtImageUrl,
     required this.location,
+    required this.types,
     required this.date,
     required this.startTime,
     required this.duration,

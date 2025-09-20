@@ -2,8 +2,15 @@ import 'package:carousel_slider/carousel_controller.dart';
 import 'package:carousel_slider/carousel_options.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
+import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
+import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
 
 class CustomerHomeController extends GetxController {
+  // Tambahkan controller untuk history
+  final CustomerHistoryController historyController =
+      Get.find<CustomerHistoryController>();
+
   // Carousel controller
   final CarouselSliderController carouselController =
       CarouselSliderController();
@@ -66,5 +73,92 @@ class CustomerHomeController extends GetxController {
     // Contoh: imgList = await ApiService.getNewImages();
 
     isLoading.value = false;
+  }
+
+  void navigateToBookingWithCategory(String category) {
+    // Dapatkan instance dari CustomerBookingController
+    Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 1});
+   Future.delayed(const Duration(milliseconds: 100), () {
+    final bookingController = Get.find<CustomerBookingController>();
+    bookingController.setCategoryFilter(category);
+  });
+    // Navigate ke halaman booking
+  }
+
+  // Get popular categories with count and icon
+  List<Map<String, dynamic>> get popularCategoriesWithIcon {
+    final bookingController = Get.find<CustomerBookingController>();
+    final Map<String, int> categoryCount = {};
+
+    for (final court in bookingController.courts) {
+      for (final type in court.types) {
+        categoryCount[type] = (categoryCount[type] ?? 0) + 1;
+      }
+    }
+
+    return categoryCount.entries.map((entry) {
+      return {
+        'name': entry.key,
+        'count': entry.value,
+        'icon': _getCategoryIcon(entry.key),
+        'color': _getCategoryColor(entry.key),
+      };
+    }).toList();
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'tennis':
+        return Icons.sports_tennis;
+      case 'padel':
+        return Icons.sports_tennis;
+      case 'futsal':
+        return Icons.sports_soccer;
+      case 'basketball':
+        return Icons.sports_basketball;
+      case 'volleyball':
+        return Icons.sports_volleyball;
+      case 'badminton':
+        return Icons.sports;
+      default:
+        return Icons.sports;
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'tennis':
+        return Colors.green;
+      case 'padel':
+        return Colors.orange;
+      case 'futsal':
+        return Colors.blue;
+      case 'basketball':
+        return Colors.red;
+      case 'volleyball':
+        return Colors.purple;
+      case 'badminton':
+        return Colors.teal;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  List<BookingHistory> getRecentBookings() {
+    if (historyController.bookings.isEmpty) return [];
+
+    // Ambil 3 booking terbaru (diurutkan dari yang terbaru)
+    final allBookings = List<BookingHistory>.from(historyController.bookings);
+    allBookings.sort((a, b) => b.date.compareTo(a.date));
+
+    return allBookings.take(3).toList();
+  }
+
+  // Check if recent bookings are loading
+  bool get isRecentBookingsLoading => historyController.isLoading.value;
+
+  // Refresh both home and history data
+  Future<void> refreshAllData() async {
+    await Future.wait([refreshData(), historyController.refreshData()]);
   }
 }

@@ -180,6 +180,7 @@ class CustomerBookingDetailController extends GetxController {
         equipment: Map.from(selectedEquipment),
         courtPrice: court.price,
         equipmentTotal: equipmentTotal,
+        types: court.types,
       );
 
       // Simpan ke history controller - gunakan Get.find dengan tag jika perlu
