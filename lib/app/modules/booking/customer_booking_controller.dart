@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_model.dart'; // Adjust the path to your Debouncer utility
+
 class CustomerBookingController extends GetxController {
   final RxBool isLoading = false.obs;
 
@@ -33,9 +34,21 @@ class CustomerBookingController extends GetxController {
           'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
       openingHours: {'monday-sunday': '06:00 - 22:00'},
       equipment: [
-        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
-        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
-        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+        Equipment(
+          name: 'Tennis Racket',
+          description: 'Rackets, balls,  and other equipment',
+          price: 50000,
+        ),
+        Equipment(
+          name: 'Towel rental',
+          description: 'Clean towels for after yout game',
+          price: 25000,
+        ),
+        Equipment(
+          name: 'Grip Tape',
+          description: 'Secure storage for your belongings',
+          price: 15000,
+        ),
       ],
       latitude: -6.2088,
       longitude: 106.8456,
@@ -49,10 +62,22 @@ class CustomerBookingController extends GetxController {
       description:
           'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
       openingHours: {'monday-sunday': '06:00 - 22:00'},
-     equipment: [
-        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
-        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
-        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      equipment: [
+        Equipment(
+          name: 'Tennis Racket',
+          description: 'Rackets, balls,  and other equipment',
+          price: 50000,
+        ),
+        Equipment(
+          name: 'Towel rental',
+          description: 'Clean towels for after yout game',
+          price: 25000,
+        ),
+        Equipment(
+          name: 'Grip Tape',
+          description: 'Secure storage for your belongings',
+          price: 15000,
+        ),
       ],
       latitude: -6.2088,
       longitude: 106.8456,
@@ -66,10 +91,22 @@ class CustomerBookingController extends GetxController {
       description:
           'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
       openingHours: {'monday-sunday': '06:00 - 22:00'},
-     equipment: [
-        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
-        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
-        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      equipment: [
+        Equipment(
+          name: 'Tennis Racket',
+          description: 'Rackets, balls,  and other equipment',
+          price: 50000,
+        ),
+        Equipment(
+          name: 'Towel rental',
+          description: 'Clean towels for after yout game',
+          price: 25000,
+        ),
+        Equipment(
+          name: 'Grip Tape',
+          description: 'Secure storage for your belongings',
+          price: 15000,
+        ),
       ],
       latitude: -6.2088,
       longitude: 106.8456,
@@ -84,9 +121,21 @@ class CustomerBookingController extends GetxController {
           'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
       openingHours: {'monday-sunday': '06:00 - 22:00'},
       equipment: [
-        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
-        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
-        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+        Equipment(
+          name: 'Tennis Racket',
+          description: 'Rackets, balls,  and other equipment',
+          price: 50000,
+        ),
+        Equipment(
+          name: 'Towel rental',
+          description: 'Clean towels for after yout game',
+          price: 25000,
+        ),
+        Equipment(
+          name: 'Grip Tape',
+          description: 'Secure storage for your belongings',
+          price: 15000,
+        ),
       ],
       latitude: -6.2088,
       longitude: 106.8456,
@@ -101,9 +150,21 @@ class CustomerBookingController extends GetxController {
           'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
       openingHours: {'monday-sunday': '06:00 - 22:00'},
       equipment: [
-        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
-        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
-        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+        Equipment(
+          name: 'Tennis Racket',
+          description: 'Rackets, balls,  and other equipment',
+          price: 50000,
+        ),
+        Equipment(
+          name: 'Towel rental',
+          description: 'Clean towels for after yout game',
+          price: 25000,
+        ),
+        Equipment(
+          name: 'Grip Tape',
+          description: 'Secure storage for your belongings',
+          price: 15000,
+        ),
       ],
       latitude: -6.2088,
       longitude: 106.8456,
@@ -117,10 +178,22 @@ class CustomerBookingController extends GetxController {
       description:
           'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
       openingHours: {'monday-sunday': '06:00 - 22:00'},
-    equipment: [
-        Equipment(name: 'Tennis Racket',description:'Rackets, balls,  and other equipment', price: 50000),
-        Equipment(name: 'Towel rental',description:'Clean towels for after yout game', price: 25000),
-        Equipment(name: 'Grip Tape',description:'Secure storage for your belongings', price: 15000),
+      equipment: [
+        Equipment(
+          name: 'Tennis Racket',
+          description: 'Rackets, balls,  and other equipment',
+          price: 50000,
+        ),
+        Equipment(
+          name: 'Towel rental',
+          description: 'Clean towels for after yout game',
+          price: 25000,
+        ),
+        Equipment(
+          name: 'Grip Tape',
+          description: 'Secure storage for your belongings',
+          price: 15000,
+        ),
       ],
       latitude: -6.2088,
       longitude: 106.8456,
@@ -146,13 +219,13 @@ class CustomerBookingController extends GetxController {
     );
   }
 
-  @override
-  void onClose() {
-    searchController.dispose();
-    minPriceController.dispose();
-    maxPriceController.dispose();
-    super.onClose();
-  }
+  // @override
+  // void onClose() {
+  //   searchController.dispose();
+  //   minPriceController.dispose();
+  //   maxPriceController.dispose();
+  //   super.onClose();
+  // }
 
   // Method untuk extract kota dari location string
   String _extractCity(String location) {

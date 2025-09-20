@@ -1,6 +1,9 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
+import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
 import 'package:lapangan_kita/app/modules/home/customer_home_controller.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -42,31 +45,36 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
             backgroundColor: Colors.white,
             displacement: 40,
             strokeWidth: 2,
-            child: Column(
-              children: [
-                _buildCarouselSection(),
-                const SizedBox(height: 16),
-                _buildSmoothIndicator(),
-                Expanded(
-                  child: ListView(
-                    children: [
-                      // Your other content here
-                      const SizedBox(height: 20),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'Lapangan Terpopuler',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildCarouselSection(),
+                  const SizedBox(height: 16),
+                  _buildSmoothIndicator(),
+
+                  // Popular Categories Section
+                  _buildPopularCategories(),
+
+                  // Your Recent Activity Section
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Your Recent Activity',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // Add more content...
-                    ],
+                    ),
                   ),
-                ),
-              ],
+
+                  // Recent Activity Widget
+                  _recentActivity(controller: controller),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           );
         }),
@@ -182,5 +190,284 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
         ),
       ),
     );
+  }
+
+  Widget _buildPopularCategories() {
+    // Jangan gunakan Obx di sini jika tidak ada observable variable
+    final bookingController = Get.find<CustomerBookingController>();
+
+    // Tampilkan loading jika data courts masih kosong
+    if (bookingController.courts.isEmpty) {
+      return const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final categories = controller.popularCategoriesWithIcon;
+
+    if (categories.isEmpty) {
+      return const SizedBox();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Text(
+            'Popular Categories',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ),
+        SizedBox(
+          height: 116,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: categories.map((category) {
+              return _buildCategoryIconCard(
+                category['name'],
+                category['count'],
+                category['icon'],
+                category['color'],
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // Widget untuk Card dengan Icon
+  Widget _buildCategoryIconCard(
+    String category,
+    int count,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.2),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // Gunakan method navigateToBookingWithCategory dari home controller
+          controller.navigateToBookingWithCategory(category);
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon dengan background circle
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 30, color: color),
+            ),
+            const SizedBox(height: 8),
+
+            // Category Name
+            Text(
+              category,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+
+            // Court Count
+            Text(
+              '$count ${count > 1 ? 'courts' : 'court'}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _recentActivity({required CustomerHomeController controller}) {
+    return Obx(() {
+      if (controller.isRecentBookingsLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final recentBookings = controller.getRecentBookings();
+
+      if (recentBookings.isEmpty) {
+        return const SizedBox(); // Tidak tampilkan apa-apa jika tidak ada booking
+      }
+
+      return Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.2),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...recentBookings.map(
+              (booking) => _buildRecentBookingItem(booking),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  // Navigate to full history page
+                  Get.offAllNamed(
+                    '/customer/navigation',
+                    arguments: {'initialTab': 3},
+                  );
+                },
+                child: const Text(
+                  'View All Bookings',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildRecentBookingItem(BookingHistory booking) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  booking.courtName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                Text(
+                  _formatDate(booking.date),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+
+                Text(
+                  _formatTimeRange(booking),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+
+                Text(
+                  booking.location,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Wrap(
+                  spacing: 8,
+                  children: booking.types.map((type) {
+                    return Chip(
+                      label: Text(
+                        type,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: AppColors.secondary,
+                      visualDensity: VisualDensity.compact,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildStatusChip(booking.status),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color backgroundColor;
+    Color textColor;
+
+    switch (status) {
+      case 'approved':
+        backgroundColor = Colors.green[100]!;
+        textColor = Colors.green[800]!;
+        break;
+      case 'rejected':
+        backgroundColor = Colors.red[100]!;
+        textColor = Colors.red[800]!;
+        break;
+      default: // pending
+        backgroundColor = Colors.orange[100]!;
+        textColor = Colors.orange[800]!;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('EEEE, dd MMM yyyy').format(date);
+  }
+
+  String _formatTimeRange(BookingHistory booking) {
+    final startTime = booking.startTime;
+    final startHour = int.parse(startTime.split(':')[0]);
+    final endHour = startHour + booking.duration;
+
+    return '$startTime - ${endHour.toString().padLeft(2, '0')}:00';
   }
 }

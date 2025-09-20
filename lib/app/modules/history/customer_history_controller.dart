@@ -57,6 +57,7 @@ class CustomerHistoryController extends GetxController {
       courtImageUrl:
           'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
       location: 'Kemang, South Jakarta',
+      types: ['Futsal'],
       date: DateTime.now().subtract(const Duration(days: 2)),
       startTime: '14:00',
       duration: 2,
@@ -74,6 +75,7 @@ class CustomerHistoryController extends GetxController {
       courtImageUrl:
           'https://images.unsplash.com/photo-1520877880798-5ee004e3f11e',
       location: 'Senayan, Central Jakarta',
+      types: ['Tennis'],
       date: DateTime.now().subtract(const Duration(days: 1)),
       startTime: '19:00',
       duration: 1,
@@ -116,6 +118,7 @@ class CustomerHistoryController extends GetxController {
         equipment: bookings[index].equipment,
         courtPrice: bookings[index].courtPrice,
         equipmentTotal: bookings[index].equipmentTotal,
+        types: bookings[index].types,
       );
       bookings[index] = updatedBooking;
     }
