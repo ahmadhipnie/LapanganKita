@@ -73,6 +73,29 @@ class EditFieldFieldmanagerView
                                     v == null || v.isEmpty ? 'Required' : null,
                               ),
                               const SizedBox(height: 12),
+                              // Status dropdown
+                              DropdownButtonFormField<String>(
+                                value: controller.status.value.isEmpty
+                                    ? null
+                                    : controller.status.value,
+                                items: controller.statusList
+                                    .map(
+                                      (s) => DropdownMenuItem(
+                                        value: s,
+                                        child: Text(s),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) =>
+                                    controller.status.value = v ?? '',
+                                decoration: const InputDecoration(
+                                  labelText: 'Status',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                              const SizedBox(height: 16),
                               Row(
                                 children: [
                                   Expanded(
@@ -236,6 +259,58 @@ class EditFieldFieldmanagerView
                                 ),
                               ),
                               const SizedBox(height: 24),
+                              // Delete button
+                              SizedBox(
+                                height: 44,
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  label: const Text(
+                                    'Delete Field',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Colors.red),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Confirm Deletion'),
+                                        content: const Text(
+                                          'Are you sure you want to delete this field?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(ctx).pop(false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(ctx).pop(true),
+                                            child: const Text(
+                                              'Delete',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      controller.deleteField();
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               SizedBox(
                                 height: 48,
                                 child: ElevatedButton(

@@ -1,10 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../routes/app_routes.dart';
+import 'package:lapangan_kita/app/bindings/edit_field_fieldmanager_binding.dart';
+import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fieldmanager_view.dart';
+import 'package:lapangan_kita/app/bindings/fieldmanager_withdraw_binding.dart';
+import 'package:lapangan_kita/app/modules/fieldmanager_withdraw/fieldmanager_withdraw_view.dart';
 import '../tabs_controller/fieldmanager_home_controller.dart';
 
 class FieldManagerHomeView extends StatelessWidget {
   const FieldManagerHomeView({super.key});
+
+  // Small helper to render a filter chip and update controller.filterStatus
+  Widget _filterChip(FieldManagerHomeController c, String label) {
+    final isSelected = c.filterStatus.value == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      selectedColor: const Color(0xFF2563EB).withOpacity(0.15),
+      labelStyle: TextStyle(
+        color: isSelected ? const Color(0xFF2563EB) : Colors.black87,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+      ),
+      side: BorderSide(
+        color: isSelected ? const Color(0xFF2563EB) : Colors.grey.shade300,
+      ),
+      onSelected: (_) => c.filterStatus.value = label,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    );
+  }
+
+  // Small status chip used on each card (green for available, red for not available)
+  Widget _statusChip(dynamic statusRaw) {
+    final statusStr = (statusRaw?.toString() ?? '').toLowerCase();
+    // Map potential Indonesian values to English labels used in filters
+    String label;
+    Color color;
+    if (statusStr == 'tersedia' || statusStr == 'available') {
+      label = 'Available';
+      color = const Color(0xFF10B981); // green
+    } else if (statusStr == 'tidak tersedia' || statusStr == 'not available') {
+      label = 'Not Available';
+      color = const Color(0xFFEF4444); // red
+    } else {
+      label = statusRaw?.toString() ?? 'Unknown';
+      color = Colors.grey;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.6)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,11 +128,19 @@ class FieldManagerHomeView extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () {
-                              Get.snackbar(
-                                'Withdraw',
-                                'Fitur withdraw coming soon!',
+                            onPressed: () async {
+                              final res = await Get.to(
+                                () => const FieldmanagerWithdrawView(),
+                                binding: FieldmanagerWithdrawBinding(),
+                                arguments: {'balance': c.balance.value},
                               );
+                              if (res is Map && res['withdrawn'] is int) {
+                                final w = res['withdrawn'] as int;
+                                c.balance.value = (c.balance.value - w).clamp(
+                                  0,
+                                  1 << 31,
+                                );
+                              }
                             },
                             child: const Text('Withdraw'),
                           ),
@@ -85,6 +150,135 @@ class FieldManagerHomeView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
+                // Profit Recap
+                Obx(
+                  () => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            'Profit Recap',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Icon(
+                            Icons.bar_chart_rounded,
+                            color: Color(0xFF2563EB),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _profitCard(
+                              title: 'Today',
+                              amount: c.profitToday.value,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _profitCard(
+                              title: 'This Week',
+                              amount: c.profitWeek.value,
+                              color: const Color(0xFF10B981),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _profitCard(
+                              title: 'This Month',
+                              amount: c.profitMonth.value,
+                              color: const Color(0xFFF59E0B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            'Recent Transactions',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: c.recentTransactions.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, i) {
+                          final t = c.recentTransactions[i];
+                          return ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(t['title']),
+                            subtitle: Text(t['date']),
+                            trailing: Text(
+                              'Rp ${t['amount'].toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Divider(height: 32, thickness: 1, color: Colors.grey.shade300),
+                // Search + Filters
+                Obx(
+                  () => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search field name...',
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        onChanged: (v) => c.searchQuery.value = v,
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          _filterChip(c, 'All'),
+                          _filterChip(c, 'Available'),
+                          _filterChip(c, 'Not Available'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 // Data Lapangan
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -103,14 +297,31 @@ class FieldManagerHomeView extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Obx(
-                  () => ListView.separated(
+                Obx(() {
+                  final list = c.fields.where((f) {
+                    final matchesSearch =
+                        c.searchQuery.value.isEmpty ||
+                        f['name'].toString().toLowerCase().contains(
+                          c.searchQuery.value.toLowerCase(),
+                        );
+                    final status = f['status']?.toString().toLowerCase() ?? '';
+                    final mapped = status == 'tersedia'
+                        ? 'Available'
+                        : (status == 'tidak tersedia'
+                              ? 'Not Available'
+                              : status);
+                    final matchesFilter =
+                        c.filterStatus.value == 'All' ||
+                        mapped == c.filterStatus.value;
+                    return matchesSearch && matchesFilter;
+                  }).toList();
+                  return ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: c.fields.length,
+                    itemCount: list.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, i) {
-                      final field = c.fields[i];
+                      final field = list[i];
                       return Card(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -203,8 +414,11 @@ class FieldManagerHomeView extends StatelessWidget {
                                             ),
                                             onPressed: () {
                                               Navigator.of(ctx).pop();
-                                              Get.toNamed(
-                                                '/fieldmanager/edit-field',
+                                              Get.to(
+                                                () =>
+                                                    const EditFieldFieldmanagerView(),
+                                                binding:
+                                                    EditFieldFieldmanagerBinding(),
                                                 arguments: field,
                                               );
                                             },
@@ -226,55 +440,57 @@ class FieldManagerHomeView extends StatelessWidget {
                             );
                           },
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
                               children: [
-                                // Gambar lapangan horizontal di atas
-                                Container(
-                                  height: 90,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
                                   child: Image.asset(
                                     'assets/images/gbk.jpeg',
+                                    width: 96,
+                                    height: 72,
                                     fit: BoxFit.cover,
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                                // Nama lapangan
-                                Text(
-                                  field['name'],
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              field['name'],
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          _statusChip(field['status']),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        field['type'],
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Rp ${field['price'].toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}/jam',
+                                        style: const TextStyle(
+                                          color: Color(0xFF2563EB),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 6),
-                                // Info lain di bawah nama
-                                Text(
-                                  '${field['type']} • Rp${field['price']}/jam',
-                                  style: const TextStyle(color: Colors.black54),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  field['status'],
-                                  style: TextStyle(
-                                    color: field['status'] == 'Tersedia'
-                                        ? Colors.green
-                                        : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
@@ -282,8 +498,8 @@ class FieldManagerHomeView extends StatelessWidget {
                         ),
                       );
                     },
-                  ),
-                ),
+                  );
+                }),
                 const SizedBox(height: 80),
               ],
             ),
@@ -297,6 +513,61 @@ class FieldManagerHomeView extends StatelessWidget {
         onPressed: () {
           Get.toNamed(AppRoutes.FIELD_ADD);
         },
+      ),
+    );
+  }
+
+  Widget _profitCard({
+    required String title,
+    required int amount,
+    required Color color,
+  }) {
+    String formatted = amount.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => '.',
+    );
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.trending_up, size: 18, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Rp $formatted',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

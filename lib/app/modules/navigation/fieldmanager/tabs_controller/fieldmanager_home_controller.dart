@@ -39,6 +39,23 @@ class FieldManagerHomeController extends GetxController {
 
   RxInt balance = 2500000.obs;
 
+  // UI filters
+  RxString searchQuery = ''.obs;
+  // 'All', 'Available', 'Not Available'
+  RxString filterStatus = 'All'.obs;
+
+  // Profit recap (dummy data)
+  RxInt profitToday = 350000.obs;
+  RxInt profitWeek = 2100000.obs;
+  RxInt profitMonth = 8200000.obs;
+
+  // Recent transactions (dummy)
+  RxList<Map<String, dynamic>> recentTransactions = <Map<String, dynamic>>[
+    {'title': 'Booking - Futsal A', 'date': '2025-09-20', 'amount': 150000},
+    {'title': 'Booking - Badminton B', 'date': '2025-09-19', 'amount': 100000},
+    {'title': 'Booking - Basket C', 'date': '2025-09-18', 'amount': 200000},
+  ].obs;
+
   void refreshFields() {
     // Dummy refresh, bisa diisi logic fetch data dari API
     Get.snackbar('Refresh', 'Data dummy di-refresh!');
