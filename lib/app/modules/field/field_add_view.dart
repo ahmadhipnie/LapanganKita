@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'field_add_controller.dart';
 
 class FieldAddView extends GetView<FieldAddController> {
+  const FieldAddView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,7 +134,7 @@ class FieldAddView extends GetView<FieldAddController> {
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
-                                value: controller.fieldType.value.isEmpty
+                                initialValue: controller.fieldType.value.isEmpty
                                     ? null
                                     : controller.fieldType.value,
                                 items: controller.fieldTypeList

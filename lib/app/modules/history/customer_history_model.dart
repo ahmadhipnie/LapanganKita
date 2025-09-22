@@ -1,4 +1,3 @@
-
 class BookingHistory {
   final String id;
   final String courtName;
