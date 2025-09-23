@@ -147,8 +147,8 @@ class LoginView extends GetView<LoginController> {
                                   if (controller.formKey.currentState
                                           ?.validate() ??
                                       false) {
-                                    // Get.offAllNamed('/customer/navigation');
-                                    Get.offAllNamed('/fieldadmin/navigation');
+                                    Get.offAllNamed('/customer/navigation');
+                                    // Get.offAllNamed('/fieldadmin/navigation');
                                     // TODO: Implement login action
                                     // Get.offAllNamed('/fieldmanager/navigation');
                                     Get.snackbar(
