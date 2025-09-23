@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navigation_controller.dart';
-import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_history_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_transaction_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_withdraw_view.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
@@ -12,7 +11,6 @@ class FieldadminNavigationView extends GetView<FieldadminNavigationController> {
   final List<Widget> _pages = [
     FieldadminWithdrawView(), // index 0
     FieldadminTransactionView(), // index 1
-    FieldadminHistoryView(), // index 2
   ];
 
   @override
@@ -31,10 +29,9 @@ class FieldadminNavigationView extends GetView<FieldadminNavigationController> {
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Withdraw'),
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'Transaction',
+              icon: Icon(Icons.receipt_long),
+              label: 'Refund',
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.people), label: 'History'),
           ],
         ),
       ),

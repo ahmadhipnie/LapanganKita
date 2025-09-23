@@ -1,5 +1,4 @@
 import 'package:lapangan_kita/app/bindings/customer_booking_detail_binding.dart';
-import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_history_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_navigation_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_transaction_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_withdraw_binding.dart';
@@ -9,7 +8,6 @@ import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fie
 import 'package:lapangan_kita/app/modules/edit_profile_fieldmanager/edit_profile_fieldmanager_view.dart';
 import 'package:lapangan_kita/app/bindings/edit_profile_fieldmanager_binding.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navigation_view.dart';
-import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_history_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_transaction_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_withdraw_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/fieldmanager_navigation_view.dart';
@@ -151,10 +149,6 @@ class AppPages {
       page: () => FieldadminTransactionView(),
       binding: FieldadminTransactionBinding(),
     ),
-    GetPage(
-      name: AppRoutes.FIELD_ADMIN_HISTORY,
-      page: () => FieldadminHistoryView(),
-      binding: FieldadminHistoryBinding(),
-    ),
+   
   ];
 }

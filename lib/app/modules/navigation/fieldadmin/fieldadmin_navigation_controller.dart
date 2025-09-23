@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-enum BottomNavItem { withdraw, transaction, history }
+enum BottomNavItem { withdraw, transaction }
 
 class FieldadminNavigationController extends GetxController {
   final RxInt currentIndex = 0.obs;
@@ -15,7 +15,7 @@ class FieldadminNavigationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Check jika ada arguments untuk initial tab 
+    // Check jika ada arguments untuk initial tab
     final arguments = Get.arguments;
     if (arguments != null && arguments['initialTab'] != null) {
       currentIndex.value = arguments['initialTab'];
