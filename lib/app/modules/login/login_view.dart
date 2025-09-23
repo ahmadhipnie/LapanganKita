@@ -149,12 +149,12 @@ class LoginView extends GetView<LoginController> {
                                           ?.validate() ??
                                       false) {
                                     // Get.offAllNamed(AppRoutes.CUSTOMER_NAVIGATION);
-                                    // Get.offAllNamed(
-                                    //   AppRoutes.FIELD_ADMIN_NAVIGATION,
-                                    // );
                                     Get.offAllNamed(
-                                      AppRoutes.FIELD_MANAGER_NAVIGATION,
+                                      AppRoutes.FIELD_ADMIN_NAVIGATION,
                                     );
+                                    // Get.offAllNamed(
+                                    //   AppRoutes.FIELD_MANAGER_NAVIGATION,
+                                    // );
                                     Get.snackbar(
                                       'Success',
                                       'Validation passed!',

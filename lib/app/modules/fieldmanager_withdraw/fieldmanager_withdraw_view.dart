@@ -82,14 +82,9 @@ class FieldmanagerWithdrawView extends GetView<FieldmanagerWithdrawController> {
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  value: c.selectedMethod.value,
-                  items: c.methods
-                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) c.selectedMethod.value = v;
-                  },
+                TextFormField(
+                  enabled: false,
+                  initialValue: 'Bank',
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white,
@@ -97,7 +92,7 @@ class FieldmanagerWithdrawView extends GetView<FieldmanagerWithdrawController> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
-                    enabledBorder: OutlineInputBorder(
+                    disabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
@@ -105,68 +100,31 @@ class FieldmanagerWithdrawView extends GetView<FieldmanagerWithdrawController> {
                 ),
 
                 const SizedBox(height: 16),
-                // Dynamic fields
-                if (c.selectedMethod.value == 'Bank') ...[
+                // Bank fields only
+                ...[
                   const Text('Bank Name'),
                   const SizedBox(height: 6),
                   TextField(
+                    readOnly: true,
                     controller: c.bankNameController,
-                    decoration: _inputDecoration('e.g. BCA, BRI, Mandiri'),
+                    decoration: _readonlyDecoration(),
                   ),
                   const SizedBox(height: 12),
                   const Text('Bank Account Number'),
                   const SizedBox(height: 6),
                   TextField(
+                    readOnly: true,
                     controller: c.bankAccountNumberController,
                     keyboardType: TextInputType.number,
-                    decoration: _inputDecoration('e.g. 0123456789'),
+                    decoration: _readonlyDecoration(),
                   ),
                   const SizedBox(height: 12),
                   const Text('Account Holder Name'),
                   const SizedBox(height: 6),
                   TextField(
+                    readOnly: true,
                     controller: c.bankAccountHolderController,
-                    decoration: _inputDecoration('e.g. Budi Santoso'),
-                  ),
-                ] else if (c.selectedMethod.value == 'Digital Wallet') ...[
-                  const Text('Wallet Provider'),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: c.walletProviderController,
-                    decoration: _inputDecoration(
-                      'e.g. OVO, GoPay, Dana, ShopeePay',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Wallet Number'),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: c.walletNumberController,
-                    keyboardType: TextInputType.number,
-                    decoration: _inputDecoration('e.g. 081234567890'),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Wallet Name'),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: c.walletNameController,
-                    decoration: _inputDecoration('e.g. Budi Santoso'),
-                  ),
-                ] else ...[
-                  const Text('Method Name'),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: c.otherMethodController,
-                    decoration: _inputDecoration(
-                      'e.g. Cash, Transfer Internal',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Identifier / Number'),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: c.otherIdentifierController,
-                    decoration: _inputDecoration('Enter identifier'),
+                    decoration: _readonlyDecoration(),
                   ),
                 ],
 
@@ -194,9 +152,8 @@ class FieldmanagerWithdrawView extends GetView<FieldmanagerWithdrawController> {
     );
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _readonlyDecoration() {
     return InputDecoration(
-      hintText: hint,
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(

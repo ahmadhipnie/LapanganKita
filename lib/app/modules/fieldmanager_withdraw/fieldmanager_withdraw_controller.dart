@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_profile_controller.dart';
 
 class FieldmanagerWithdrawController extends GetxController {
-  // Available methods to withdraw
-  final methods = ['Bank', 'Digital Wallet', 'Other'].obs;
+  // Method fixed to bank
   final selectedMethod = 'Bank'.obs;
 
   // Balance (could be passed in as argument), default to 0 for now
@@ -34,6 +34,41 @@ class FieldmanagerWithdrawController extends GetxController {
       final b = args['balance'];
       if (b is int) balance.value = b;
     }
+
+    // Prefill defaults for Bank method (dummy)
+    bankNameController.text = 'Mandiri';
+    bankAccountNumberController.text = '0123456789';
+    try {
+      final profile = Get.find<FieldManagerProfileController>();
+      bankAccountHolderController.text = (profile.name.value.isNotEmpty
+          ? profile.name.value
+          : 'Budi Pengelola');
+    } catch (_) {
+      // Profile controller not found; use dummy name
+      bankAccountHolderController.text = 'Budi Pengelola';
+    }
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    // Ensure defaults are present if still empty when view first builds
+    if (bankNameController.text.isEmpty) {
+      bankNameController.text = 'Mandiri';
+    }
+    if (bankAccountNumberController.text.isEmpty) {
+      bankAccountNumberController.text = '0123456789';
+    }
+    if (bankAccountHolderController.text.isEmpty) {
+      try {
+        final profile = Get.find<FieldManagerProfileController>();
+        bankAccountHolderController.text = (profile.name.value.isNotEmpty
+            ? profile.name.value
+            : 'Budi Pengelola');
+      } catch (_) {
+        bankAccountHolderController.text = 'Budi Pengelola';
+      }
+    }
   }
 
   String? validate() {
@@ -46,27 +81,13 @@ class FieldmanagerWithdrawController extends GetxController {
       return 'Amount exceeds balance';
     }
 
-    switch (selectedMethod.value) {
-      case 'Bank':
-        if (bankNameController.text.isEmpty) return 'Bank name is required';
-        if (bankAccountNumberController.text.isEmpty)
-          return 'Bank account number is required';
-        if (bankAccountHolderController.text.isEmpty)
-          return 'Account holder name is required';
-        break;
-      case 'Digital Wallet':
-        if (walletProviderController.text.isEmpty)
-          return 'Wallet provider is required';
-        if (walletNumberController.text.isEmpty)
-          return 'Wallet number is required';
-        if (walletNameController.text.isEmpty) return 'Wallet name is required';
-        break;
-      case 'Other':
-        if (otherMethodController.text.isEmpty)
-          return 'Method name is required';
-        if (otherIdentifierController.text.isEmpty)
-          return 'Identifier is required';
-        break;
+    // Validate bank fields only
+    if (bankNameController.text.isEmpty) return 'Bank name is required';
+    if (bankAccountNumberController.text.isEmpty) {
+      return 'Bank account number is required';
+    }
+    if (bankAccountHolderController.text.isEmpty) {
+      return 'Account holder name is required';
     }
     return null;
   }
