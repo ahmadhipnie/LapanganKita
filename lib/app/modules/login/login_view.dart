@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/routes/app_routes.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
@@ -147,10 +148,13 @@ class LoginView extends GetView<LoginController> {
                                   if (controller.formKey.currentState
                                           ?.validate() ??
                                       false) {
-                                    Get.offAllNamed('/customer/navigation');
-                                    // Get.offAllNamed('/fieldadmin/navigation');
-                                    // TODO: Implement login action
-                                    // Get.offAllNamed('/fieldmanager/navigation');
+                                    // Get.offAllNamed(AppRoutes.CUSTOMER_NAVIGATION);
+                                    Get.offAllNamed(
+                                      AppRoutes.FIELD_ADMIN_NAVIGATION,
+                                    );
+                                    // Get.offAllNamed(
+                                    //   AppRoutes.FIELD_MANAGER_NAVIGATION,
+                                    // );
                                     Get.snackbar(
                                       'Success',
                                       'Validation passed!',

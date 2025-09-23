@@ -4,12 +4,12 @@ import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 import '../tabs_controller/fieldmanager_profile_controller.dart';
 
-class FieldManagerProfileView extends StatelessWidget {
+class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
   const FieldManagerProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(FieldManagerProfileController());
+    final c = controller;
     return Scaffold(
       backgroundColor: AppColors.neutralColor,
       body: SafeArea(

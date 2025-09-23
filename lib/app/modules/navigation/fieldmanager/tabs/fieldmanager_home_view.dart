@@ -7,7 +7,7 @@ import 'package:lapangan_kita/app/bindings/fieldmanager_withdraw_binding.dart';
 import 'package:lapangan_kita/app/modules/fieldmanager_withdraw/fieldmanager_withdraw_view.dart';
 import '../tabs_controller/fieldmanager_home_controller.dart';
 
-class FieldManagerHomeView extends StatelessWidget {
+class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
   const FieldManagerHomeView({super.key});
 
   // Small helper to render a filter chip and update controller.filterStatus
@@ -65,7 +65,7 @@ class FieldManagerHomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(FieldManagerHomeController());
+    final c = controller;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(

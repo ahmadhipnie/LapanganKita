@@ -11,7 +11,13 @@ import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navig
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_transaction_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_withdraw_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/fieldmanager_navigation_view.dart';
+import 'package:lapangan_kita/app/bindings/fieldmanager_tabs_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_navigation_binding.dart';
+import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navigation_view.dart';
+import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_navigation_binding.dart';
+import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_withdraw_binding.dart';
+import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_transaction_binding.dart';
+import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_history_binding.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/bindings/customer_booking_binding.dart';
 import 'package:lapangan_kita/app/bindings/customer_community_binding.dart';
@@ -47,10 +53,21 @@ import '../bindings/field_add_binding.dart';
 
 class AppPages {
   static final pages = <GetPage>[
+    // Field Admin Navigation
+    GetPage(
+      name: AppRoutes.FIELD_ADMIN_NAVIGATION,
+      page: () => FieldadminNavigationView(),
+      bindings: [
+        FieldadminNavigationBinding(),
+        FieldadminWithdrawBinding(),
+        FieldadminTransactionBinding(),
+        FieldadminHistoryBinding(),
+      ],
+    ),
     GetPage(
       name: AppRoutes.FIELD_MANAGER_NAVIGATION,
       page: () => FieldManagerNavigationView(),
-      binding: FieldManagerNavigationBinding(),
+      bindings: [FieldManagerNavigationBinding(), FieldManagerTabsBinding()],
     ),
     GetPage(
       name: AppRoutes.LOGIN,
