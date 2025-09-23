@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../tabs_controller/fieldmanager_history_controller.dart';
 
-class FieldManagerHistoryView extends StatelessWidget {
+class FieldManagerHistoryView extends GetView<FieldManagerHistoryController> {
   const FieldManagerHistoryView({super.key});
 
   void showHistoryDetail(
@@ -44,7 +44,7 @@ class FieldManagerHistoryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(FieldManagerHistoryController());
+    final c = controller;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(

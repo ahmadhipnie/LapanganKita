@@ -5,6 +5,7 @@ import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fie
 import 'package:lapangan_kita/app/modules/edit_profile_fieldmanager/edit_profile_fieldmanager_view.dart';
 import 'package:lapangan_kita/app/bindings/edit_profile_fieldmanager_binding.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/fieldmanager_navigation_view.dart';
+import 'package:lapangan_kita/app/bindings/fieldmanager_tabs_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_navigation_binding.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/bindings/customer_booking_binding.dart';
@@ -44,7 +45,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.FIELD_MANAGER_NAVIGATION,
       page: () => FieldManagerNavigationView(),
-      binding: FieldManagerNavigationBinding(),
+      bindings: [FieldManagerNavigationBinding(), FieldManagerTabsBinding()],
     ),
     GetPage(
       name: AppRoutes.LOGIN,

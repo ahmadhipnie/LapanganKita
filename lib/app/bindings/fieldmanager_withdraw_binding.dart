@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import 'fieldmanager_withdraw_controller.dart';
+import '../modules/fieldmanager_withdraw/fieldmanager_withdraw_controller.dart';
 
 class FieldmanagerWithdrawBinding extends Bindings {
   @override

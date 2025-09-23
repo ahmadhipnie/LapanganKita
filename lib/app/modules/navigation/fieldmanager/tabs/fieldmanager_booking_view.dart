@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../tabs_controller/fieldmanager_booking_controller.dart';
 
-class FieldManagerBookingView extends StatelessWidget {
+class FieldManagerBookingView extends GetView<FieldManagerBookingController> {
   const FieldManagerBookingView({super.key});
 
   void showBookingDetail(BuildContext context, Map<String, dynamic> b) {
@@ -79,7 +79,7 @@ class FieldManagerBookingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(FieldManagerBookingController());
+    final c = controller;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
