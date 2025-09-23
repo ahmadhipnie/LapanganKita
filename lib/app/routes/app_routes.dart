@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 abstract class AppRoutes {
   static const EDIT_PROFILE_FIELD_MANAGER = '/fieldmanager/edit-profile';
   static const HOME = '/home';
@@ -18,4 +20,8 @@ abstract class AppRoutes {
   static const CUSTOMER_PROFILE = '/customer/profile';
   static const FIELD_MANAGER_NAVIGATION = '/fieldmanager/navigation';
   static const EDIT_FIELD_FIELDMANAGER = '/fieldmanager/edit-field';
+  static const FIELD_ADMIN_NAVIGATION = '/fieldadmin/navigation';
+  static const FIELD_ADMIN_WITHDRAW = '/fieldadmin/withdraw';
+  static const FIELD_ADMIN_TRANSACTION = '/fieldadmin/transaction';
+  static const FIELD_ADMIN_HISTORY = '/fieldadmin/history';
 }
