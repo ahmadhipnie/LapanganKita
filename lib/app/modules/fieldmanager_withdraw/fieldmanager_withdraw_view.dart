@@ -85,12 +85,7 @@ class FieldmanagerWithdrawView extends GetView<FieldmanagerWithdrawController> {
                 DropdownButtonFormField<String>(
                   value: c.selectedMethod.value,
                   items: c.methods
-                      .map(
-                        (m) => DropdownMenuItem(
-                          value: m,
-                          child: Text(m),
-                        ),
-                      )
+                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                       .toList(),
                   onChanged: (v) {
                     if (v != null) c.selectedMethod.value = v;
@@ -138,7 +133,9 @@ class FieldmanagerWithdrawView extends GetView<FieldmanagerWithdrawController> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: c.walletProviderController,
-                    decoration: _inputDecoration('e.g. OVO, GoPay, Dana, ShopeePay'),
+                    decoration: _inputDecoration(
+                      'e.g. OVO, GoPay, Dana, ShopeePay',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Text('Wallet Number'),
@@ -160,7 +157,9 @@ class FieldmanagerWithdrawView extends GetView<FieldmanagerWithdrawController> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: c.otherMethodController,
-                    decoration: _inputDecoration('e.g. Cash, Transfer Internal'),
+                    decoration: _inputDecoration(
+                      'e.g. Cash, Transfer Internal',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Text('Identifier / Number'),
