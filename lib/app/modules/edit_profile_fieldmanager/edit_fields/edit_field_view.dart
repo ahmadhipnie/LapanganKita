@@ -22,7 +22,7 @@ class EditFieldView extends StatefulWidget {
   final TextEditingController? provinceController;
 
   const EditFieldView({
-    Key? key,
+    super.key,
     required this.title,
     required this.hint,
     this.controller,
@@ -37,7 +37,7 @@ class EditFieldView extends StatefulWidget {
     this.streetController,
     this.cityController,
     this.provinceController,
-  }) : super(key: key);
+  });
 
   @override
   State<EditFieldView> createState() => _EditFieldViewState();
@@ -84,14 +84,15 @@ class _EditFieldViewState extends State<EditFieldView> {
           children: [
             if (widget.isGender)
               DropdownButtonFormField<String>(
-                value: selectedGender,
+                initialValue: selectedGender,
                 items: genderOptions
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (val) {
                   setState(() => selectedGender = val);
-                  if (widget.controller != null)
+                  if (widget.controller != null) {
                     widget.controller!.text = val ?? '';
+                  }
                 },
                 decoration: InputDecoration(
                   labelText: widget.hint,
@@ -107,14 +108,15 @@ class _EditFieldViewState extends State<EditFieldView> {
               )
             else if (widget.isBankType)
               DropdownButtonFormField<String>(
-                value: selectedBankType,
+                initialValue: selectedBankType,
                 items: bankOptions
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (val) {
                   setState(() => selectedBankType = val);
-                  if (widget.controller != null)
+                  if (widget.controller != null) {
                     widget.controller!.text = val ?? '';
+                  }
                 },
                 decoration: InputDecoration(
                   labelText: widget.hint,

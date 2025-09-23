@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_home_controller.dart';
 
 class EditFieldFieldmanagerController extends GetxController {
   @override
@@ -32,6 +33,15 @@ class EditFieldFieldmanagerController extends GetxController {
     descController.text = field['description']?.toString() ?? '';
     maxPersonController.text = field['maxPerson']?.toString() ?? '';
     fieldType.value = field['type']?.toString() ?? '';
+    // Status mapping: map Indonesian to English for UI
+    final rawStatus = field['status']?.toString() ?? '';
+    if (rawStatus.toLowerCase() == 'tersedia') {
+      status.value = 'Available';
+    } else if (rawStatus.toLowerCase() == 'tidak tersedia') {
+      status.value = 'Not Available';
+    } else {
+      status.value = rawStatus;
+    }
     // If there are images, handle them here as well
   }
 
@@ -64,6 +74,10 @@ class EditFieldFieldmanagerController extends GetxController {
     'Voli',
     'Other',
   ];
+
+  // Status for availability (UI in English)
+  final status = ''.obs;
+  final statusList = ['Available', 'Not Available'];
 
   final images = <File>[].obs;
   final ImagePicker _picker = ImagePicker();
@@ -108,5 +122,27 @@ class EditFieldFieldmanagerController extends GetxController {
     descController.dispose();
     maxPersonController.dispose();
     super.onClose();
+  }
+
+  // Delete the field from the home controller's list (dummy data)
+  void deleteField() {
+    final args = Get.arguments;
+    FieldManagerHomeController? home;
+    if (Get.isRegistered<FieldManagerHomeController>()) {
+      home = Get.find<FieldManagerHomeController>();
+    }
+    if (home != null) {
+      dynamic id = (args is Map) ? args['id'] : null;
+      if (id != null) {
+        home.fields.removeWhere((e) => e['id'] == id);
+      } else {
+        // fallback by name+type
+        final name = nameController.text;
+        final type = fieldType.value;
+        home.fields.removeWhere((e) => e['name'] == name && e['type'] == type);
+      }
+    }
+    Get.back();
+    Get.snackbar('Success', 'Field deleted successfully');
   }
 }
