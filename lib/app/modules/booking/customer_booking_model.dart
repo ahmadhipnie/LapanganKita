@@ -7,10 +7,9 @@ class Court {
   final String description;
   final Map<String, String> openingHours; // Hari: jam buka-tutup
   final List<Equipment> equipment;
-  final double latitude;
-  final double longitude;
+  final String mapsUrl;
 
-  Court({
+  Court( {
     required this.name,
     required this.location,
     required this.types,
@@ -19,8 +18,7 @@ class Court {
     required this.description,
     required this.openingHours,
     required this.equipment,
-    required this.latitude,
-    required this.longitude,
+    required this.mapsUrl
   });
 }
 
