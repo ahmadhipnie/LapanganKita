@@ -54,7 +54,13 @@ class FieldManagerHomeController extends GetxController {
     {'title': 'Booking - Futsal A', 'date': '2025-09-20', 'amount': 150000},
     {'title': 'Booking - Badminton B', 'date': '2025-09-19', 'amount': 100000},
     {'title': 'Booking - Basket C', 'date': '2025-09-18', 'amount': 200000},
+    {'title': 'Booking - Futsal A', 'date': '2025-09-17', 'amount': 150000},
+    {'title': 'Booking - Badminton B', 'date': '2025-09-16', 'amount': 100000},
+    {'title': 'Booking - Basket C', 'date': '2025-09-15', 'amount': 200000},
   ].obs;
+
+  // Controls whether to show all transactions or only a few on the home view
+  RxBool showAllTransactions = false.obs;
 
   void refreshFields() {
     // Dummy refresh, bisa diisi logic fetch data dari API
