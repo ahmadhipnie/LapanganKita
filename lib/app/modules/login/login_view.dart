@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lapangan_kita/app/routes/app_routes.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
@@ -135,42 +134,59 @@ class LoginView extends GetView<LoginController> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            SizedBox(
-                              height: 48,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2563EB),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                            Obx(
+                              () => SizedBox(
+                                height: 48,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF2563EB),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
-                                ),
-                                onPressed: () {
-                                  if (controller.formKey.currentState
-                                          ?.validate() ??
-                                      false) {
-                                    // Get.offAllNamed(AppRoutes.CUSTOMER_NAVIGATION);
-                                    Get.offAllNamed(
-                                      AppRoutes.FIELD_ADMIN_NAVIGATION,
-                                    );
-                                    // Get.offAllNamed(
-                                    //   AppRoutes.FIELD_MANAGER_NAVIGATION,
-                                    // );
-                                    Get.snackbar(
-                                      'Success',
-                                      'Validation passed!',
-                                    );
-                                  }
-                                },
-                                child: const Text(
-                                  'Log In',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white,
-                                  ),
+                                  onPressed: controller.isLoading.value
+                                      ? null
+                                      : controller.submitLogin,
+                                  child: controller.isLoading.value
+                                      ? const SizedBox(
+                                          height: 22,
+                                          width: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.4,
+                                            valueColor: AlwaysStoppedAnimation(
+                                              Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Log In',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 16),
+                            Obx(() {
+                              final error = controller.errorMessage.value;
+                              if (error == null) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Text(
+                                  error,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
