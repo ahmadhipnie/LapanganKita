@@ -50,8 +50,7 @@ class CustomerBookingController extends GetxController {
           price: 15000,
         ),
       ],
-      latitude: -6.2088,
-      longitude: 106.8456,
+      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
     ),
     Court(
       name: 'Outdoor Tennis Court',
@@ -79,8 +78,7 @@ class CustomerBookingController extends GetxController {
           price: 15000,
         ),
       ],
-      latitude: -6.2088,
-      longitude: 106.8456,
+      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
     ),
     Court(
       name: 'Padel Court',
@@ -108,8 +106,7 @@ class CustomerBookingController extends GetxController {
           price: 15000,
         ),
       ],
-      latitude: -6.2088,
-      longitude: 106.8456,
+      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
     ),
     Court(
       name: 'Multi Sport Court',
@@ -137,8 +134,7 @@ class CustomerBookingController extends GetxController {
           price: 15000,
         ),
       ],
-      latitude: -6.2088,
-      longitude: 106.8456,
+      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
     ),
     Court(
       name: 'Premium Futsal Court',
@@ -166,8 +162,7 @@ class CustomerBookingController extends GetxController {
           price: 15000,
         ),
       ],
-      latitude: -6.2088,
-      longitude: 106.8456,
+      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
     ),
     Court(
       name: 'Basketball Court',
@@ -195,8 +190,7 @@ class CustomerBookingController extends GetxController {
           price: 15000,
         ),
       ],
-      latitude: -6.2088,
-      longitude: 106.8456,
+      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
     ),
   ];
 
