@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/data/models/user_model.dart';
 
 enum BottomNavItem { home, booking, community, history, profile }
 
@@ -15,10 +16,15 @@ class CustomerNavigationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Check jika ada arguments untuk initial tab
+    
     final arguments = Get.arguments;
-    if (arguments != null && arguments['initialTab'] != null) {
-      currentIndex.value = arguments['initialTab'];
+    if (arguments != null) {
+      if (arguments is Map) {
+        if (arguments['initialTab'] != null) {
+          currentIndex.value = arguments['initialTab'];
+        }
+      } else if (arguments is UserModel) {
+      }
     }
   }
 

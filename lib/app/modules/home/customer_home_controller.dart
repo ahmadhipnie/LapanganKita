@@ -78,10 +78,10 @@ class CustomerHomeController extends GetxController {
   void navigateToBookingWithCategory(String category) {
     // Dapatkan instance dari CustomerBookingController
     Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 1});
-   Future.delayed(const Duration(milliseconds: 100), () {
-    final bookingController = Get.find<CustomerBookingController>();
-    bookingController.setCategoryFilter(category);
-  });
+    Future.delayed(const Duration(milliseconds: 100), () {
+      final bookingController = Get.find<CustomerBookingController>();
+      bookingController.setCategoryFilter(category);
+    });
     // Navigate ke halaman booking
   }
 
@@ -160,5 +160,104 @@ class CustomerHomeController extends GetxController {
   // Refresh both home and history data
   Future<void> refreshAllData() async {
     await Future.wait([refreshData(), historyController.refreshData()]);
+  }
+
+  // Tambahkan method untuk show image dialog
+  void showImageDialog(int index, BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutBack,
+            ),
+            child: Stack(
+              children: [
+                // Image Container
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      imgList[index],
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: double.infinity,
+                          height: 400,
+                          color: Colors.grey[300],
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: double.infinity,
+                          height: 400,
+                          color: Colors.grey[300],
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error, color: Colors.red, size: 40),
+                              SizedBox(height: 8),
+                              Text(
+                                'Failed to load image',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                // Close Button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        Get.back();
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
   }
 }
