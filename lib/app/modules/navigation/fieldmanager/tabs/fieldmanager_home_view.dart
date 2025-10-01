@@ -202,40 +202,74 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             'Recent Transactions',
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          Icon(
-                            Icons.receipt_long_rounded,
-                            color: Colors.black54,
+                          Row(
+                            children: const [
+                              Icon(
+                                Icons.receipt_long_rounded,
+                                color: Colors.black54,
+                              ),
+                            ],
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: c.recentTransactions.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (_, i) {
-                          final t = c.recentTransactions[i];
-                          return ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(t['title']),
-                            subtitle: Text(t['date']),
-                            trailing: Text(
-                              'Rp ${t['amount'].toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                              ),
+                      Obx(() {
+                        final total = c.recentTransactions.length;
+                        final limit = 3; // show 2-3 items (choose 3 here)
+                        final showAll = c.showAllTransactions.value;
+                        final itemCount = showAll
+                            ? total
+                            : total.clamp(0, limit);
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: itemCount,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (_, i) {
+                                final t = c.recentTransactions[i];
+                                return ListTile(
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(t['title']),
+                                  subtitle: Text(t['date']),
+                                  trailing: Text(
+                                    'Rp ${t['amount'].toString().replaceAllMapped(RegExp(r'\\B(?=(\\d{3})+(?!\\d))'), (m) => '.')}',
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
+                            if (total > limit)
+                              Align(
+                                alignment: Alignment.center,
+                                child: TextButton(
+                                  onPressed: () =>
+                                      c.showAllTransactions.toggle(),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    foregroundColor: const Color(0xFF2563EB),
+                                  ),
+                                  child: Text(
+                                    showAll ? 'View less' : 'View more',
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      }),
                     ],
                   ),
                 ),

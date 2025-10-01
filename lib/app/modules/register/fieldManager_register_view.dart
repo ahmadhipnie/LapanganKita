@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'fieldManager_register_controller.dart';
-import '../login/login_controller.dart';
 
 class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
   const FieldManagerRegisterView({super.key});
@@ -58,7 +57,6 @@ class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              Get.delete<LoginController>();
                               Get.offAllNamed('/login');
                             },
                             child: const Text(
@@ -109,28 +107,36 @@ class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
                                 validator: controller.validateEmail,
                               ),
                               const SizedBox(height: 12),
-                              DropdownButtonFormField<String>(
-                                initialValue: controller.gender.value.isEmpty
-                                    ? null
-                                    : controller.gender.value,
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: 'male',
-                                    child: Text('Male'),
+                              Obx(
+                                () => DropdownButtonFormField<String>(
+                                  key: ValueKey(
+                                    controller.gender.value.isEmpty
+                                        ? 'gender-null'
+                                        : controller.gender.value,
                                   ),
-                                  DropdownMenuItem(
-                                    value: 'female',
-                                    child: Text('Female'),
+                                  initialValue: controller.gender.value.isEmpty
+                                      ? null
+                                      : controller.gender.value,
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'male',
+                                      child: Text('Male'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'female',
+                                      child: Text('Female'),
+                                    ),
+                                  ],
+                                  onChanged: (v) =>
+                                      controller.gender.value = v ?? '',
+                                  decoration: const InputDecoration(
+                                    labelText: 'Gender',
+                                    border: OutlineInputBorder(),
                                   ),
-                                ],
-                                onChanged: (v) =>
-                                    controller.gender.value = v ?? '',
-                                decoration: const InputDecoration(
-                                  labelText: 'Gender',
-                                  border: OutlineInputBorder(),
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Required'
+                                      : null,
                                 ),
-                                validator: (v) =>
-                                    v == null || v.isEmpty ? 'Required' : null,
                               ),
                               const SizedBox(height: 12),
                               TextFormField(
@@ -191,26 +197,34 @@ class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
                                     v == null || v.isEmpty ? 'Required' : null,
                               ),
                               const SizedBox(height: 12),
-                              DropdownButtonFormField<String>(
-                                initialValue: controller.bank.value.isEmpty
-                                    ? null
-                                    : controller.bank.value,
-                                items: controller.bankList
-                                    .map(
-                                      (b) => DropdownMenuItem(
-                                        value: b,
-                                        child: Text(b),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (v) =>
-                                    controller.bank.value = v ?? '',
-                                decoration: const InputDecoration(
-                                  labelText: 'Bank',
-                                  border: OutlineInputBorder(),
+                              Obx(
+                                () => DropdownButtonFormField<String>(
+                                  key: ValueKey(
+                                    controller.bank.value.isEmpty
+                                        ? 'bank-null'
+                                        : controller.bank.value,
+                                  ),
+                                  initialValue: controller.bank.value.isEmpty
+                                      ? null
+                                      : controller.bank.value,
+                                  items: controller.bankList
+                                      .map(
+                                        (b) => DropdownMenuItem(
+                                          value: b,
+                                          child: Text(b),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      controller.bank.value = v ?? '',
+                                  decoration: const InputDecoration(
+                                    labelText: 'Bank',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Required'
+                                      : null,
                                 ),
-                                validator: (v) =>
-                                    v == null || v.isEmpty ? 'Required' : null,
                               ),
                               const SizedBox(height: 12),
                               Obx(
@@ -235,33 +249,38 @@ class FieldManagerRegisterView extends GetView<FieldManagerRegisterController> {
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              SizedBox(
-                                height: 48,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF2563EB),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                              Obx(
+                                () => SizedBox(
+                                  height: 48,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2563EB),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
-                                  ),
-                                  onPressed: () {
-                                    if (controller.formKey.currentState
-                                            ?.validate() ??
-                                        false) {
-                                      // TODO: Implement register action
-                                      Get.snackbar(
-                                        'Success',
-                                        'Registration form valid!',
-                                      );
-                                      Get.toNamed('/place/form');
-                                    }
-                                  },
-                                  child: const Text(
-                                    'Register',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                    ),
+                                    onPressed: controller.isLoading.value
+                                        ? null
+                                        : controller.submitRegistration,
+                                    child: controller.isLoading.value
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation(
+                                                    Colors.white,
+                                                  ),
+                                            ),
+                                          )
+                                        : const Text(
+                                            'Register',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ),

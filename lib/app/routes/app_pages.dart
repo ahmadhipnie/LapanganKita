@@ -13,10 +13,6 @@ import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/fieldmanager_navigation_view.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_tabs_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_navigation_binding.dart';
-import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navigation_view.dart';
-import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_navigation_binding.dart';
-import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_withdraw_binding.dart';
-import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_transaction_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_history_binding.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/bindings/customer_booking_binding.dart';
@@ -166,6 +162,5 @@ class AppPages {
       page: () => FieldadminTransactionView(),
       binding: FieldadminTransactionBinding(),
     ),
-   
   ];
 }

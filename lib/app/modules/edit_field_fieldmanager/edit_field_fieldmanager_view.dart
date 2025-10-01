@@ -75,7 +75,7 @@ class EditFieldFieldmanagerView
                               const SizedBox(height: 12),
                               // Status dropdown
                               DropdownButtonFormField<String>(
-                                value: controller.status.value.isEmpty
+                                initialValue: controller.status.value.isEmpty
                                     ? null
                                     : controller.status.value,
                                 items: controller.statusList
