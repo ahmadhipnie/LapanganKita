@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../models/edit_profile_request.dart';
+import '../models/edit_profile_response.dart';
 import '../models/login_response.dart';
 import '../models/register_request.dart';
 import '../models/register_response.dart';
@@ -105,6 +107,43 @@ class AuthRepository {
       return data;
     }
     return null;
+  }
+
+  Future<UpdateProfileResponse> updateProfile({
+    required int userId,
+    required UpdateProfileRequest request,
+  }) async {
+    try {
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        'users/$userId', // Endpoint: PUT /api/users/:id
+        data: request.toJson(),
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        return UpdateProfileResponse.fromJson(body);
+      }
+
+      final message =
+          _extractMessage(body) ?? 'Update failed with status $statusCode';
+      throw AuthException(message);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const AuthException(
+          'Unable to reach the server. Check connection.',
+        );
+      }
+
+      final message =
+          _extractMessage(e.response?.data) ?? e.message ?? 'Update failed.';
+      throw AuthException(message);
+    } on FormatException catch (e) {
+      throw AuthException(e.message);
+    }
   }
 }
 

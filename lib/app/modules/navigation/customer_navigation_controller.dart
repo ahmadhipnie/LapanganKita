@@ -16,15 +16,14 @@ class CustomerNavigationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    
+
     final arguments = Get.arguments;
     if (arguments != null) {
       if (arguments is Map) {
         if (arguments['initialTab'] != null) {
           currentIndex.value = arguments['initialTab'];
         }
-      } else if (arguments is UserModel) {
-      }
+      } else if (arguments is UserModel) {}
     }
   }
 

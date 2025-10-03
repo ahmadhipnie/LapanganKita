@@ -3,8 +3,7 @@ import 'package:dio/dio.dart';
 class ApiClient {
   ApiClient({Dio? dio}) : _dio = dio ?? createDefaultDio();
 
-  static const String baseUrl =
-      'https://api-node-lapangan-kita.vercel.app/api/';
+  static const String baseUrl = 'https://8db98bdba725.ngrok-free.app/api/';
 
   static final BaseOptions _defaultOptions = BaseOptions(
     baseUrl: baseUrl,
@@ -40,6 +39,20 @@ class ApiClient {
     Options? options,
   }) async {
     return _dio.post<T>(
+      endpoint,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  Future<Response<T>> put<T>(
+    String endpoint, {
+    Map<String, dynamic>? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _dio.put<T>(
       endpoint,
       data: data,
       queryParameters: queryParameters,

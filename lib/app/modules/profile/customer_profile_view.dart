@@ -9,6 +9,14 @@ class CustomerProfileView extends GetView<CustomerProfileController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        centerTitle: false,
+        title: const Text(
+          'Profile',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
       backgroundColor: AppColors.neutralColor,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -17,13 +25,6 @@ class CustomerProfileView extends GetView<CustomerProfileController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 24),
-                const Text(
-                  'Profile',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                // Profile Card
                 Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -140,7 +141,7 @@ class CustomerProfileView extends GetView<CustomerProfileController> {
                                   ),
                                   onPressed: () {
                                     Navigator.of(ctx).pop();
-                                    // TODO: Implement logout logic
+                                    controller.logout();
                                   },
                                   child: const Text('Log out'),
                                 ),
