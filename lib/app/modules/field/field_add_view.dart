@@ -133,26 +133,29 @@ class FieldAddView extends GetView<FieldAddController> {
                                     v == null || v.isEmpty ? 'Required' : null,
                               ),
                               const SizedBox(height: 12),
-                              DropdownButtonFormField<String>(
-                                initialValue: controller.fieldType.value.isEmpty
-                                    ? null
-                                    : controller.fieldType.value,
-                                items: controller.fieldTypeList
-                                    .map(
-                                      (type) => DropdownMenuItem(
-                                        value: type,
-                                        child: Text(type),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (v) =>
-                                    controller.fieldType.value = v ?? '',
-                                decoration: const InputDecoration(
-                                  labelText: 'Field Type',
-                                  border: OutlineInputBorder(),
+                              Obx(
+                                () => DropdownButtonFormField<String>(
+                                  value: controller.fieldType.value.isEmpty
+                                      ? null
+                                      : controller.fieldType.value,
+                                  items: controller.fieldTypeList
+                                      .map(
+                                        (type) => DropdownMenuItem(
+                                          value: type,
+                                          child: Text(type),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      controller.fieldType.value = v ?? '',
+                                  decoration: const InputDecoration(
+                                    labelText: 'Field Type',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Required'
+                                      : null,
                                 ),
-                                validator: (v) =>
-                                    v == null || v.isEmpty ? 'Required' : null,
                               ),
                               const SizedBox(height: 12),
                               TextFormField(
@@ -171,30 +174,32 @@ class FieldAddView extends GetView<FieldAddController> {
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 8),
-                              Obx(
-                                () => Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
+                              Obx(() {
+                                final photo = controller.fieldPhoto.value;
+                                return Row(
                                   children: [
-                                    ...controller.images.map(
-                                      (img) => Stack(
+                                    if (photo != null)
+                                      Stack(
                                         alignment: Alignment.topRight,
                                         children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            child: Image.file(
-                                              img,
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.cover,
+                                          GestureDetector(
+                                            onTap: controller.pickFieldPhoto,
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.file(
+                                                photo,
+                                                width: 120,
+                                                height: 120,
+                                                fit: BoxFit.cover,
+                                              ),
                                             ),
                                           ),
                                           Container(
+                                            margin: const EdgeInsets.all(4),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(
-                                                0.7,
+                                              color: Colors.white.withValues(
+                                                alpha: 0.8,
                                               ),
                                               shape: BoxShape.circle,
                                             ),
@@ -202,66 +207,89 @@ class FieldAddView extends GetView<FieldAddController> {
                                               icon: const Icon(
                                                 Icons.close,
                                                 color: Colors.red,
+                                                size: 20,
                                               ),
-                                              onPressed: () =>
-                                                  controller.removeImage(img),
+                                              onPressed:
+                                                  controller.removeFieldPhoto,
                                             ),
                                           ),
                                         ],
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: controller.pickImages,
-                                      child: Container(
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[200],
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                      )
+                                    else
+                                      GestureDetector(
+                                        onTap: controller.pickFieldPhoto,
+                                        child: Container(
+                                          width: 120,
+                                          height: 120,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[200],
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF2563EB),
+                                            ),
                                           ),
-                                          border: Border.all(
-                                            color: Color(0xFF2563EB),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: const [
+                                              Icon(
+                                                Icons.add_a_photo,
+                                                size: 32,
+                                                color: Color(0xFF2563EB),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'Upload Photo',
+                                                style: TextStyle(
+                                                  color: Color(0xFF2563EB),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        child: const Icon(
-                                          Icons.add_a_photo,
-                                          size: 32,
-                                          color: Color(0xFF2563EB),
-                                        ),
                                       ),
-                                    ),
                                   ],
-                                ),
-                              ),
+                                );
+                              }),
                               const SizedBox(height: 24),
-                              SizedBox(
-                                height: 48,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF2563EB),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                              Obx(
+                                () => SizedBox(
+                                  height: 48,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2563EB),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
-                                  ),
-                                  onPressed: () {
-                                    if (controller.formKey.currentState
-                                            ?.validate() ??
-                                        false) {
-                                      // TODO: Implement submit logic
-                                      Get.toNamed('/fieldmanager/navigation');
-                                      Get.snackbar(
-                                        'Success',
-                                        'Lapangan berhasil disimpan!',
-                                      );
-                                    }
-                                  },
-                                  child: const Text(
-                                    'Simpan',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                    ),
+                                    onPressed: controller.isSubmitting.value
+                                        ? null
+                                        : () async {
+                                            await controller.submit();
+                                          },
+                                    child: controller.isSubmitting.value
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation(
+                                                    Colors.white,
+                                                  ),
+                                            ),
+                                          )
+                                        : const Text(
+                                            'Save Field',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ),

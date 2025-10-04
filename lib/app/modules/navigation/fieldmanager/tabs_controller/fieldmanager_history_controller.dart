@@ -1,78 +1,131 @@
-import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../data/models/owner_booking_model.dart';
+import '../../../../data/repositories/booking_repository.dart';
+import '../../../../data/services/session_service.dart';
 
 class FieldManagerHistoryController extends GetxController {
-  RxString filterStatus = 'Semua'.obs;
-  RxString searchQuery = ''.obs;
+  FieldManagerHistoryController({
+    BookingRepository? bookingRepository,
+    SessionService? sessionService,
+  }) : _bookingRepository = bookingRepository ?? Get.find<BookingRepository>(),
+       _sessionService = sessionService ?? Get.find<SessionService>();
 
-  RxList<Map<String, dynamic>> history = <Map<String, dynamic>>[
-    {
-      'id': 1,
-      'customer': 'Andi Wijaya',
-      'field': 'Lapangan Futsal A',
-      'date': '2025-09-10',
-      'start': '14:00',
-      'end': '16:00',
-      'status': 'Selesai',
-      'total': 300000,
-      'payment': 'Transfer',
-    },
-    {
-      'id': 2,
-      'customer': 'Siti Rahma',
-      'field': 'Lapangan Badminton B',
-      'date': '2025-09-09',
-      'start': '09:00',
-      'end': '11:00',
-      'status': 'Batal',
-      'total': 0,
-      'payment': '-',
-    },
-    {
-      'id': 3,
-      'customer': 'Budi Santoso',
-      'field': 'Lapangan Basket C',
-      'date': '2025-09-08',
-      'start': '19:00',
-      'end': '21:00',
-      'status': 'Ditolak',
-      'total': 0,
-      'payment': '-',
-    },
-  ].obs;
+  final BookingRepository _bookingRepository;
+  final SessionService _sessionService;
 
-  List<Map<String, dynamic>> get filteredHistory {
-    var list = history.toList();
-    if (filterStatus.value != 'Semua') {
-      list = list.where((b) => b['status'] == filterStatus.value).toList();
+  final RxList<OwnerBooking> bookings = <OwnerBooking>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxString errorMessage = ''.obs;
+  final RxString filterStatus = 'All'.obs;
+  final RxString searchQuery = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchBookings();
+  }
+
+  Future<void> fetchBookings() async {
+    final user = _sessionService.rememberedUser;
+    if (user == null) {
+      bookings.clear();
+      errorMessage.value = 'Unable to identify the current user.';
+      return;
     }
-    if (searchQuery.value.isNotEmpty) {
-      list = list
-          .where(
-            (b) =>
-                b['customer'].toLowerCase().contains(
-                  searchQuery.value.toLowerCase(),
-                ) ||
-                b['field'].toLowerCase().contains(
-                  searchQuery.value.toLowerCase(),
-                ),
-          )
-          .toList();
+
+    isLoading.value = true;
+    errorMessage.value = '';
+
+    try {
+      final results = await _bookingRepository.getBookingsByOwner(
+        ownerId: user.id,
+      );
+      bookings.assignAll(results);
+    } on BookingException catch (e) {
+      bookings.clear();
+      errorMessage.value = e.message;
+    } catch (_) {
+      bookings.clear();
+      errorMessage.value =
+          'Failed to load booking history. Please try again later.';
+    } finally {
+      isLoading.value = false;
     }
-    list.sort((a, b) => b['date'].compareTo(a['date']));
+  }
+
+  Future<void> refreshBookings() => fetchBookings();
+
+  List<OwnerBooking> get filteredBookings {
+    final query = searchQuery.value.trim().toLowerCase();
+    final statusFilter = filterStatus.value;
+
+    final list = bookings.where((booking) {
+      if (statusFilter != 'All' &&
+          booking.normalizedStatus.label.toLowerCase() !=
+              statusFilter.toLowerCase()) {
+        return false;
+      }
+
+      if (query.isNotEmpty && !_matchesSearchQuery(booking, query)) {
+        return false;
+      }
+
+      return true;
+    }).toList();
+
+    list.sort((a, b) => b.bookingStart.compareTo(a.bookingStart));
+
     return list;
   }
 
-  Color statusColor(String status) {
+  bool _matchesSearchQuery(OwnerBooking booking, String query) {
+    bool contains(String value) => value.toLowerCase().contains(query);
+
+    if (contains(booking.userName)) return true;
+    if (contains(booking.fieldName)) return true;
+    if (contains(booking.placeName)) return true;
+    if (contains(booking.orderId)) return true;
+
+    final formattedDate = DateFormat('yyyy-MM-dd').format(booking.bookingStart);
+    return formattedDate.contains(query);
+  }
+
+  Color statusColor(OwnerBookingStatus status) {
     switch (status) {
-      case 'Selesai':
-        return Colors.green;
-      case 'Batal':
-        return Colors.red;
-      case 'Ditolak':
+      case OwnerBookingStatus.pending:
         return Colors.orange;
-      default:
+      case OwnerBookingStatus.accepted:
+        return Colors.green;
+      case OwnerBookingStatus.rejected:
+        return Colors.red;
+      case OwnerBookingStatus.cancelled:
+        return Colors.grey;
+      case OwnerBookingStatus.completed:
+        return Colors.blueGrey;
+      case OwnerBookingStatus.unknown:
         return Colors.grey;
     }
+  }
+
+  String statusLabel(OwnerBooking booking) => booking.normalizedStatus.label;
+
+  String formatDate(DateTime date) =>
+      DateFormat('EEE, d MMM yyyy').format(date);
+
+  String formatTimeRange(DateTime start, DateTime end) {
+    final timeFormat = DateFormat('HH:mm');
+    return '${timeFormat.format(start)} - ${timeFormat.format(end)}';
+  }
+
+  String formatPrice(num value) {
+    final currency = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
+    return currency.format(value);
   }
 }

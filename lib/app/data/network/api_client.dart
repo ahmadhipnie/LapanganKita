@@ -3,8 +3,7 @@ import 'package:dio/dio.dart';
 class ApiClient {
   ApiClient({Dio? dio}) : _dio = dio ?? createDefaultDio();
 
-  static const String baseUrl =
-      'https://api-node-lapangan-kita.vercel.app/api/';
+  static const String baseUrl = 'https://217f27a1c4e8.ngrok-free.app/api/';
 
   static final BaseOptions _defaultOptions = BaseOptions(
     baseUrl: baseUrl,
