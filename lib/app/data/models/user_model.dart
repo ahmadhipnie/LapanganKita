@@ -42,6 +42,7 @@ class UserModel {
         final lower = value.toLowerCase();
         if (lower == 'true') return true;
         if (lower == 'false') return false;
+        if (DateTime.tryParse(value) != null) return true;
       }
       return null;
     }

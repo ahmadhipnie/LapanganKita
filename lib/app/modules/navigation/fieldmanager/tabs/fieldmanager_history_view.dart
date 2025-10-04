@@ -1,36 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../../../../data/models/owner_booking_model.dart';
 import '../tabs_controller/fieldmanager_history_controller.dart';
 
 class FieldManagerHistoryView extends GetView<FieldManagerHistoryController> {
   const FieldManagerHistoryView({super.key});
 
-  void showHistoryDetail(
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          Text(value),
+        ],
+      ),
+    );
+  }
+
+  void showBookingDetail(
     BuildContext context,
-    Map<String, dynamic> b,
     FieldManagerHistoryController c,
+    OwnerBooking booking,
   ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('History Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Customer: ${b['customer']}'),
-            Text('Field: ${b['field']}'),
-            Text('Date: ${b['date']}'),
-            Text('Time: ${b['start']} - ${b['end']}'),
-            Text('Status: ${b['status']}'),
-            Text('Total: Rp${b['total']}'),
-            Text('Payment: ${b['payment']}'),
-            const SizedBox(height: 8),
-            const Divider(),
-            const Text('Notes:'),
-            const SizedBox(height: 4),
-            Text('No special notes.'),
-          ],
+        title: const Text('Booking Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _detailRow('Status', c.statusLabel(booking)),
+              _detailRow('Customer', booking.userName),
+              _detailRow('Email', booking.userEmail),
+              _detailRow('Field', booking.fieldName),
+              _detailRow('Place', booking.placeName),
+              _detailRow('Date', c.formatDate(booking.bookingStart)),
+              _detailRow(
+                'Time',
+                c.formatTimeRange(booking.bookingStart, booking.bookingEnd),
+              ),
+              _detailRow('Order ID', booking.orderId),
+              _detailRow('Total Price', c.formatPrice(booking.totalPrice)),
+              _detailRow(
+                'Notes',
+                booking.note != null && booking.note!.trim().isNotEmpty
+                    ? booking.note!
+                    : 'No notes provided.',
+              ),
+              if (booking.details.isNotEmpty) ...[
+                const Divider(height: 24),
+                const Text(
+                  'Add-ons',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                ...booking.details.map(
+                  (detail) => _detailRow(
+                    detail.addOnName ?? 'Add-on',
+                    '${detail.quantity} x ${c.formatPrice(detail.pricePerHour ?? 0)} = ${c.formatPrice(detail.totalPrice)}',
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -65,7 +103,7 @@ class FieldManagerHistoryView extends GetView<FieldManagerHistoryController> {
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: 'Search customer/field...',
+                        hintText: 'Search customer, field, or order...',
                         prefixIcon: const Icon(Icons.search, size: 20),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 12,
@@ -96,25 +134,30 @@ class FieldManagerHistoryView extends GetView<FieldManagerHistoryController> {
                         child: DropdownButton<String>(
                           value: c.filterStatus.value,
                           items: const [
+                            DropdownMenuItem(value: 'All', child: Text('All')),
                             DropdownMenuItem(
-                              value: 'Semua',
-                              child: Text('All'),
+                              value: 'Pending',
+                              child: Text('Pending'),
                             ),
                             DropdownMenuItem(
-                              value: 'Selesai',
-                              child: Text('Completed'),
+                              value: 'Accepted',
+                              child: Text('Accepted'),
                             ),
                             DropdownMenuItem(
-                              value: 'Batal',
+                              value: 'Rejected',
+                              child: Text('Rejected'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Cancelled',
                               child: Text('Cancelled'),
                             ),
                             DropdownMenuItem(
-                              value: 'Ditolak',
-                              child: Text('Rejected'),
+                              value: 'Completed',
+                              child: Text('Completed'),
                             ),
                           ],
                           onChanged: (val) =>
-                              c.filterStatus.value = val ?? 'Semua',
+                              c.filterStatus.value = val ?? 'All',
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.black87,
@@ -129,81 +172,116 @@ class FieldManagerHistoryView extends GetView<FieldManagerHistoryController> {
             ),
           ),
           const SizedBox(height: 10),
-          Obx(
-            () => Expanded(
-              child: c.filteredHistory.isEmpty
-                  ? const Center(child: Text('No booking history yet'))
-                  : ListView.separated(
-                      itemCount: c.filteredHistory.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, i) {
-                        final b = c.filteredHistory[i];
-                        return GestureDetector(
-                          onTap: () => showHistoryDetail(context, b, c),
-                          child: Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: Obx(() {
+              if (c.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (c.errorMessage.isNotEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        c.errorMessage.value,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: c.fetchBookings,
+                        child: const Text('Try again'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final bookings = c.filteredBookings;
+              if (bookings.isEmpty) {
+                return const Center(
+                  child: Text('No booking history available.'),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: c.refreshBookings,
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: bookings.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final booking = bookings[index];
+                    final status = booking.normalizedStatus;
+                    final statusColor = c.statusColor(status);
+
+                    return GestureDetector(
+                      onTap: () => showBookingDetail(context, c, booking),
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        b['field'],
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
+                                  Expanded(
+                                    child: Text(
+                                      booking.fieldName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: c
-                                              .statusColor(b['status'])
-                                              .withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          // Status label in English
-                                          b['status'] == 'Selesai'
-                                              ? 'Completed'
-                                              : b['status'] == 'Batal'
-                                              ? 'Cancelled'
-                                              : b['status'] == 'Ditolak'
-                                              ? 'Rejected'
-                                              : b['status'],
-                                          style: TextStyle(
-                                            color: c.statusColor(b['status']),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text('Customer: ${b['customer']}'),
-                                  Text('Date: ${b['date']}'),
-                                  Text('Time: ${b['start']} - ${b['end']}'),
-                                  Text('Total: Rp${b['total']}'),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      c.statusLabel(booking),
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              Text('Customer: ${booking.userName}'),
+                              Text(
+                                'Date: ${c.formatDate(booking.bookingStart)}',
+                              ),
+                              Text(
+                                'Time: ${c.formatTimeRange(booking.bookingStart, booking.bookingEnd)}',
+                              ),
+                              Text(
+                                'Total: ${c.formatPrice(booking.totalPrice)}',
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-            ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }),
           ),
         ],
       ),
