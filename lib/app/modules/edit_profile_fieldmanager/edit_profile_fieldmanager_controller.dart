@@ -6,6 +6,7 @@ import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
 import '../../data/models/edit_profile_request.dart';
 import '../navigation/fieldmanager/tabs_controller/fieldmanager_profile_controller.dart';
+import '../profile/customer_profile_controller.dart';
 
 class EditProfileFieldmanagerController extends GetxController {
   final LocalStorageService _localStorage = LocalStorageService();
@@ -185,11 +186,20 @@ class EditProfileFieldmanagerController extends GetxController {
   void _refreshProfileController() {
     try {
       // Cari instance FieldManagerProfileController yang aktif
-      final profileController = Get.find<FieldManagerProfileController>();
-      profileController.reloadUserData();
+      final fieldAdminProfileController =
+          Get.find<FieldManagerProfileController>();
+      fieldAdminProfileController.reloadUserData();
     } catch (e) {
       // Jika controller belum ada, tidak perlu dilakukan apa-apa
       // print('Profile controller not found: $e');
+    }
+
+    try {
+      final customerProfileController = Get.find<CustomerProfileController>();
+      customerProfileController.reloadUserData();
+    } catch (e) {
+      // Jika controller belum ada, tidak perlu dilakukan apa-apa
+      // print('Customer Profile controller not found: $e');
     }
   }
 

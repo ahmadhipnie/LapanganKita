@@ -198,51 +198,64 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
   }
 
   Widget _buildPopularCategories() {
-    // Jangan gunakan Obx di sini jika tidak ada observable variable
-    final bookingController = Get.find<CustomerBookingController>();
+    return Obx(() {
+      final bookingController = Get.find<CustomerBookingController>();
 
-    // Tampilkan loading jika data courts masih kosong
-    if (bookingController.courts.isEmpty) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+      // Tampilkan loading jika data courts masih loading
+      if (bookingController.isLoading.value &&
+          bookingController.allCourts.isEmpty) {
+        return const SizedBox(
+          height: 140,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
 
-    final categories = controller.popularCategoriesWithIcon;
-
-    if (categories.isEmpty) {
-      return const SizedBox();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      // Tampilkan empty state jika tidak ada data
+      if (bookingController.allCourts.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.all(16),
           child: Text(
-            'Popular Categories',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            'No courts available',
+            style: TextStyle(color: Colors.grey),
           ),
-        ),
-        SizedBox(
-          height: 116,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: categories.map((category) {
-              return _buildCategoryIconCard(
-                category['name'],
-                category['count'],
-                category['icon'],
-                category['color'],
-              );
-            }).toList(),
+        );
+      }
+
+      final categories = controller.popularCategoriesWithIcon;
+
+      if (categories.isEmpty) {
+        return const SizedBox();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Text(
+              'Popular Categories',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
+          SizedBox(
+            height: 116,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: categories.map((category) {
+                return _buildCategoryIconCard(
+                  category['name'],
+                  category['count'],
+                  category['icon'],
+                  category['color'],
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      );
+    });
   }
 
   // Widget untuk Card dengan Icon

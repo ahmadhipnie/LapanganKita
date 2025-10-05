@@ -17,6 +17,10 @@ class CustomerProfileController extends GetxController {
     super.onInit();
   }
 
+  void reloadUserData() {
+    _loadUserData();
+  }
+
   void _loadUserData() {
     final userData = _localStorage.getUserData();
     if (userData != null) {

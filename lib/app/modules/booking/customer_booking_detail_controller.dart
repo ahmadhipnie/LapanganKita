@@ -1,8 +1,9 @@
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangan_kita/app/modules/booking/customer_booking_model.dart';
 import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
 import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
+
+import '../../data/models/customer/booking/court_model.dart';
 
 class CustomerBookingDetailController extends GetxController {
   final Court court = Get.arguments;
