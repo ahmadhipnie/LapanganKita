@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_controller.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../data/network/api_client.dart';
 
 class CustomerBookingDetailView
     extends GetView<CustomerBookingDetailController> {
@@ -19,35 +22,7 @@ class CustomerBookingDetailView
             backgroundColor: AppColors.neutralColor,
             expandedHeight: 300,
             flexibleSpace: FlexibleSpaceBar(
-              background: Image.network(
-                controller.court.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, url, error) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    color: Colors.grey[300],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Maybe image is not found or crash ><',
-                        style: TextStyle(
-                          color: Colors.red[300],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              background: _buildCachedImage(controller.court.imageUrl),
             ),
             pinned: true,
           ),
@@ -76,6 +51,50 @@ class CustomerBookingDetailView
         ],
       ),
       bottomSheet: _buildBottomBar(),
+    );
+  }
+
+  Widget _buildCachedImage(String imagePath) {
+    final ApiClient apiClient = Get.find<ApiClient>();
+    final imageUrl = apiClient.getImageUrl(imagePath);
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      imageBuilder: (context, imageProvider) => Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+        ),
+      ),
+      placeholder: (context, url) => Container(
+        color: Colors.grey[300],
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      errorWidget: (context, url, error) => Container(
+        color: Colors.grey[200],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sports_soccer, size: 60, color: Colors.grey[400]),
+            const SizedBox(height: 12),
+            Text(
+              'Court Image',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Image not available',
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
     );
   }
 

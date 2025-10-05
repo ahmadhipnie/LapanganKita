@@ -1,31 +1,70 @@
 import 'package:get/get.dart';
+import '../../../../services/local_storage_service.dart';
 
 import 'package:lapangan_kita/app/data/services/session_service.dart';
 import 'package:lapangan_kita/app/modules/login/login_controller.dart';
 import 'package:lapangan_kita/app/routes/app_routes.dart';
 
 class FieldManagerProfileController extends GetxController {
-  FieldManagerProfileController({SessionService? sessionService})
-    : _sessionService = sessionService ?? Get.find<SessionService>();
+  final LocalStorageService _localStorage = LocalStorageService();
 
-  final SessionService _sessionService;
+//   FieldManagerProfileController({SessionService? sessionService})
+//     : _sessionService = sessionService ?? Get.find<SessionService>();
+
+//   final SessionService _sessionService;
   RxBool faceIdEnabled = false.obs;
-  // Dummy user data
-  final RxString name = 'Budi sakti'.obs;
-  final RxString email = 'budi@gmail.com'.obs;
+
+  // User data from shared preferences
+  final RxString name = ''.obs;
+  final RxString email = ''.obs;
   final RxString avatarUrl = ''.obs;
+
+  @override
+  void onInit() {
+    _loadUserData();
+    super.onInit();
+  }
+
+  void reloadUserData() {
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final userData = _localStorage.getUserData();
+    if (userData != null) {
+      try {
+        name.value = userData['name']?.toString() ?? '';
+        email.value = userData['email']?.toString() ?? '';
+
+        // You can set avatar URL if available in your API
+        avatarUrl.value = userData['avatar_url']?.toString() ?? '';
+      } catch (e) {
+        // Fallback to default values
+        name.value = 'User';
+        email.value = 'user@example.com';
+      }
+    } else {
+      // If no user data found, set default values
+      name.value = 'User';
+      email.value = 'user@example.com';
+    }
+  }
 
   void toggleFaceId(bool value) {
     faceIdEnabled.value = value;
   }
 
+  // Logout function
+  Future<void> logout() async {
+    await _localStorage.clearUserData();
+    Get.offAllNamed('/login');
   // Add more profile logic here as needed
 
-  Future<void> logout() async {
-    await _sessionService.clearRememberedUser();
-    if (Get.isRegistered<LoginController>()) {
-      Get.find<LoginController>().resetForm();
-    }
-    await Get.offAllNamed(AppRoutes.LOGIN);
-  }
+//   Future<void> logout() async {
+//     await _sessionService.clearRememberedUser();
+//     if (Get.isRegistered<LoginController>()) {
+//       Get.find<LoginController>().resetForm();
+//     }
+//     await Get.offAllNamed(AppRoutes.LOGIN);
+//   }
 }

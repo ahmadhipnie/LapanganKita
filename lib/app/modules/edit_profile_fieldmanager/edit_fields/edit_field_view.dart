@@ -46,7 +46,7 @@ class EditFieldView extends StatefulWidget {
 class _EditFieldViewState extends State<EditFieldView> {
   String? selectedGender;
   String? selectedBankType;
-  final List<String> genderOptions = ['Laki-laki', 'Perempuan'];
+  final List<String> genderOptions = ['male', 'female'];
   final List<String> bankOptions = [
     'BCA',
     'BNI',

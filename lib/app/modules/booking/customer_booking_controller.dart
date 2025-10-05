@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lapangan_kita/app/modules/booking/customer_booking_model.dart'; // Adjust the path to your Debouncer utility
+import '../../data/models/customer/booking/court_model.dart';
+import '../../data/repositories/field_repository.dart';
 
 class CustomerBookingController extends GetxController {
+  final CourtRepository _courtRepository = Get.find<CourtRepository>();
+
   final RxBool isLoading = false.obs;
+  final RxBool hasError = false.obs;
+  final RxString errorMessage = ''.obs;
 
   final TextEditingController searchController = TextEditingController();
   final TextEditingController minPriceController = TextEditingController();
@@ -14,198 +19,21 @@ class CustomerBookingController extends GetxController {
   final RxList<String> availableCategories = <String>[].obs;
   final RxList<String> availableLocations = <String>[].obs;
   final RxList<Court> filteredCourts = <Court>[].obs;
+  final RxList<Court> allCourts = <Court>[].obs;
 
   // Timestamp untuk force reload images
   final RxString _timestamp = DateTime.now().millisecondsSinceEpoch
       .toString()
       .obs;
 
-  String getTimestampedImageUrl(String baseUrl) =>
-      '$baseUrl?t=${_timestamp.value}';
-
-  final List<Court> courts = [
-    Court(
-      name: 'Indoor Tennis Court',
-      location: 'Kemang, South Jakarta',
-      imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
-      price: 240000,
-      types: ['Tennis'],
-      description:
-          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
-      openingHours: {'monday-sunday': '06:00 - 22:00'},
-      equipment: [
-        Equipment(
-          name: 'Tennis Racket',
-          description: 'Rackets, balls,  and other equipment',
-          price: 50000,
-        ),
-        Equipment(
-          name: 'Towel rental',
-          description: 'Clean towels for after yout game',
-          price: 25000,
-        ),
-        Equipment(
-          name: 'Grip Tape',
-          description: 'Secure storage for your belongings',
-          price: 15000,
-        ),
-      ],
-      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
-    ),
-    Court(
-      name: 'Outdoor Tennis Court',
-      location: 'Kemang, South Jakarta',
-      types: ['Tennis'],
-      price: 200000,
-      imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
-      description:
-          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
-      openingHours: {'monday-sunday': '06:00 - 22:00'},
-      equipment: [
-        Equipment(
-          name: 'Tennis Racket',
-          description: 'Rackets, balls,  and other equipment',
-          price: 50000,
-        ),
-        Equipment(
-          name: 'Towel rental',
-          description: 'Clean towels for after yout game',
-          price: 25000,
-        ),
-        Equipment(
-          name: 'Grip Tape',
-          description: 'Secure storage for your belongings',
-          price: 15000,
-        ),
-      ],
-      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
-    ),
-    Court(
-      name: 'Padel Court',
-      location: 'Kemang, South Jakarta',
-      types: ['Padel'],
-      price: 220000,
-      imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc',
-      description:
-          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
-      openingHours: {'monday-sunday': '06:00 - 22:00'},
-      equipment: [
-        Equipment(
-          name: 'Tennis Racket',
-          description: 'Rackets, balls,  and other equipment',
-          price: 50000,
-        ),
-        Equipment(
-          name: 'Towel rental',
-          description: 'Clean towels for after yout game',
-          price: 25000,
-        ),
-        Equipment(
-          name: 'Grip Tape',
-          description: 'Secure storage for your belongings',
-          price: 15000,
-        ),
-      ],
-      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
-    ),
-    Court(
-      name: 'Multi Sport Court',
-      location: 'Kemang, South Jakarta',
-      types: ['Tennis', 'Padel'],
-      price: 300000,
-      imageUrl: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211',
-      description:
-          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
-      openingHours: {'monday-sunday': '06:00 - 22:00'},
-      equipment: [
-        Equipment(
-          name: 'Tennis Racket',
-          description: 'Rackets, balls,  and other equipment',
-          price: 50000,
-        ),
-        Equipment(
-          name: 'Towel rental',
-          description: 'Clean towels for after yout game',
-          price: 25000,
-        ),
-        Equipment(
-          name: 'Grip Tape',
-          description: 'Secure storage for your belongings',
-          price: 15000,
-        ),
-      ],
-      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
-    ),
-    Court(
-      name: 'Premium Futsal Court',
-      location: 'Senayan, Central Jakarta',
-      types: ['Futsal'],
-      price: 100000,
-      imageUrl: 'https://images.unsplash.com/photo-1520877880798-5ee004e3f11e',
-      description:
-          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
-      openingHours: {'monday-sunday': '06:00 - 22:00'},
-      equipment: [
-        Equipment(
-          name: 'Tennis Racket',
-          description: 'Rackets, balls,  and other equipment',
-          price: 50000,
-        ),
-        Equipment(
-          name: 'Towel rental',
-          description: 'Clean towels for after yout game',
-          price: 25000,
-        ),
-        Equipment(
-          name: 'Grip Tape',
-          description: 'Secure storage for your belongings',
-          price: 15000,
-        ),
-      ],
-      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
-    ),
-    Court(
-      name: 'Basketball Court',
-      location: 'Wikwok, Surabaya',
-      types: ['Basketball'],
-      price: 180000,
-      imageUrl: 'https://images.unsplash.com/photo-1549060279-7e168fce7090',
-      description:
-          'Premium indoor tennis court with professional flooring and lighting. Perfect for both training and competitive play.',
-      openingHours: {'monday-sunday': '06:00 - 22:00'},
-      equipment: [
-        Equipment(
-          name: 'Tennis Racket',
-          description: 'Rackets, balls,  and other equipment',
-          price: 50000,
-        ),
-        Equipment(
-          name: 'Towel rental',
-          description: 'Clean towels for after yout game',
-          price: 25000,
-        ),
-        Equipment(
-          name: 'Grip Tape',
-          description: 'Secure storage for your belongings',
-          price: 15000,
-        ),
-      ],
-      mapsUrl: "https://maps.app.goo.gl/k49fhABUMmtymC7v5",
-    ),
-  ];
+  String getTimestamp() => _timestamp.value;
 
   @override
   void onInit() {
     super.onInit();
-    filteredCourts.assignAll(courts);
+    _loadCourts();
 
-    // Extract available categories and locations
-    _extractAvailableOptions();
-
-    // Listen to search query changes
-    ever(searchQuery, (_) => filterCourts());
-
-    // Add debounce untuk search
+    // Listen to search query changes dengan debounce
     debounce(
       searchQuery,
       (_) => filterCourts(),
@@ -213,17 +41,52 @@ class CustomerBookingController extends GetxController {
     );
   }
 
-  // @override
-  // void onClose() {
-  //   searchController.dispose();
-  //   minPriceController.dispose();
-  //   maxPriceController.dispose();
-  //   super.onClose();
-  // }
+  void refreshFilterChips() {
+    update(); // Trigger GetBuilder rebuild
+  }
+
+  // ✅ METHOD UNTUK SET CATEGORY FILTER DARI EXTERNAL
+  void setCategoryFilterFromExternal(String category) {
+    print('🎯 Setting category filter from external: $category');
+    selectedCategory.value = category;
+
+    // ✅ PASTIKAN FILTER DIEKSEKUSI SETELAH STATE BERUBAH
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      filterCourts();
+      refreshFilterChips();
+    });
+
+    print('🎯 Current selected category: ${selectedCategory.value}');
+  }
+
+  // ✅ LOAD DATA FROM API
+  Future<void> _loadCourts() async {
+    isLoading.value = true;
+    hasError.value = false;
+    errorMessage.value = '';
+
+    try {
+      final courts = await _courtRepository.getCourts();
+      allCourts.assignAll(courts);
+      filteredCourts.assignAll(courts);
+
+      // Extract available categories and locations
+      _extractAvailableOptions();
+    } on CourtException catch (e) {
+      hasError.value = true;
+      errorMessage.value = e.message;
+      Get.snackbar('Error', e.message);
+    } catch (e) {
+      hasError.value = true;
+      errorMessage.value = 'Failed to load courts: $e';
+      Get.snackbar('Error', 'Failed to load courts: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   // Method untuk extract kota dari location string
   String _extractCity(String location) {
-    // Split by comma and take the last part (city name)
     final parts = location.split(',');
     if (parts.length > 1) {
       return parts.last.trim();
@@ -232,90 +95,67 @@ class CustomerBookingController extends GetxController {
   }
 
   void _extractAvailableOptions() {
-    // Extract unique categories dari types
-    final categories = courts.expand((court) => court.types).toSet().toList();
+    // Extract unique categories dari field_type
+    final categories = allCourts
+        .expand((court) => court.types)
+        .toSet()
+        .toList();
     availableCategories.assignAll(categories);
 
     // Extract unique locations (hanya nama kota)
-    final locations = courts
+    final locations = allCourts
         .map((court) => _extractCity(court.location))
+        .where((city) => city.isNotEmpty)
         .toSet()
         .toList();
     availableLocations.assignAll(locations);
   }
 
-  // Method untuk filter courts berdasarkan search query
+  // ✅ METHOD FILTER COURTS
   void filterCourts() {
-    if (searchQuery.value.isEmpty) {
-      filteredCourts.assignAll(courts);
-      return;
+    print('🔄 Starting filterCourts...');
+    print('📊 All courts count: ${allCourts.length}');
+    print('🎯 Selected category: ${selectedCategory.value}');
+
+    // Step 1: Filter hanya yang available
+    var results = allCourts
+        .where((court) => court.status == 'available')
+        .toList();
+    print('✅ Available courts: ${results.length}');
+
+    // Step 2: Apply category filter jika ada
+    if (selectedCategory.value.isNotEmpty) {
+      results = results.where((court) {
+        final hasCategory = court.types.contains(selectedCategory.value);
+        print(
+          '🔍 Court "${court.name}" has category ${selectedCategory.value}: $hasCategory',
+        );
+        return hasCategory;
+      }).toList();
+      print('✅ After category filter: ${results.length} courts');
     }
 
-    final query = searchQuery.value.toLowerCase();
-
-    final results = courts.where((court) {
-      // Cek nama court
-      if (court.name.toLowerCase().contains(query)) {
-        return true;
-      }
-
-      // Cek lokasi court
-      if (court.location.toLowerCase().contains(query)) {
-        return true;
-      }
-
-      // Cek kategori/types
-      if (court.types.any((type) => type.toLowerCase().contains(query))) {
-        return true;
-      }
-
-      // Cek kombinasi kata-kata
-      final queryWords = query.split(' ');
-      for (final word in queryWords) {
-        if (word.length > 2) {
-          if (court.name.toLowerCase().contains(word) ||
-              court.location.toLowerCase().contains(word) ||
-              court.types.any((type) => type.toLowerCase().contains(word))) {
-            return true;
-          }
-        }
-      }
-
-      return false;
-    }).toList();
-
-    filteredCourts.assignAll(results);
-  }
-
-  void applyFilters() {
-    var results = courts;
-
-    // Apply search filter
+    // Step 3: Apply search filter jika ada
     if (searchQuery.value.isNotEmpty) {
       final query = searchQuery.value.toLowerCase();
       results = results.where((court) {
         return court.name.toLowerCase().contains(query) ||
             court.location.toLowerCase().contains(query) ||
             court.types.any((type) => type.toLowerCase().contains(query)) ||
-            _extractCity(court.location).toLowerCase().contains(query);
+            court.placeName.toLowerCase().contains(query);
       }).toList();
+      print('✅ After search filter: ${results.length} courts');
     }
 
-    // Apply category filter
-    if (selectedCategory.value.isNotEmpty) {
-      results = results.where((court) {
-        return court.types.contains(selectedCategory.value);
-      }).toList();
-    }
-
-    // Apply location filter (berdasarkan kota saja)
+    // Step 4: Apply location filter jika ada
     if (selectedLocation.value.isNotEmpty) {
       results = results.where((court) {
         return _extractCity(court.location) == selectedLocation.value;
       }).toList();
+      print('✅ After location filter: ${results.length} courts');
     }
 
-    // Apply price filter
+    // Step 5: Apply price filter jika ada
     final minPrice = double.tryParse(minPriceController.text) ?? 0;
     final maxPrice =
         double.tryParse(maxPriceController.text) ?? double.maxFinite;
@@ -324,76 +164,113 @@ class CustomerBookingController extends GetxController {
       results = results.where((court) {
         return court.price >= minPrice && court.price <= maxPrice;
       }).toList();
+      print('✅ After price filter: ${results.length} courts');
     }
 
+    // ✅ PASTIKAN ASSIGN KE filteredCourts
     filteredCourts.assignAll(results);
+    print('🎯 Final filtered courts: ${filteredCourts.length}');
+
+    // Force UI update
+    update(['courts_list']);
   }
 
   // Method untuk set category filter
   void setCategoryFilter(String category) {
     selectedCategory.value = category;
-    applyFilters();
+    filterCourts();
   }
 
   // Method untuk set location filter
   void setLocationFilter(String location) {
     selectedLocation.value = location;
-    applyFilters();
+    filterCourts();
+  }
+
+  // Method untuk apply filters dari dialog
+  void applyFilters() {
+    filterCourts();
   }
 
   // Method untuk clear semua filter
+  // void clearFilters() {
+  //   searchQuery.value = '';
+  //   searchController.clear();
+  //   selectedCategory.value = '';
+  //   selectedLocation.value = '';
+  //   minPriceController.clear();
+  //   maxPriceController.clear();
+  //   filteredCourts.assignAll(allCourts);
+  // }
   void clearFilters() {
+    print('🔄 Clearing all filters');
     searchQuery.value = '';
     searchController.clear();
     selectedCategory.value = '';
     selectedLocation.value = '';
     minPriceController.clear();
     maxPriceController.clear();
-    filteredCourts.assignAll(courts);
+
+    // Kembali ke available courts saja
+    filteredCourts.assignAll(
+      allCourts.where((court) => court.status == 'available').toList(),
+    );
+
+    refreshFilterChips();
+    update(['courts_list']);
+    print(
+      '✅ Filters cleared, showing ${filteredCourts.length} available courts',
+    );
   }
 
-  // Method untuk refresh data
+  // ✅ METHOD REFRESH DATA
   Future<void> refreshData() async {
     isLoading.value = true;
+    hasError.value = false;
 
     // Update timestamp untuk force reload images
     _timestamp.value = DateTime.now().millisecondsSinceEpoch.toString();
 
-    // Simulate API call atau data refresh
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await _loadCourts();
 
-    // Reset search dan filter
-    searchQuery.value = '';
-    searchController.clear();
-    filteredCourts.assignAll(courts);
-
-    isLoading.value = false;
-
-    Get.snackbar(
-      'Success',
-      'Data refreshed successfully',
-      snackPosition: SnackPosition.TOP,
-    );
+      Get.snackbar(
+        'Success',
+        'Data refreshed successfully',
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to refresh data: $e',
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   // Method untuk clear search
   void clearSearch() {
     searchQuery.value = '';
     searchController.clear();
-    filteredCourts.assignAll(courts);
+    filteredCourts.assignAll(allCourts);
   }
 
   // Method untuk search courts
   List<Court> searchCourts(String query) {
-    if (query.isEmpty) return courts;
-    return courts
+    if (query.isEmpty) return allCourts;
+    return allCourts
         .where(
           (court) =>
               court.name.toLowerCase().contains(query.toLowerCase()) ||
               court.location.toLowerCase().contains(query.toLowerCase()) ||
               court.types.any(
                 (type) => type.toLowerCase().contains(query.toLowerCase()),
-              ),
+              ) ||
+              court.placeName.toLowerCase().contains(query.toLowerCase()),
         )
         .toList();
   }

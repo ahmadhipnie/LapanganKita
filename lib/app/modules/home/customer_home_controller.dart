@@ -59,44 +59,27 @@ class CustomerHomeController extends GetxController {
     },
   );
 
-  // Method untuk refresh data
-  Future<void> refreshData() async {
-    isLoading.value = true;
-
-    // Update timestamp untuk force reload images
-    _timestamp.value = DateTime.now().millisecondsSinceEpoch.toString();
-
-    // Simulate API call atau data refresh
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Di sini Anda bisa update data dari API
-    // Contoh: imgList = await ApiService.getNewImages();
-
-    isLoading.value = false;
-  }
-
-  void navigateToBookingWithCategory(String category) {
-    // Dapatkan instance dari CustomerBookingController
-    Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 1});
-   Future.delayed(const Duration(milliseconds: 100), () {
-    final bookingController = Get.find<CustomerBookingController>();
-    bookingController.setCategoryFilter(category);
-  });
-    // Navigate ke halaman booking
-  }
-
-  // Get popular categories with count and icon
+  // ✅ FIX: Get popular categories dengan data dari allCourts
   List<Map<String, dynamic>> get popularCategoriesWithIcon {
     final bookingController = Get.find<CustomerBookingController>();
+
+    // Gunakan allCourts bukan filteredCourts
+    if (bookingController.allCourts.isEmpty) return [];
+
     final Map<String, int> categoryCount = {};
 
-    for (final court in bookingController.courts) {
+    // Hitung jumlah court per kategori dari semua data
+    for (final court in bookingController.allCourts) {
       for (final type in court.types) {
         categoryCount[type] = (categoryCount[type] ?? 0) + 1;
       }
     }
 
-    return categoryCount.entries.map((entry) {
+    // Urutkan berdasarkan jumlah terbanyak
+    final sortedCategories = categoryCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sortedCategories.map((entry) {
       return {
         'name': entry.key,
         'count': entry.value,
@@ -104,6 +87,18 @@ class CustomerHomeController extends GetxController {
         'color': _getCategoryColor(entry.key),
       };
     }).toList();
+  }
+
+  // ✅ FIX: Method untuk check jika data courts sudah loaded
+  bool get areCourtsLoaded {
+    final bookingController = Get.find<CustomerBookingController>();
+    return bookingController.allCourts.isNotEmpty;
+  }
+
+  // ✅ FIX: Method untuk get loading state dari booking controller
+  bool get areCourtsLoading {
+    final bookingController = Get.find<CustomerBookingController>();
+    return bookingController.isLoading.value;
   }
 
   IconData _getCategoryIcon(String category) {
@@ -120,6 +115,8 @@ class CustomerHomeController extends GetxController {
         return Icons.sports_volleyball;
       case 'badminton':
         return Icons.sports;
+      case 'mini soccer':
+        return Icons.sports_soccer;
       default:
         return Icons.sports;
     }
@@ -139,9 +136,95 @@ class CustomerHomeController extends GetxController {
         return Colors.purple;
       case 'badminton':
         return Colors.teal;
+      case 'mini soccer':
+        return Colors.blue.shade700;
       default:
         return Colors.grey;
     }
+  }
+
+  // Method untuk refresh data
+  Future<void> refreshData() async {
+    isLoading.value = true;
+
+    // Update timestamp untuk force reload images
+    _timestamp.value = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Refresh booking data juga
+    final bookingController = Get.find<CustomerBookingController>();
+    await bookingController.refreshData();
+
+    // Simulate API call atau data refresh
+    await Future.delayed(const Duration(seconds: 1));
+
+    isLoading.value = false;
+  }
+
+  void _applyCategoryFilterWithRetry(String category, {int retryCount = 0}) {
+    try {
+      final bookingController = Get.find<CustomerBookingController>();
+      print('🎯 Found booking controller');
+      print('📊 All courts count: ${bookingController.allCourts.length}');
+      print('🔄 Is loading: ${bookingController.isLoading.value}');
+
+      // ✅ CHECK JIKA DATA SUDAH READY
+      if (bookingController.allCourts.isEmpty ||
+          bookingController.isLoading.value) {
+        if (retryCount < 5) {
+          // Max 5 retries
+          print('⏳ Data not ready, retrying... (${retryCount + 1}/5)');
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _applyCategoryFilterWithRetry(category, retryCount: retryCount + 1);
+          });
+          return;
+        } else {
+          print('❌ Max retries reached, data still not ready');
+          return;
+        }
+      }
+
+      // ✅ DATA SUDAH READY, APPLY FILTER
+      print('✅ Data is ready, applying filter: $category');
+      bookingController.setCategoryFilterFromExternal(category);
+    } catch (e) {
+      print('❌ Error applying category filter: $e');
+      if (retryCount < 5) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _applyCategoryFilterWithRetry(category, retryCount: retryCount + 1);
+        });
+      }
+    }
+  }
+
+  void navigateToBookingWithCategory(String category) {
+    // Navigate ke halaman booking
+    Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 1});
+
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      _applyCategoryFilterWithRetry(category);
+    });
+
+    // ✅ PASTIKAN DELAY YANG CUKUP UNTUK CONTROLLER SIAP
+    Future.delayed(const Duration(milliseconds: 500), () {
+      try {
+        final bookingController = Get.find<CustomerBookingController>();
+        bookingController.setCategoryFilterFromExternal(category);
+
+        // ✅ FORCE UPDATE JUGA DI VIEW
+        bookingController.refreshFilterChips();
+      } catch (e) {
+        // print('Error setting category filter: $e');
+        // Retry setelah delay lebih lama
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          try {
+            final bookingController = Get.find<CustomerBookingController>();
+            bookingController.setCategoryFilterFromExternal(category);
+          } catch (e) {
+            // print('Retry failed: $e');
+          }
+        });
+      }
+    });
   }
 
   List<BookingHistory> getRecentBookings() {
@@ -160,5 +243,104 @@ class CustomerHomeController extends GetxController {
   // Refresh both home and history data
   Future<void> refreshAllData() async {
     await Future.wait([refreshData(), historyController.refreshData()]);
+  }
+
+  // Tambahkan method untuk show image dialog
+  void showImageDialog(int index, BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutBack,
+            ),
+            child: Stack(
+              children: [
+                // Image Container
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      imgList[index],
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: double.infinity,
+                          height: 400,
+                          color: Colors.grey[300],
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: double.infinity,
+                          height: 400,
+                          color: Colors.grey[300],
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error, color: Colors.red, size: 40),
+                              SizedBox(height: 8),
+                              Text(
+                                'Failed to load image',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                // Close Button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        Get.back();
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
   }
 }

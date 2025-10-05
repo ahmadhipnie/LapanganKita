@@ -1,3 +1,15 @@
+import 'package:dio/dio.dart';
+import '../models/customer/booking/court_model.dart';
+import '../network/api_client.dart';
+
+class CourtRepository {
+  CourtRepository(this._apiClient);
+
+  final ApiClient _apiClient;
+
+  Future<List<Court>> getCourts() async {
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>('fields');
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -54,6 +66,22 @@ class FieldRepository {
       final body = response.data;
 
       if (statusCode >= 200 && statusCode < 300 && body != null) {
+        final apiResponse = ApiResponse.fromJson(body);
+        
+        if (apiResponse.success) {
+          // Convert data to Court objects
+          final courts = apiResponse.data.map<Court>((courtData) {
+            return Court.fromJson(courtData as Map<String, dynamic>);
+          }).toList();
+          
+          return courts;
+        } else {
+          throw CourtException(apiResponse.message);
+        }
+      }
+
+      final message = _extractMessage(body) ?? 'Failed to fetch courts with status $statusCode';
+      throw CourtException(message);
         final parsed = FieldCreateResponse.fromJson(body);
         if (parsed.success) {
           return parsed;
@@ -68,6 +96,17 @@ class FieldRepository {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
+        throw const CourtException(
+          'Unable to reach the server. Check your connection.',
+        );
+      }
+
+      final message = _extractMessage(e.response?.data) ?? e.message ?? 'Failed to fetch courts.';
+      throw CourtException(message);
+    } on FormatException catch (e) {
+      throw CourtException('Data format error: ${e.message}');
+    } catch (e) {
+      throw CourtException('Unexpected error: $e');
         throw const FieldException(
           'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
         );
@@ -255,11 +294,15 @@ class FieldRepository {
   }
 }
 
+class CourtException implements Exception {
+  const CourtException(this.message);
 class FieldException implements Exception {
   const FieldException(this.message);
 
   final String message;
 
   @override
+  String toString() => 'CourtException: $message';
+}
   String toString() => 'FieldException: $message';
 }

@@ -5,6 +5,8 @@ import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.da
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:lapangan_kita/app/widgets/card.dart';
 
+import '../../data/network/api_client.dart';
+
 class CustomerBookingView extends GetView<CustomerBookingController> {
   const CustomerBookingView({super.key});
 
@@ -23,9 +25,14 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
       ),
       body: SafeArea(
         child: Obx(() {
-          if (controller.isLoading.value) {
+          if (controller.isLoading.value && controller.allCourts.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
+
+          if (controller.hasError.value && controller.allCourts.isEmpty) {
+            return _buildErrorWidget();
+          }
+
           return RefreshIndicator(
             onRefresh: () => controller.refreshData(),
             child: CustomScrollView(
@@ -46,27 +53,25 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
                     ),
                   ),
                 ),
-                // Courts List dengan builder untuk efisiensi
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: Obx(() {
                     final filteredCourts = controller.filteredCourts;
 
-                    if (filteredCourts.isEmpty) {
+                    if (filteredCourts.isEmpty && !controller.isLoading.value) {
                       return SliverFillRemaining(child: _buildNoDataMessage());
                     }
+
                     return SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final court = filteredCourts[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: CourtCard(
-                            key: ValueKey('${court.name}_$index'),
-                            image: _buildCachedImage(
-                              controller.getTimestampedImageUrl(court.imageUrl),
-                            ),
+                            key: ValueKey('${court.id}_$index'),
+                            image: _buildCachedImage(court.imageUrl),
                             title: court.name,
-                            location: court.location,
+                            location: court.placeName,
                             types: court.types,
                             prefixText: 'Start from ',
                             price: court.price,
@@ -91,7 +96,43 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
     );
   }
 
-  Widget _buildCachedImage(String imageUrl) {
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load data',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Obx(
+            () => Text(
+              controller.errorMessage.value,
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => controller.refreshData(),
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCachedImage(String imagePath) {
+    final ApiClient apiClient = Get.find<ApiClient>();
+    final imageUrl = apiClient.getImageUrl(imagePath);
+
     return CachedNetworkImage(
       imageUrl: imageUrl,
       imageBuilder: (context, imageProvider) => Container(
@@ -104,6 +145,7 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
         ),
       ),
       placeholder: (context, url) => Container(
+        height: 200,
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(12),
@@ -114,35 +156,37 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
         child: const Center(child: CircularProgressIndicator()),
       ),
       errorWidget: (context, url, error) => Container(
+        height: 200,
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(12),
             topRight: Radius.circular(12),
           ),
-          color: Colors.grey[300],
+          color: Colors.grey[200],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.broken_image, size: 50, color: Colors.grey),
+            Icon(Icons.sports_soccer, size: 50, color: Colors.grey[400]),
             const SizedBox(height: 8),
             Text(
-              'Maybe image is not found or crash ><',
+              'Court Image',
               style: TextStyle(
-                color: Colors.red[300],
+                color: Colors.grey[600],
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
               ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Image not available',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
             ),
           ],
         ),
       ),
-      fadeInDuration: const Duration(milliseconds: 300),
-      fadeOutDuration: const Duration(milliseconds: 300),
+      fit: BoxFit.cover,
       width: double.infinity,
       height: 200,
-      fit: BoxFit.cover,
     );
   }
 
@@ -215,46 +259,45 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
   }
 
   Widget _buildFilterRow() {
-    return Builder(
-      builder: (builderContext) {
-        return Row(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildFilterChip(
-                      label: 'All',
-                      isSelected: controller.selectedCategory.value.isEmpty,
-                      onSelected: (_) => controller.clearFilters(),
-                    ),
-                    const SizedBox(width: 8),
-                    ...controller.availableCategories.map((category) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(
-                          label: category,
-                          isSelected:
-                              controller.selectedCategory.value == category,
-                          onSelected: (_) =>
-                              controller.setCategoryFilter(category),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+    return Obx(() {
+      // ✅ WRAP DENGAN Obx
+      return Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip(
+                    label: 'All',
+                    isSelected: controller.selectedCategory.value.isEmpty,
+                    onSelected: (_) => controller.clearFilters(),
+                  ),
+                  const SizedBox(width: 8),
+                  ...controller.availableCategories.map((category) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _buildFilterChip(
+                        label: category,
+                        isSelected:
+                            controller.selectedCategory.value == category,
+                        onSelected: (_) =>
+                            controller.setCategoryFilter(category),
+                      ),
+                    );
+                  }),
+                ],
               ),
             ),
-            IconButton(
-              hoverColor: AppColors.primary,
-              icon: const Icon(Icons.filter_list),
-              onPressed: () => _showFilterDialog(builderContext),
-            ),
-          ],
-        );
-      },
-    );
+          ),
+          IconButton(
+            hoverColor: AppColors.primary,
+            icon: const Icon(Icons.filter_list),
+            onPressed: () => _showFilterDialog(Get.context!),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildFilterChip({
