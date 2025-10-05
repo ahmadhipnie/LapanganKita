@@ -269,7 +269,7 @@ class FieldManagerHomeController extends GetxController {
     FieldRepository? fieldRepository,
     ReportRepository? reportRepository,
   }) : _placeRepository = placeRepository ?? Get.find<PlaceRepository>(),
-//        _sessionService = sessionService ?? Get.find<SessionService>(),
+       //        _sessionService = sessionService ?? Get.find<SessionService>(),
        _fieldRepository = fieldRepository ?? Get.find<FieldRepository>(),
        _reportRepository = reportRepository ?? Get.find<ReportRepository>();
 
@@ -317,18 +317,22 @@ class FieldManagerHomeController extends GetxController {
     fetchPlacesForOwner();
   }
 
-//     void setPlace(
-//     PlaceModel? newPlace, {
-//     bool syncCollection = true,
-//     bool refreshReport = true,
-//   }) {
+  //     void setPlace(
+  //     PlaceModel? newPlace, {
+  //     bool syncCollection = true,
+  //     bool refreshReport = true,
+  //   }) {
   /// Get user ID from LocalStorage
   int get _userId {
     final userData = _localStorage.getUserData();
     return int.tryParse(userData?['id']?.toString() ?? '0') ?? 0;
   }
 
-  void setPlace(PlaceModel? newPlace, {bool syncCollection = true, bool refreshReport = true,}) {
+  void setPlace(
+    PlaceModel? newPlace, {
+    bool syncCollection = true,
+    bool refreshReport = true,
+  }) {
     final resolvedPhoto = _resolvePhotoUrl(newPlace?.placePhoto);
     final resolvedPlace = newPlace?.copyWith(placePhoto: resolvedPhoto);
 
@@ -556,20 +560,29 @@ class FieldManagerHomeController extends GetxController {
   }
 
   Future<void> fetchPerformanceReport({bool silent = false}) async {
-    final user = _sessionService.rememberedUser;
-    if (user == null) {
+    // final user = _sessionService.rememberedUser;
+    // if (user == null) {
+    //   _resetPerformanceReport(error: 'Sesi berakhir. Silakan masuk kembali.');
+    //   return;
+    // }
+
+    if (!_localStorage.isLoggedIn) {
       _resetPerformanceReport(error: 'Sesi berakhir. Silakan masuk kembali.');
       return;
     }
 
+    final userId = _localStorage.userId;
     if (!silent) {
       isLoadingReport.value = true;
     }
     reportError.value = '';
 
     try {
+      // final report = await _reportRepository.getOwnerPerformanceReport(
+      //   ownerId: user.id,
+      // );
       final report = await _reportRepository.getOwnerPerformanceReport(
-        ownerId: user.id,
+        ownerId: userId,
       );
       profitToday.value = report.profitToday;
       profitWeek.value = report.profitWeek;
@@ -605,6 +618,7 @@ class FieldManagerHomeController extends GetxController {
     recentTransactions.clear();
     reportError.value = (error ?? '').trim();
   }
+
   /// Check if user is logged in and has valid session
   bool get isUserValid {
     return _localStorage.isLoggedIn && _userId > 0;

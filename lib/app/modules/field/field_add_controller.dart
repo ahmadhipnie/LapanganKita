@@ -3,23 +3,25 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
 import '../../data/models/field_model.dart';
 import '../../data/models/place_model.dart';
 import '../../data/repositories/field_repository.dart';
-import '../../data/services/session_service.dart';
+// import '../../data/services/session_service.dart';
 import '../../routes/app_routes.dart';
 import '../navigation/fieldmanager/tabs_controller/fieldmanager_home_controller.dart';
 
 class FieldAddController extends GetxController {
   FieldAddController({
     FieldRepository? repository,
-    SessionService? sessionService,
-  }) : _repository = repository ?? Get.find<FieldRepository>(),
-       _sessionService = sessionService ?? Get.find<SessionService>();
+    // SessionService? sessionService,
+  }) : _repository = repository ?? Get.find<FieldRepository>();
+  //  _sessionService = sessionService ?? Get.find<SessionService>();
 
   final FieldRepository _repository;
-  final SessionService _sessionService;
+  // final SessionService _sessionService;
+  final LocalStorageService _storageService = LocalStorageService.instance;
 
   final formKey = GlobalKey<FormState>();
 
@@ -87,8 +89,8 @@ class FieldAddController extends GetxController {
     final isValid = formKey.currentState?.validate() ?? false;
     if (!isValid) return false;
 
-    final user = _sessionService.rememberedUser;
-    if (user == null) {
+    // final user = _sessionService.rememberedUser;
+    if (!_storageService.isLoggedIn) {
       Get.snackbar(
         'Session expired',
         'Please sign in again to continue.',
@@ -156,6 +158,7 @@ class FieldAddController extends GetxController {
     }
 
     isSubmitting.value = true;
+    final userId = _storageService.userId;
     try {
       final response = await _repository.createField(
         fieldName: nameController.text.trim(),
@@ -168,7 +171,7 @@ class FieldAddController extends GetxController {
         status: 'available',
         maxPerson: maxPerson,
         placeId: place.id,
-        userId: user.id,
+        userId: userId,
       );
 
       final field = response.data;
