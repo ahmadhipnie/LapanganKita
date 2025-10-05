@@ -100,11 +100,11 @@ class LoginController extends GetxController {
       }
 
       final user = response.user!;
-      if (user.isVerified != true) {
-        throw const AuthException(
-          'Akun belum diverifikasi. Silakan cek email Anda.',
-        );
-      }
+      // if (user.isVerified != true) {
+      //   throw const AuthException(
+      //     'Akun belum diverifikasi. Silakan cek email Anda.',
+      //   );
+      // }
 
       currentUser.value = user;
 
@@ -142,11 +142,10 @@ class LoginController extends GetxController {
   String _resolveRoute(String role) {
     switch (role.toLowerCase()) {
       case 'field_owner':
-      case 'field_manager':
         return AppRoutes.FIELD_MANAGER_NAVIGATION;
-      case 'field_admin':
+      case 'admin':
         return AppRoutes.FIELD_ADMIN_NAVIGATION;
-      case 'customer':
+      case 'user':
         return AppRoutes.CUSTOMER_NAVIGATION;
       default:
         return AppRoutes.FIELD_MANAGER_NAVIGATION;

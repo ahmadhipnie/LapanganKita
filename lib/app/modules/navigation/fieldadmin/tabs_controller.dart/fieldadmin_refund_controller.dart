@@ -1,0 +1,373 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
+
+import 'package:lapangan_kita/app/data/models/owner_booking_model.dart';
+import 'package:lapangan_kita/app/data/models/refund_model.dart';
+import 'package:lapangan_kita/app/data/repositories/booking_repository.dart';
+import 'package:lapangan_kita/app/data/repositories/refund_repository.dart';
+
+class FieldadminTransactionController extends GetxController {
+  FieldadminTransactionController({
+    RefundRepository? refundRepository,
+    BookingRepository? bookingRepository,
+  }) : _refundRepository = refundRepository ?? Get.find<RefundRepository>(),
+       _bookingRepository = bookingRepository ?? Get.find<BookingRepository>();
+
+  final RefundRepository _refundRepository;
+  final BookingRepository _bookingRepository;
+
+  final RxList<RefundModel> refunds = <RefundModel>[].obs;
+  final RxList<OwnerBooking> cancelledBookings = <OwnerBooking>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxBool isProcessingRefund = false.obs;
+  final RxString errorMessage = ''.obs;
+  final RxString bookingWarning = ''.obs;
+
+  final RxString filterStatus = 'All'.obs;
+  final RxString searchQuery = ''.obs;
+  final RxList<String> statusOptions = <String>['All'].obs;
+
+  static final NumberFormat _currencyFormatter = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
+
+  static final DateFormat _dateFormatter = DateFormat('dd MMM yyyy', 'id_ID');
+  static final DateFormat _dateTimeFormatter = DateFormat(
+    'dd MMM yyyy, HH:mm',
+    'id_ID',
+  );
+
+  @override
+  void onInit() {
+    super.onInit();
+    _ensureLocaleInitialized().then((_) => fetchRefunds());
+  }
+
+  static Future<void> _ensureLocaleInitialized() async {
+    try {
+      await initializeDateFormatting('id_ID', null);
+    } catch (_) {
+      await initializeDateFormatting();
+    }
+  }
+
+  Future<void> fetchRefunds({bool showLoading = true}) async {
+    if (showLoading) {
+      isLoading.value = true;
+    }
+    errorMessage.value = '';
+    bookingWarning.value = '';
+
+    try {
+      final refundsResult = await _refundRepository.getRefunds();
+      refunds.assignAll(refundsResult);
+
+      final bookingsResult = await _loadCancelledBookings();
+      cancelledBookings.assignAll(bookingsResult);
+
+      _synchronizeStatusOptions(refundsResult, bookingsResult);
+    } on RefundException catch (e) {
+      refunds.clear();
+      cancelledBookings.clear();
+      errorMessage.value = e.message;
+    } catch (_) {
+      refunds.clear();
+      cancelledBookings.clear();
+      errorMessage.value = 'Gagal memuat data refund. Coba lagi nanti.';
+    } finally {
+      if (showLoading) {
+        isLoading.value = false;
+      }
+    }
+  }
+
+  Future<List<OwnerBooking>> _loadCancelledBookings() async {
+    try {
+      final bookings = await _bookingRepository.getBookingsAll();
+
+      return bookings
+          .where(
+            (booking) =>
+                booking.normalizedStatus == OwnerBookingStatus.cancelled,
+          )
+          .toList();
+    } on BookingException catch (e) {
+      bookingWarning.value = e.message;
+      return const <OwnerBooking>[];
+    } catch (_) {
+      bookingWarning.value =
+          'Gagal memuat data booking batal. Coba lagi nanti.';
+      return const <OwnerBooking>[];
+    }
+  }
+
+  void _synchronizeStatusOptions(
+    List<RefundModel> refundItems,
+    List<OwnerBooking> bookingItems,
+  ) {
+    final statuses = <String>{
+      for (final refund in refundItems) refund.statusLabel,
+      for (final booking in bookingItems) booking.normalizedStatus.label,
+    }..removeWhere((status) => status.trim().isEmpty || status == 'Unknown');
+
+    statusOptions
+      ..clear()
+      ..add('All')
+      ..addAll(statuses.toList()..sort());
+
+    if (!statusOptions.contains(filterStatus.value)) {
+      filterStatus.value = 'All';
+    }
+  }
+
+  List<FieldadminRefundItem> get filteredItems {
+    var list = <FieldadminRefundItem>[
+      ...refunds.map(FieldadminRefundItem.fromRefund),
+      ...cancelledBookings.map(FieldadminRefundItem.fromBooking),
+    ];
+
+    if (filterStatus.value != 'All') {
+      final selected = filterStatus.value.toLowerCase();
+      list = list
+          .where((item) => item.statusLabel.toLowerCase() == selected)
+          .toList();
+    }
+
+    final query = searchQuery.value.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      list = list.where((item) => item.matchesQuery(query)).toList();
+    }
+
+    list.sort((a, b) {
+      final priorityA = a.isCancelledBooking ? 0 : 1;
+      final priorityB = b.isCancelledBooking ? 0 : 1;
+      if (priorityA != priorityB) {
+        return priorityA.compareTo(priorityB);
+      }
+      return b.sortDate.compareTo(a.sortDate);
+    });
+    return list;
+  }
+
+  Color statusColor(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized.contains('reject')) return Colors.red;
+    if (normalized.contains('approve') ||
+        normalized.contains('complete') ||
+        normalized.contains('refund')) {
+      return Colors.green;
+    }
+    if (normalized.contains('cancel')) return Colors.orange;
+    return Colors.blueGrey;
+  }
+
+  String formatCurrency(num amount) {
+    return _currencyFormatter.format(amount);
+  }
+
+  String formatDate(DateTime date) {
+    return _dateFormatter.format(date.toLocal());
+  }
+
+  String formatDateTime(DateTime date) {
+    return _dateTimeFormatter.format(date.toLocal());
+  }
+
+  String formatDateRange(DateTime start, DateTime end) {
+    final date = _dateFormatter.format(start.toLocal());
+    final timeFormatter = DateFormat('HH:mm', 'id_ID');
+    final startTime = timeFormatter.format(start.toLocal());
+    final endTime = timeFormatter.format(end.toLocal());
+    return '$date, $startTime - $endTime';
+  }
+
+  Future<void> submitRefund({
+    required FieldadminRefundItem item,
+    required num totalRefund,
+    required String proofPath,
+  }) async {
+    final booking = item.booking;
+    if (booking == null) {
+      Get.snackbar(
+        'Tidak dapat diproses',
+        'Data booking tidak ditemukan.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.shade100,
+        colorText: Colors.orange.shade900,
+      );
+      return;
+    }
+
+    if (isProcessingRefund.value) return;
+
+    try {
+      isProcessingRefund.value = true;
+
+      final result = await _refundRepository.createRefund(
+        bookingId: booking.id,
+        totalRefund: totalRefund,
+        proofFile: File(proofPath),
+      );
+
+      if (Get.isBottomSheetOpen ?? false) {
+        Get.back();
+      }
+
+      await fetchRefunds();
+
+      final successMessage = result.message.isNotEmpty
+          ? result.message
+          : 'Refund booking #${booking.id} berhasil diproses.';
+
+      Get.snackbar(
+        'Berhasil',
+        successMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.shade100,
+        colorText: Colors.green.shade900,
+      );
+    } on RefundException catch (e) {
+      Get.snackbar(
+        'Gagal memproses refund',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
+    } catch (_) {
+      Get.snackbar(
+        'Gagal memproses refund',
+        'Terjadi kesalahan. Silakan coba lagi.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
+    } finally {
+      isProcessingRefund.value = false;
+    }
+  }
+}
+
+enum FieldadminRefundItemType { refund, cancelledBooking }
+
+class FieldadminRefundItem {
+  FieldadminRefundItem._({this.refund, this.booking, required this.type});
+
+  factory FieldadminRefundItem.fromRefund(RefundModel refund) {
+    return FieldadminRefundItem._(
+      refund: refund,
+      type: FieldadminRefundItemType.refund,
+    );
+  }
+
+  factory FieldadminRefundItem.fromBooking(OwnerBooking booking) {
+    return FieldadminRefundItem._(
+      booking: booking,
+      type: FieldadminRefundItemType.cancelledBooking,
+    );
+  }
+
+  final RefundModel? refund;
+  final OwnerBooking? booking;
+  final FieldadminRefundItemType type;
+
+  bool get isRefund => type == FieldadminRefundItemType.refund;
+  bool get isCancelledBooking =>
+      type == FieldadminRefundItemType.cancelledBooking;
+
+  RefundModel get _refund => refund!;
+  OwnerBooking get _booking => booking!;
+
+  String get statusLabel =>
+      isRefund ? _refund.statusLabel : _booking.normalizedStatus.label;
+
+  String get statusRaw => isRefund ? _refund.bookingStatus : _booking.status;
+
+  String get customerLabel {
+    if (isRefund) return _refund.customerLabel;
+    final email = _booking.userEmail.trim();
+    if (email.isEmpty || email == '-') {
+      return _booking.userName;
+    }
+    return '${_booking.userName} ($email)';
+  }
+
+  String get fieldName => isRefund ? _refund.fieldName : _booking.fieldName;
+
+  String get fieldLocation {
+    if (isRefund) return _refund.fieldLocation;
+    if (_booking.placeAddress.trim().isNotEmpty) {
+      return _booking.placeAddress;
+    }
+    if (_booking.placeName.trim().isNotEmpty) {
+      return _booking.placeName;
+    }
+    return '-';
+  }
+
+  int? get refundId => refund?.id;
+
+  int get bookingId => isRefund ? _refund.bookingId : _booking.id;
+
+  DateTime get sortDate => isRefund ? _refund.createdAt : _booking.updatedAt;
+
+  DateTime get bookingCreatedAt =>
+      isRefund ? _refund.bookingCreatedAt : _booking.bookingStart;
+
+  DateTime? get refundCreatedAt =>
+      isRefund ? _refund.createdAt : _booking.updatedAt;
+
+  num get refundAmount => isRefund ? _refund.totalRefund : 0;
+
+  num get bookingTotal =>
+      isRefund ? _refund.bookingTotalPrice : _booking.totalPrice;
+
+  String? get fieldType {
+    final value = isRefund ? _refund.fieldType : _booking.fieldType;
+    if (value.trim().isEmpty || value == '-') {
+      return null;
+    }
+    return value;
+  }
+
+  String? get fieldOwner => isRefund && _refund.fieldOwnerName.trim().isNotEmpty
+      ? _refund.fieldOwnerName
+      : null;
+
+  String? get proofFile =>
+      isRefund &&
+          _refund.filePhoto != null &&
+          _refund.filePhoto!.trim().isNotEmpty
+      ? _refund.filePhoto
+      : null;
+
+  DateTime? get bookingEnd => isRefund ? null : _booking.bookingEnd;
+
+  bool get canProcessRefund => isCancelledBooking;
+
+  bool matchesQuery(String query) {
+    bool contains(String value) => value.toLowerCase().contains(query);
+
+    if (isRefund) {
+      return contains(_refund.userName) ||
+          contains(_refund.userEmail) ||
+          contains(_refund.fieldName) ||
+          contains(_refund.placeName) ||
+          contains('#${_refund.id}'.toLowerCase()) ||
+          contains('#${_refund.bookingId}'.toLowerCase());
+    }
+
+    return contains(_booking.userName) ||
+        contains(_booking.userEmail) ||
+        contains(_booking.fieldName) ||
+        contains(_booking.placeName) ||
+        contains('#${_booking.id}'.toLowerCase()) ||
+        contains(_booking.orderId.toLowerCase());
+  }
+}

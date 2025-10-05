@@ -8,7 +8,7 @@ import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fie
 import 'package:lapangan_kita/app/modules/edit_profile_fieldmanager/edit_profile_fieldmanager_view.dart';
 import 'package:lapangan_kita/app/bindings/edit_profile_fieldmanager_binding.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navigation_view.dart';
-import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_transaction_view.dart';
+import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_refund_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_withdraw_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/fieldmanager_navigation_view.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_tabs_binding.dart';
@@ -166,7 +166,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.FIELD_ADMIN_TRANSACTION,
-      page: () => FieldadminTransactionView(),
+      page: () => const FieldadminRefundView(),
       binding: FieldadminTransactionBinding(),
     ),
   ];

@@ -63,9 +63,9 @@ class FieldManagerBookingController extends GetxController {
     final statusFilter = filterStatus.value;
 
     final relevantStatuses = <OwnerBookingStatus>{
-      OwnerBookingStatus.pending,
-      OwnerBookingStatus.accepted,
-      OwnerBookingStatus.rejected,
+      OwnerBookingStatus.waitingConfirmation,
+      OwnerBookingStatus.approved,
+      OwnerBookingStatus.cancelled,
     };
 
     final list = bookings.where((booking) {
@@ -126,7 +126,7 @@ class FieldManagerBookingController extends GetxController {
     OwnerBookingStatus status,
     DateTime now,
   ) {
-    if (status == OwnerBookingStatus.pending) {
+    if (status == OwnerBookingStatus.waitingConfirmation) {
       return false;
     }
     return booking.bookingEnd.isBefore(now);
@@ -134,11 +134,11 @@ class FieldManagerBookingController extends GetxController {
 
   int _statusPriority(OwnerBookingStatus status) {
     switch (status) {
-      case OwnerBookingStatus.pending:
+      case OwnerBookingStatus.waitingConfirmation:
         return 0;
-      case OwnerBookingStatus.accepted:
+      case OwnerBookingStatus.approved:
         return 1;
-      case OwnerBookingStatus.rejected:
+      case OwnerBookingStatus.cancelled:
         return 2;
       default:
         return 3;
@@ -147,14 +147,14 @@ class FieldManagerBookingController extends GetxController {
 
   Color statusColor(OwnerBookingStatus status) {
     switch (status) {
-      case OwnerBookingStatus.pending:
+      case OwnerBookingStatus.waitingConfirmation:
         return Colors.orange;
-      case OwnerBookingStatus.accepted:
+      case OwnerBookingStatus.approved:
         return Colors.green;
+      case OwnerBookingStatus.cancelled:
+        return Colors.red;
       case OwnerBookingStatus.rejected:
         return Colors.red;
-      case OwnerBookingStatus.cancelled:
-        return Colors.grey;
       case OwnerBookingStatus.completed:
         return Colors.blueGrey;
       case OwnerBookingStatus.unknown:
@@ -181,6 +181,27 @@ class FieldManagerBookingController extends GetxController {
     return currency.format(value);
   }
 
+  Future<String> updateStatusWithNote({
+    required OwnerBooking booking,
+    required OwnerBookingStatus newStatus,
+    required String note,
+  }) async {
+    final rawStatus = _statusToRaw(newStatus);
+    final message = await _bookingRepository.updateBookingStatus(
+      bookingId: booking.id,
+      status: rawStatus,
+      note: note,
+    );
+
+    final index = bookings.indexWhere((item) => item.id == booking.id);
+    if (index != -1) {
+      bookings[index] = bookings[index].copyWith(status: rawStatus, note: note);
+      bookings.refresh();
+    }
+
+    return message;
+  }
+
   void updateStatus(int id, OwnerBookingStatus newStatus) {
     final index = bookings.indexWhere((booking) => booking.id == id);
     if (index == -1) return;
@@ -191,10 +212,10 @@ class FieldManagerBookingController extends GetxController {
 
   String _statusToRaw(OwnerBookingStatus status) {
     switch (status) {
-      case OwnerBookingStatus.pending:
-        return 'pending';
-      case OwnerBookingStatus.accepted:
-        return 'accepted';
+      case OwnerBookingStatus.waitingConfirmation:
+        return 'waiting_confirmation';
+      case OwnerBookingStatus.approved:
+        return 'approved';
       case OwnerBookingStatus.rejected:
         return 'rejected';
       case OwnerBookingStatus.cancelled:

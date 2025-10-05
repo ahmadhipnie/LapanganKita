@@ -1,10 +1,12 @@
 import 'package:get/get.dart';
 
 import '../../../../data/models/field_model.dart';
+import '../../../../data/models/performance_report_model.dart';
 import '../../../../data/models/place_model.dart';
 import '../../../../data/network/api_client.dart';
 import '../../../../data/repositories/field_repository.dart';
 import '../../../../data/repositories/place_repository.dart';
+import '../../../../data/repositories/report_repository.dart';
 import '../../../../data/services/session_service.dart';
 
 class FieldManagerHomeController extends GetxController {
@@ -12,13 +14,16 @@ class FieldManagerHomeController extends GetxController {
     PlaceRepository? placeRepository,
     SessionService? sessionService,
     FieldRepository? fieldRepository,
+    ReportRepository? reportRepository,
   }) : _placeRepository = placeRepository ?? Get.find<PlaceRepository>(),
        _sessionService = sessionService ?? Get.find<SessionService>(),
-       _fieldRepository = fieldRepository ?? Get.find<FieldRepository>();
+       _fieldRepository = fieldRepository ?? Get.find<FieldRepository>(),
+       _reportRepository = reportRepository ?? Get.find<ReportRepository>();
 
   final PlaceRepository _placeRepository;
   final SessionService _sessionService;
   final FieldRepository _fieldRepository;
+  final ReportRepository _reportRepository;
 
   RxList<Map<String, dynamic>> fields = <Map<String, dynamic>>[].obs;
   final RxBool isLoadingFields = false.obs;
@@ -28,6 +33,7 @@ class FieldManagerHomeController extends GetxController {
   final RxList<PlaceModel> places = <PlaceModel>[].obs;
 
   RxInt balance = 0.obs;
+  int _baseBalance = 0;
   RxBool hasPlace = false.obs;
   final Rxn<PlaceModel> place = Rxn<PlaceModel>();
   final RxBool isLoadingPlace = false.obs;
@@ -44,11 +50,14 @@ class FieldManagerHomeController extends GetxController {
   RxInt profitMonth = 0.obs;
 
   // Recent transactions
-  RxList<Map<String, dynamic>> recentTransactions =
-      <Map<String, dynamic>>[].obs;
+  RxList<PerformanceTransaction> recentTransactions =
+      <PerformanceTransaction>[].obs;
 
   // Controls whether to show all transactions or only a few on the home view
   RxBool showAllTransactions = false.obs;
+
+  final RxBool isLoadingReport = false.obs;
+  final RxString reportError = ''.obs;
 
   @override
   void onInit() {
@@ -56,7 +65,11 @@ class FieldManagerHomeController extends GetxController {
     fetchPlacesForOwner();
   }
 
-  void setPlace(PlaceModel? newPlace, {bool syncCollection = true}) {
+  void setPlace(
+    PlaceModel? newPlace, {
+    bool syncCollection = true,
+    bool refreshReport = true,
+  }) {
     final resolvedPhoto = _resolvePhotoUrl(newPlace?.placePhoto);
     final resolvedPlace = newPlace?.copyWith(placePhoto: resolvedPhoto);
 
@@ -64,6 +77,7 @@ class FieldManagerHomeController extends GetxController {
     place.value = resolvedPlace;
     hasPlace.value = resolvedPlace != null;
     balance.value = resolvedPlace?.balance ?? 0;
+    _baseBalance = resolvedPlace?.balance ?? 0;
 
     if (resolvedPlace == null) {
       if (syncCollection) {
@@ -72,6 +86,10 @@ class FieldManagerHomeController extends GetxController {
       fields.clear();
       fieldsError.value = '';
       _lastFetchedPlaceId = null;
+      _baseBalance = 0;
+      if (refreshReport) {
+        _resetPerformanceReport();
+      }
       return;
     }
 
@@ -87,6 +105,9 @@ class FieldManagerHomeController extends GetxController {
 
     if (resolvedPlace.id != previousPlaceId) {
       fetchFieldsForPlace(placeId: resolvedPlace.id);
+    }
+    if (refreshReport) {
+      fetchPerformanceReport(silent: true);
     }
   }
 
@@ -222,6 +243,7 @@ class FieldManagerHomeController extends GetxController {
     if (user == null) {
       setPlace(null);
       placeError.value = 'Sesi berakhir. Silakan masuk kembali.';
+      _resetPerformanceReport(error: 'Unable to identify the current user.');
       return;
     }
 
@@ -236,18 +258,78 @@ class FieldManagerHomeController extends GetxController {
 
       places.assignAll(resolvedPlaces);
       if (resolvedPlaces.isNotEmpty) {
-        setPlace(resolvedPlaces.first, syncCollection: false);
+        setPlace(
+          resolvedPlaces.first,
+          syncCollection: false,
+          refreshReport: false,
+        );
+        await fetchPerformanceReport();
       } else {
-        setPlace(null, syncCollection: false);
+        setPlace(null, syncCollection: false, refreshReport: true);
       }
     } on PlaceException catch (e) {
       placeError.value = e.message;
-      setPlace(null, syncCollection: false);
+      setPlace(null, syncCollection: false, refreshReport: true);
+      _resetPerformanceReport(error: e.message);
     } catch (_) {
       placeError.value = 'Gagal memuat data tempat. Coba lagi nanti.';
-      setPlace(null, syncCollection: false);
+      setPlace(null, syncCollection: false, refreshReport: true);
+      _resetPerformanceReport(
+        error: 'Gagal memuat laporan performa. Coba lagi nanti.',
+      );
     } finally {
       isLoadingPlace.value = false;
     }
+  }
+
+  Future<void> fetchPerformanceReport({bool silent = false}) async {
+    final user = _sessionService.rememberedUser;
+    if (user == null) {
+      _resetPerformanceReport(error: 'Sesi berakhir. Silakan masuk kembali.');
+      return;
+    }
+
+    if (!silent) {
+      isLoadingReport.value = true;
+    }
+    reportError.value = '';
+
+    try {
+      final report = await _reportRepository.getOwnerPerformanceReport(
+        ownerId: user.id,
+      );
+      profitToday.value = report.profitToday;
+      profitWeek.value = report.profitWeek;
+      profitMonth.value = report.profitMonth;
+      recentTransactions.assignAll(report.transactions);
+
+      final totalCompleted = report.transactions.fold<int>(
+        0,
+        (sum, tx) => sum + tx.amount,
+      );
+      final currentPlaceBalance = place.value?.balance ?? _baseBalance;
+      final computedBalance = totalCompleted >= currentPlaceBalance
+          ? totalCompleted
+          : currentPlaceBalance;
+      balance.value = computedBalance;
+    } on ReportException catch (e) {
+      _resetPerformanceReport(error: e.message);
+    } catch (_) {
+      _resetPerformanceReport(
+        error: 'Gagal memuat laporan performa. Coba lagi nanti.',
+      );
+    } finally {
+      if (!silent) {
+        isLoadingReport.value = false;
+      }
+    }
+  }
+
+  void _resetPerformanceReport({String? error}) {
+    profitToday.value = 0;
+    profitWeek.value = 0;
+    profitMonth.value = 0;
+    recentTransactions.clear();
+    reportError.value = (error ?? '').trim();
   }
 }

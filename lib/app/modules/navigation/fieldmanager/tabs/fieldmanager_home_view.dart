@@ -5,6 +5,7 @@ import 'package:lapangan_kita/app/bindings/edit_field_fieldmanager_binding.dart'
 import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fieldmanager_view.dart';
 import 'package:lapangan_kita/app/bindings/fieldmanager_withdraw_binding.dart';
 import 'package:lapangan_kita/app/modules/fieldmanager_withdraw/fieldmanager_withdraw_view.dart';
+import '../../../../data/models/performance_report_model.dart';
 import '../tabs_controller/fieldmanager_home_controller.dart';
 
 class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
@@ -333,12 +334,15 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
       final today = c.profitToday.value;
       final week = c.profitWeek.value;
       final month = c.profitMonth.value;
-      final transactions = c.recentTransactions.toList();
+      final List<PerformanceTransaction> transactions = c.recentTransactions
+          .toList();
       const limit = 3;
       final showAll = c.showAllTransactions.value;
       final visibleTransactions = showAll
           ? transactions
           : transactions.take(limit).toList();
+      final isLoading = c.isLoadingReport.value;
+      final errorMessage = c.reportError.value;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,111 +373,184 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _profitSummaryTile(
-                        label: 'Today',
-                        amount: today,
-                        color: const Color(0xFF2563EB),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _profitSummaryTile(
-                        label: 'This Week',
-                        amount: week,
-                        color: const Color(0xFF10B981),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _profitSummaryTile(
-                        label: 'This Month',
-                        amount: month,
-                        color: const Color(0xFFF59E0B),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Recent Transaction History',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                const SizedBox(height: 12),
-                if (visibleTransactions.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: const Text(
-                      'There are no recorded transactions yet.\nAttract customers by adding schedules and promotions.',
-                      style: TextStyle(color: Colors.black54, fontSize: 13),
-                      textAlign: TextAlign.center,
+            child: isLoading
+                ? const SizedBox(
+                    height: 160,
+                    child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 3),
                     ),
                   )
-                else
-                  Column(
+                : errorMessage.isNotEmpty
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: visibleTransactions.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                        itemBuilder: (_, index) {
-                          final transaction = visibleTransactions[index];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                            title: Text(
-                              transaction['title'] ?? '-',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              transaction['date'] ?? '-',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: Text(
-                              _formatCurrency(
-                                int.tryParse(
-                                      transaction['amount']?.toString() ?? '',
-                                    ) ??
-                                    0,
-                              ),
-                              style: const TextStyle(
+                      Row(
+                        children: const [
+                          Icon(Icons.error_outline, color: Color(0xFFDC2626)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Failed to load performance report',
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF111827),
+                                color: Color(0xFFB91C1C),
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      if (transactions.length > limit)
-                        Align(
-                          alignment: Alignment.center,
-                          child: TextButton(
-                            onPressed: c.showAllTransactions.toggle,
-                            child: Text(showAll ? 'Show Less' : 'Show All'),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        errorMessage,
+                        style: const TextStyle(color: Color(0xFF7F1D1D)),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: () => c.fetchPerformanceReport(),
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('Retry'),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _profitSummaryTile(
+                              label: 'Today',
+                              amount: today,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _profitSummaryTile(
+                              label: 'This Week',
+                              amount: week,
+                              color: const Color(0xFF10B981),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _profitSummaryTile(
+                              label: 'This Month',
+                              amount: month,
+                              color: const Color(0xFFF59E0B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Recent Transaction History',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (visibleTransactions.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF9FAFB),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: const Text(
+                            'There are no recorded transactions yet.\nAttract customers by adding schedules and promotions.',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      else
+                        Column(
+                          children: [
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: visibleTransactions.length,
+                              separatorBuilder: (_, __) => const Divider(
+                                height: 1,
+                                color: Color(0xFFE5E7EB),
+                              ),
+                              itemBuilder: (_, index) {
+                                final transaction = visibleTransactions[index];
+                                final reference = transaction.reference;
+                                final status = transaction.status;
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  dense: true,
+                                  title: Text(
+                                    transaction.title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        transaction.date,
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      if (reference != null &&
+                                          reference.trim().isNotEmpty)
+                                        Text(
+                                          reference,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF6B7280),
+                                          ),
+                                        ),
+                                      if (status != null &&
+                                          status.trim().isNotEmpty)
+                                        Text(
+                                          status,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF9CA3AF),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  trailing: Text(
+                                    _formatCurrency(transaction.amount),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF111827),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            if (transactions.length > limit)
+                              Align(
+                                alignment: Alignment.center,
+                                child: TextButton(
+                                  onPressed: c.showAllTransactions.toggle,
+                                  child: Text(
+                                    showAll ? 'Show Less' : 'Show All',
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                     ],
                   ),
-              ],
-            ),
           ),
         ],
       );

@@ -1,6 +1,6 @@
 enum OwnerBookingStatus {
-  pending,
-  accepted,
+  waitingConfirmation,
+  approved,
   rejected,
   cancelled,
   completed,
@@ -9,10 +9,10 @@ enum OwnerBookingStatus {
   static OwnerBookingStatus fromRaw(String? raw) {
     final normalized = raw?.toLowerCase().trim();
     switch (normalized) {
-      case 'pending':
-        return OwnerBookingStatus.pending;
-      case 'accepted':
-        return OwnerBookingStatus.accepted;
+      case 'waiting_confirmation':
+        return OwnerBookingStatus.waitingConfirmation;
+      case 'approved':
+        return OwnerBookingStatus.approved;
       case 'rejected':
         return OwnerBookingStatus.rejected;
       case 'cancelled':
@@ -26,10 +26,11 @@ enum OwnerBookingStatus {
 
   String get label {
     switch (this) {
-      case OwnerBookingStatus.pending:
-        return 'Pending';
-      case OwnerBookingStatus.accepted:
-        return 'Accepted';
+      case OwnerBookingStatus.waitingConfirmation:
+        return 'Waiting Confirmation';
+
+      case OwnerBookingStatus.approved:
+        return 'Approved';
       case OwnerBookingStatus.rejected:
         return 'Rejected';
       case OwnerBookingStatus.cancelled:
@@ -220,7 +221,7 @@ class OwnerBooking {
     );
   }
 
-  OwnerBooking copyWith({String? status}) {
+  OwnerBooking copyWith({String? status, String? note}) {
     return OwnerBooking(
       id: id,
       bookingStart: bookingStart,
@@ -228,7 +229,7 @@ class OwnerBooking {
       orderId: orderId,
       snapToken: snapToken,
       totalPrice: totalPrice,
-      note: note,
+      note: note ?? this.note,
       status: status ?? this.status,
       fieldId: fieldId,
       userId: userId,
