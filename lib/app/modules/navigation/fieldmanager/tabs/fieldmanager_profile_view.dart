@@ -9,8 +9,14 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
 
   @override
   Widget build(BuildContext context) {
-    final c = controller;
     return Scaffold(
+      appBar: AppBar(
+        centerTitle: false,
+        title: const Text(
+          'Profile',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
       backgroundColor: AppColors.neutralColor,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -19,13 +25,6 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 24),
-                const Text(
-                  'Profile',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                // Profile Card
                 Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -40,10 +39,11 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
                           () => CircleAvatar(
                             radius: 32,
                             backgroundColor: Colors.grey[300],
-                            backgroundImage: c.avatarUrl.value.isNotEmpty
-                                ? NetworkImage(c.avatarUrl.value)
+                            backgroundImage:
+                                controller.avatarUrl.value.isNotEmpty
+                                ? NetworkImage(controller.avatarUrl.value)
                                 : null,
-                            child: c.avatarUrl.value.isEmpty
+                            child: controller.avatarUrl.value.isEmpty
                                 ? const Icon(
                                     Icons.person,
                                     size: 40,
@@ -59,7 +59,7 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
                             children: [
                               Obx(
                                 () => Text(
-                                  c.name.value,
+                                  controller.name.value,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
@@ -70,7 +70,7 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
                               const SizedBox(height: 4),
                               Obx(
                                 () => Text(
-                                  c.email.value,
+                                  controller.email.value,
                                   style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 14,
@@ -93,6 +93,7 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
                 const SizedBox(height: 24),
                 // Account & Security
                 Card(
+                  color: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -155,6 +156,7 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
                 const SizedBox(height: 24),
                 // More Section
                 Card(
+                  color: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

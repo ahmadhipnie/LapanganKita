@@ -1,7 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_controller.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../data/network/api_client.dart';
 
 class CustomerBookingDetailView
     extends GetView<CustomerBookingDetailController> {
@@ -18,35 +22,7 @@ class CustomerBookingDetailView
             backgroundColor: AppColors.neutralColor,
             expandedHeight: 300,
             flexibleSpace: FlexibleSpaceBar(
-              background: Image.network(
-                controller.court.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, url, error) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    color: Colors.grey[300],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Maybe image is not found or crash ><',
-                        style: TextStyle(
-                          color: Colors.red[300],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              background: _buildCachedImage(controller.court.imageUrl),
             ),
             pinned: true,
           ),
@@ -75,6 +51,50 @@ class CustomerBookingDetailView
         ],
       ),
       bottomSheet: _buildBottomBar(),
+    );
+  }
+
+  Widget _buildCachedImage(String imagePath) {
+    final ApiClient apiClient = Get.find<ApiClient>();
+    final imageUrl = apiClient.getImageUrl(imagePath);
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      imageBuilder: (context, imageProvider) => Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+        ),
+      ),
+      placeholder: (context, url) => Container(
+        color: Colors.grey[300],
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      errorWidget: (context, url, error) => Container(
+        color: Colors.grey[200],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sports_soccer, size: 60, color: Colors.grey[400]),
+            const SizedBox(height: 12),
+            Text(
+              'Court Image',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Image not available',
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
     );
   }
 
@@ -431,25 +451,82 @@ class CustomerBookingDetailView
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey),
             borderRadius: BorderRadius.circular(8),
+            // Tambahkan boxShadow untuk efek depth
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.map, size: 50, color: Colors.grey),
-                const SizedBox(height: 8),
-                Text(
-                  '${controller.court.latitude.toStringAsFixed(4)}, '
-                  '${controller.court.longitude.toStringAsFixed(4)}',
-                  style: const TextStyle(color: Colors.grey),
+          child: Stack(
+            children: [
+              // Background Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  "assets/images/map_bg.jpg",
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  // Tambahkan error builder untuk handling jika image tidak ditemukan
+                  errorBuilder: (context, error, stackTrace) =>
+                      Container(color: Colors.grey[200]),
                 ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('Open in Maps'),
+              ),
+              // Overlay gelap untuk kontras teks yang lebih baik
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.black.withOpacity(0.3), // Overlay transparan
                 ),
-              ],
-            ),
+              ),
+              // Content di atas background
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.map, size: 50, color: Colors.white),
+                    const SizedBox(height: 12),
+                    // Tampilkan alamat singkat
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        controller.court.location,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _openMaps,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        // Tambahkan shadow pada button untuk kontras
+                        elevation: 4,
+                        // Tambahkan padding yang lebih nyaman
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text(
+                        'Open in Google Maps',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -526,14 +603,41 @@ class CustomerBookingDetailView
     }
   }
 
-  // void _openMaps() async {
-  //   final url = 'https://www.google.com/maps/search/?api=1&query='
-  //       '${controller.court.latitude},${controller.court.longitude}';
+  Future<void> _openMaps() async {
+    // Pastikan controller.court.mapsUrl berisi link Google Maps
+    // Contoh: "https://maps.app.goo.gl/N9VYw66ZFU7BD6cg8"
+    final String mapsUrl = controller.court.mapsUrl;
 
-  //   // if (await canLaunchUrl(Uri.parse(url))) {
-  //   //   await launchUrl(Uri.parse(url));
-  //   } else {
-  //     Get.snackbar('Error', 'Could not open maps');
-  //   }
-  // }
+    if (mapsUrl.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Link Google Maps tidak tersedia',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final Uri mapsUri = Uri.parse(mapsUrl);
+
+    try {
+      if (await canLaunchUrl(mapsUri)) {
+        await launchUrl(mapsUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Tidak dapat membuka Google Maps',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Terjadi kesalahan: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
 }

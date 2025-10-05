@@ -1,31 +1,77 @@
 import 'package:get/get.dart';
-
-import 'package:lapangan_kita/app/data/services/session_service.dart';
-import 'package:lapangan_kita/app/modules/login/login_controller.dart';
-import 'package:lapangan_kita/app/routes/app_routes.dart';
+import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
 class FieldManagerProfileController extends GetxController {
-  FieldManagerProfileController({SessionService? sessionService})
-    : _sessionService = sessionService ?? Get.find<SessionService>();
+  final LocalStorageService _localStorage = LocalStorageService.instance;
 
-  final SessionService _sessionService;
-  RxBool faceIdEnabled = false.obs;
-  // Dummy user data
-  final RxString name = 'Budi sakti'.obs;
-  final RxString email = 'budi@gmail.com'.obs;
-  final RxString avatarUrl = ''.obs;
+  // User data
+  final name = ''.obs;
+  final email = ''.obs;
+  final avatarUrl = ''.obs;
+  final isLoading = false.obs;
 
-  void toggleFaceId(bool value) {
-    faceIdEnabled.value = value;
+  @override
+  void onInit() {
+    super.onInit();
+    _loadUserData();
   }
 
-  // Add more profile logic here as needed
+  void _loadUserData() {
+    // Safe check: pastikan LocalStorageService sudah terinisialisasi
+    if (_localStorage.getUserData() == null) {
+      print('No user data found in LocalStorage');
+      return;
+    }
+
+    try {
+      final userData = _localStorage.getUserData();
+      if (userData != null) {
+        name.value = userData['name']?.toString() ?? 'Field Manager';
+        email.value = userData['email']?.toString() ?? 'email@example.com';
+        avatarUrl.value = userData['avatar_url']?.toString() ?? '';
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      // Set default values if error occurs
+      name.value = 'Field Manager';
+      email.value = 'email@example.com';
+      avatarUrl.value = '';
+    }
+  }
+
+  void reloadUserData() {
+    _loadUserData();
+  }
 
   Future<void> logout() async {
-    await _sessionService.clearRememberedUser();
-    if (Get.isRegistered<LoginController>()) {
-      Get.find<LoginController>().resetForm();
+    isLoading.value = true;
+
+    try {
+      // Clear local storage data
+      await _localStorage.clearUserData();
+
+      // Navigate to login page
+      Get.offAllNamed('/login');
+
+      Get.snackbar(
+        'Success',
+        'You have been logged out',
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      print('Error during logout: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to logout. Please try again.',
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading.value = false;
     }
-    await Get.offAllNamed(AppRoutes.LOGIN);
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
   }
 }

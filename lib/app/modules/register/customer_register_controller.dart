@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import 'package:lapangan_kita/app/data/models/register_request.dart';
 import 'package:lapangan_kita/app/data/repositories/auth_repository.dart';
-import 'package:lapangan_kita/app/modules/login/login_controller.dart';
 import 'package:lapangan_kita/app/routes/app_routes.dart';
 
 class CustomerRegisterController extends GetxController {
@@ -146,9 +145,9 @@ class CustomerRegisterController extends GetxController {
           arguments: {'email': request.email, 'role': request.role},
         );
       } else {
-        if (Get.isRegistered<LoginController>()) {
-          Get.find<LoginController>().resetForm();
-        }
+        // if (Get.isRegistered<LoginController>()) {
+        //   Get.find<LoginController>().resetForm();
+        // }
         await Get.offAllNamed(AppRoutes.LOGIN);
       }
     } on AuthException catch (e) {

@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/data/network/api_client.dart';
 import 'package:lapangan_kita/app/data/repositories/auth_repository.dart';
-import 'package:lapangan_kita/app/data/services/session_service.dart';
+// import 'package:lapangan_kita/app/data/services/session_service.dart';
 
 import '../modules/login/login_controller.dart';
 
@@ -18,7 +18,7 @@ class LoginBinding extends Bindings {
     Get.lazyPut<LoginController>(
       () => LoginController(
         authRepository: Get.find<AuthRepository>(),
-        sessionService: Get.find<SessionService>(),
+        // sessionService: Get.find<SessionService>(),
       ),
     );
   }

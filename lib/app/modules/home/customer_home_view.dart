@@ -90,83 +90,88 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
       items: controller.imgList.asMap().entries.map((entry) {
         final index = entry.key;
         final imageUrl = entry.value;
-        return Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[300],
-                      child: const Icon(
-                        Icons.error,
-                        color: Colors.red,
-                        size: 40,
-                      ),
-                    );
-                  },
+        return GestureDetector(
+          onTap: () {
+            controller.showImageDialog(index, Get.context!);
+          },
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-
-              // Gradient Overlay
-              Container(
-                decoration: BoxDecoration(
+              ],
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Image
+                ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ],
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.error,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
 
-              // Title
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Text(
-                  controller.titleList[index],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                // Gradient Overlay
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.2),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+
+                // Title
+                Positioned(
+                  bottom: 16,
+                  left: 16,
+                  right: 16,
+                  child: Text(
+                    controller.titleList[index],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),
@@ -193,51 +198,64 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
   }
 
   Widget _buildPopularCategories() {
-    // Jangan gunakan Obx di sini jika tidak ada observable variable
-    final bookingController = Get.find<CustomerBookingController>();
+    return Obx(() {
+      final bookingController = Get.find<CustomerBookingController>();
 
-    // Tampilkan loading jika data courts masih kosong
-    if (bookingController.courts.isEmpty) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+      // Tampilkan loading jika data courts masih loading
+      if (bookingController.isLoading.value &&
+          bookingController.allCourts.isEmpty) {
+        return const SizedBox(
+          height: 140,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
 
-    final categories = controller.popularCategoriesWithIcon;
-
-    if (categories.isEmpty) {
-      return const SizedBox();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      // Tampilkan empty state jika tidak ada data
+      if (bookingController.allCourts.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.all(16),
           child: Text(
-            'Popular Categories',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            'No courts available',
+            style: TextStyle(color: Colors.grey),
           ),
-        ),
-        SizedBox(
-          height: 116,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: categories.map((category) {
-              return _buildCategoryIconCard(
-                category['name'],
-                category['count'],
-                category['icon'],
-                category['color'],
-              );
-            }).toList(),
+        );
+      }
+
+      final categories = controller.popularCategoriesWithIcon;
+
+      if (categories.isEmpty) {
+        return const SizedBox();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Text(
+              'Popular Categories',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
+          SizedBox(
+            height: 116,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: categories.map((category) {
+                return _buildCategoryIconCard(
+                  category['name'],
+                  category['count'],
+                  category['icon'],
+                  category['color'],
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      );
+    });
   }
 
   // Widget untuk Card dengan Icon

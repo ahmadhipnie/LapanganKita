@@ -20,7 +20,7 @@ import 'package:lapangan_kita/app/bindings/customer_community_binding.dart';
 import 'package:lapangan_kita/app/bindings/customer_history_binding.dart';
 import 'package:lapangan_kita/app/bindings/customer_home_binding.dart';
 import 'package:lapangan_kita/app/bindings/customer_navigation_binding.dart';
-import 'package:lapangan_kita/app/bindings/customer_profile.dart';
+import 'package:lapangan_kita/app/bindings/customer_profile_binding.dart';
 import 'package:lapangan_kita/app/bindings/onboarding_binding.dart';
 import 'package:lapangan_kita/app/bindings/otp_binding.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_view.dart';
@@ -146,7 +146,7 @@ class AppPages {
     // Edit Field (Field Manager)
     GetPage(
       name: AppRoutes.EDIT_FIELD_FIELDMANAGER,
-      page: () => const EditFieldFieldmanagerView(),
+      page: () => EditFieldFieldmanagerView(),
       binding: EditFieldFieldmanagerBinding(),
     ),
     GetPage(

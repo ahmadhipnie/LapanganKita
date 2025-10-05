@@ -1,7 +1,5 @@
 import 'dart:io';
-
 import 'package:dio/dio.dart';
-
 import '../models/field_create_response.dart';
 import '../models/field_delete_response.dart';
 import '../models/field_model.dart';
@@ -148,11 +146,6 @@ class FieldRepository {
     }
   }
 
-  String _extractFileName(String path) {
-    final segments = path.split(RegExp(r'[\\/]'));
-    return segments.isNotEmpty ? segments.last : 'field-photo.jpg';
-  }
-
   Future<List<FieldModel>> getFieldsByPlace({required int placeId}) async {
     try {
       final response = await _apiClient.raw.get<Map<String, dynamic>>(
@@ -187,6 +180,42 @@ class FieldRepository {
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
       throw FieldException(message ?? 'Gagal mengambil data field.');
+    } on FormatException catch (e) {
+      throw FieldException(e.message);
+    }
+  }
+
+  Future<FieldModel> getFieldDetail(int fieldId) async {
+    try {
+      final response = await _apiClient.raw.get<Map<String, dynamic>>(
+        'fields/$fieldId',
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        final data = body['data'];
+        if (data is Map<String, dynamic>) {
+          return FieldModel.fromJson(data);
+        }
+        throw const FieldException('Data field tidak valid.');
+      }
+
+      throw FieldException(
+        _extractMessage(body) ??
+            'Gagal mengambil detail field (status $statusCode).',
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const FieldException(
+          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+        );
+      }
+      final message = _extractMessage(e.response?.data) ?? e.message;
+      throw FieldException(message ?? 'Gagal mengambil detail field.');
     } on FormatException catch (e) {
       throw FieldException(e.message);
     }
@@ -229,6 +258,11 @@ class FieldRepository {
     } on FormatException catch (e) {
       throw FieldException(e.message);
     }
+  }
+
+  String _extractFileName(String path) {
+    final segments = path.split(RegExp(r'[\\/]'));
+    return segments.isNotEmpty ? segments.last : 'field-photo.jpg';
   }
 
   String? _extractMessage(dynamic data) {

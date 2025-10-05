@@ -5,9 +5,14 @@ import 'package:lapangan_kita/app/modules/history/customer_history_controller.da
 import 'package:lapangan_kita/app/modules/home/customer_home_controller.dart';
 import 'package:lapangan_kita/app/modules/navigation/customer_navigation_controller.dart';
 
+import '../data/network/api_client.dart';
+import '../data/repositories/court_repositoy.dart';
+
 class CustomerNavigationBinding extends Bindings {
   @override
   void dependencies() {
+    Get.lazyPut<ApiClient>(() => ApiClient(), fenix: true);
+    Get.lazyPut<CourtRepository>(() => CourtRepository(Get.find<ApiClient>()));
     Get.lazyPut<CustomerCommunityController>(
       () => CustomerCommunityController(),
     );
