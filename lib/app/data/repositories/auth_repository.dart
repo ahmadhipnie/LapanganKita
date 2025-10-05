@@ -5,6 +5,7 @@ import '../models/edit_profile_response.dart';
 import '../models/login_response.dart';
 import '../models/register_request.dart';
 import '../models/register_response.dart';
+import '../models/otp_verify_response.dart';
 import '../network/api_client.dart';
 
 class AuthRepository {
@@ -43,6 +44,46 @@ class AuthRepository {
 
       final message =
           _extractMessage(e.response?.data) ?? e.message ?? 'Login failed.';
+      throw AuthException(message);
+    } on FormatException catch (e) {
+      throw AuthException(e.message);
+    }
+  }
+
+  Future<OtpVerifyResponse> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        'users/verify-otp',
+        data: {'email': email, 'otp': otp},
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        return OtpVerifyResponse.fromJson(body);
+      }
+
+      final message =
+          _extractMessage(body) ??
+          'OTP verification failed with status $statusCode';
+      throw AuthException(message);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const AuthException(
+          'Unable to reach the server. Check connection.',
+        );
+      }
+
+      final message =
+          _extractMessage(e.response?.data) ??
+          e.message ??
+          'OTP verification failed.';
       throw AuthException(message);
     } on FormatException catch (e) {
       throw AuthException(e.message);

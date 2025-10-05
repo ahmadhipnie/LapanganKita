@@ -44,6 +44,8 @@ import '../bindings/fieldManager_register_binding.dart';
 
 import '../modules/place/place_form_view.dart';
 import '../bindings/place_form_binding.dart';
+import '../modules/place_edit/place_edit_view.dart';
+import '../bindings/place_edit_binding.dart';
 import '../modules/field/field_add_view.dart';
 import '../bindings/field_add_binding.dart';
 
@@ -95,6 +97,11 @@ class AppPages {
       name: AppRoutes.PLACE_FORM,
       page: () => PlaceFormView(),
       binding: PlaceFormBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.PLACE_EDIT,
+      page: () => const PlaceEditView(),
+      binding: PlaceEditBinding(),
     ),
     GetPage(
       name: AppRoutes.FIELD_ADD,

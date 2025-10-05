@@ -10,6 +10,7 @@ abstract class AppRoutes {
   static const FIELD_MANAGER_REGISTER = '/register/field_manager';
   static const OTP = '/otp';
   static const PLACE_FORM = '/place/form';
+  static const PLACE_EDIT = '/place/edit';
   static const FIELD_ADD = '/field/add';
   static const CUSTOMER_NAVIGATION = '/customer/navigation';
   static const CUSTOMER_HOME = '/customer/home';

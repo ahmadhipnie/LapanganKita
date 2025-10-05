@@ -1,9 +1,17 @@
 import 'package:get/get.dart';
 import '../../../../services/local_storage_service.dart';
 
+import 'package:lapangan_kita/app/data/services/session_service.dart';
+import 'package:lapangan_kita/app/modules/login/login_controller.dart';
+import 'package:lapangan_kita/app/routes/app_routes.dart';
+
 class FieldManagerProfileController extends GetxController {
   final LocalStorageService _localStorage = LocalStorageService();
 
+//   FieldManagerProfileController({SessionService? sessionService})
+//     : _sessionService = sessionService ?? Get.find<SessionService>();
+
+//   final SessionService _sessionService;
   RxBool faceIdEnabled = false.obs;
 
   // User data from shared preferences
@@ -50,5 +58,13 @@ class FieldManagerProfileController extends GetxController {
   Future<void> logout() async {
     await _localStorage.clearUserData();
     Get.offAllNamed('/login');
-  }
+  // Add more profile logic here as needed
+
+//   Future<void> logout() async {
+//     await _sessionService.clearRememberedUser();
+//     if (Get.isRegistered<LoginController>()) {
+//       Get.find<LoginController>().resetForm();
+//     }
+//     await Get.offAllNamed(AppRoutes.LOGIN);
+//   }
 }

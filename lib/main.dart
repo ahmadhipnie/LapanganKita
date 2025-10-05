@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
+import 'package:lapangan_kita/app/data/services/session_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
@@ -28,6 +29,9 @@ void main() async {
       userRole: userRole,
     ),
   );
+//   Get.put<SessionService>(SessionService(prefs), permanent: true);
+
+//   runApp(MyApp(hasCompletedOnboarding: hasCompletedOnboarding));
 
   FlutterNativeSplash.remove();
 }

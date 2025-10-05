@@ -139,9 +139,9 @@ class FieldManagerProfileView extends GetView<FieldManagerProfileController> {
                                     backgroundColor: Colors.red,
                                     foregroundColor: Colors.white,
                                   ),
-                                  onPressed: () {
+                                  onPressed: () async {
                                     Navigator.of(ctx).pop();
-                                    controller.logout();
+                                    await controller.logout();
                                   },
                                   child: const Text('Log out'),
                                 ),
