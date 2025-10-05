@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../data/models/owner_booking_model.dart';
+import '../../../../data/repositories/booking_repository.dart';
 import '../tabs_controller/fieldmanager_booking_controller.dart';
 
 class FieldManagerBookingView extends GetView<FieldManagerBookingController> {
@@ -86,37 +87,102 @@ class FieldManagerBookingView extends GetView<FieldManagerBookingController> {
     OwnerBooking booking,
     OwnerBookingStatus action,
   ) {
-    final isAccept = action == OwnerBookingStatus.accepted;
+    final isApprove = action == OwnerBookingStatus.approved;
+    final formKey = GlobalKey<FormState>();
+    final noteController = TextEditingController();
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isAccept ? 'Accept Booking' : 'Reject Booking'),
-        content: Text(
-          isAccept
-              ? 'Are you sure you want to accept this booking?'
-              : 'Are you sure you want to reject this booking?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              c.updateStatus(booking.id, action);
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isAccept ? 'Booking accepted' : 'Booking rejected',
-                  ),
+      builder: (ctx) {
+        bool isSubmitting = false;
+        return StatefulBuilder(
+          builder: (dialogContext, setState) => AlertDialog(
+            title: Text(isApprove ? 'Accept Booking' : 'Reject Booking'),
+            content: Form(
+              key: formKey,
+              child: TextFormField(
+                controller: noteController,
+                decoration: const InputDecoration(
+                  labelText: 'Note',
+                  hintText: 'Add a note for this action',
                 ),
-              );
-            },
-            child: Text(isAccept ? 'Accept' : 'Reject'),
+                maxLines: 4,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please provide a note.';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        final isValid =
+                            formKey.currentState?.validate() ?? false;
+                        if (!isValid) return;
+
+                        setState(() => isSubmitting = true);
+                        final note = noteController.text.trim();
+
+                        try {
+                          final message = await c.updateStatusWithNote(
+                            booking: booking,
+                            newStatus: action,
+                            note: note,
+                          );
+
+                          if (!dialogContext.mounted) return;
+                          Navigator.of(dialogContext).pop();
+
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                message.isNotEmpty
+                                    ? message
+                                    : isApprove
+                                    ? 'Booking accepted.'
+                                    : 'Booking rejected.',
+                              ),
+                            ),
+                          );
+                        } on BookingException catch (e) {
+                          if (!dialogContext.mounted) return;
+                          setState(() => isSubmitting = false);
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(e.message)));
+                        } catch (_) {
+                          if (!dialogContext.mounted) return;
+                          setState(() => isSubmitting = false);
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to update booking status.'),
+                            ),
+                          );
+                        }
+                      },
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(isApprove ? 'Accept' : 'Reject'),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -176,16 +242,17 @@ class FieldManagerBookingView extends GetView<FieldManagerBookingController> {
                           items: const [
                             DropdownMenuItem(value: 'All', child: Text('All')),
                             DropdownMenuItem(
-                              value: 'Pending',
-                              child: Text('Pending'),
+                              value: 'Waiting Confirmation',
+                              child: Text('Waiting Confirmation'),
+                            ),
+
+                            DropdownMenuItem(
+                              value: 'Approved',
+                              child: Text('Approved'),
                             ),
                             DropdownMenuItem(
-                              value: 'Accepted',
-                              child: Text('Accepted'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Rejected',
-                              child: Text('Rejected'),
+                              value: 'Cancelled',
+                              child: Text('Cancelled'),
                             ),
                           ],
                           onChanged: (val) =>
@@ -304,7 +371,8 @@ class FieldManagerBookingView extends GetView<FieldManagerBookingController> {
                                 'Total: ${c.formatPrice(booking.totalPrice)}',
                               ),
                               const SizedBox(height: 12),
-                              if (status == OwnerBookingStatus.pending)
+                              if (status ==
+                                  OwnerBookingStatus.waitingConfirmation)
                                 Row(
                                   children: [
                                     Expanded(
@@ -316,7 +384,7 @@ class FieldManagerBookingView extends GetView<FieldManagerBookingController> {
                                           context,
                                           c,
                                           booking,
-                                          OwnerBookingStatus.accepted,
+                                          OwnerBookingStatus.approved,
                                         ),
                                         child: const Text(
                                           'Accept',
@@ -334,7 +402,7 @@ class FieldManagerBookingView extends GetView<FieldManagerBookingController> {
                                           context,
                                           c,
                                           booking,
-                                          OwnerBookingStatus.rejected,
+                                          OwnerBookingStatus.cancelled,
                                         ),
                                         child: const Text(
                                           'Reject',

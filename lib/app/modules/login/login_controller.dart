@@ -282,6 +282,12 @@ class LoginController extends GetxController {
         );
       }
 
+//        final user = response.user!;
+      // if (user.isVerified != true) {
+      //   throw const AuthException(
+      //     'Akun belum diverifikasi. Silakan cek email Anda.',
+      //   );
+      // }
       // Save user data to local storage
       await _localStorage.saveUserData(response.user!.toJson());
 
@@ -330,7 +336,6 @@ class LoginController extends GetxController {
   String _resolveRoute(String role) {
     switch (role.toLowerCase()) {
       case 'field_owner':
-      case 'field_manager':
         return AppRoutes.FIELD_MANAGER_NAVIGATION;
       case 'admin':
         return AppRoutes.FIELD_ADMIN_NAVIGATION;

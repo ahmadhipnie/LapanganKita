@@ -136,16 +136,12 @@ class FieldManagerHistoryView extends GetView<FieldManagerHistoryController> {
                           items: const [
                             DropdownMenuItem(value: 'All', child: Text('All')),
                             DropdownMenuItem(
-                              value: 'Pending',
-                              child: Text('Pending'),
+                              value: 'Waiting Confirmation',
+                              child: Text('Waiting Confirmation'),
                             ),
                             DropdownMenuItem(
-                              value: 'Accepted',
-                              child: Text('Accepted'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Rejected',
-                              child: Text('Rejected'),
+                              value: 'Approved',
+                              child: Text('Approved'),
                             ),
                             DropdownMenuItem(
                               value: 'Cancelled',

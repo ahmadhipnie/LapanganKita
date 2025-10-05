@@ -236,14 +236,14 @@ class FieldManagerHistoryController extends GetxController {
 
   Color statusColor(OwnerBookingStatus status) {
     switch (status) {
-      case OwnerBookingStatus.pending:
+      case OwnerBookingStatus.waitingConfirmation:
         return Colors.orange;
-      case OwnerBookingStatus.accepted:
+      case OwnerBookingStatus.approved:
         return Colors.green;
+      case OwnerBookingStatus.cancelled:
+        return Colors.red;
       case OwnerBookingStatus.rejected:
         return Colors.red;
-      case OwnerBookingStatus.cancelled:
-        return Colors.grey;
       case OwnerBookingStatus.completed:
         return Colors.blueGrey;
       case OwnerBookingStatus.unknown:
