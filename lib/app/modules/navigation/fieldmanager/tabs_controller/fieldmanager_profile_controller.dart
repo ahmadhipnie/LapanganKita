@@ -69,9 +69,4 @@ class FieldManagerProfileController extends GetxController {
       isLoading.value = false;
     }
   }
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }
