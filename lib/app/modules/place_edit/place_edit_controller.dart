@@ -9,7 +9,8 @@ import '../../data/models/place_model.dart';
 import '../../data/network/api_client.dart';
 import '../../data/repositories/add_on_repository.dart';
 import '../../data/repositories/place_repository.dart';
-import '../../data/services/session_service.dart';
+// import '../../data/services/session_service.dart';
+import '../../services/local_storage_service.dart';
 import '../navigation/fieldmanager/tabs_controller/fieldmanager_home_controller.dart';
 
 class AddOnActionResult {
@@ -22,15 +23,16 @@ class AddOnActionResult {
 class PlaceEditController extends GetxController {
   PlaceEditController({
     required PlaceRepository repository,
-    required SessionService sessionService,
+    // required SessionService sessionService,
     required AddOnRepository addOnRepository,
   }) : _repository = repository,
-       _sessionService = sessionService,
+       //  _sessionService = sessionService,
        _addOnRepository = addOnRepository;
 
   final PlaceRepository _repository;
-  final SessionService _sessionService;
+  // final SessionService _sessionService;
   final AddOnRepository _addOnRepository;
+  final LocalStorageService _storageService = LocalStorageService.instance;
 
   final formKey = GlobalKey<FormState>();
 
@@ -146,10 +148,11 @@ class PlaceEditController extends GetxController {
       );
     }
 
-    final user = _sessionService.rememberedUser;
+    // final user = _sessionService.rememberedUser;
     final placeId = _originalPlace?.id;
+    final userId = _storageService.userId;
 
-    if (user == null) {
+    if (!_storageService.isLoggedIn) {
       return const AddOnActionResult(
         success: false,
         message: 'Sesi berakhir. Silakan masuk kembali.',
@@ -173,7 +176,7 @@ class PlaceEditController extends GetxController {
           stock: stock,
           description: description,
           placeId: placeId,
-          userId: user.id,
+          userId: userId,
           photo: photo,
         ),
       );
@@ -212,8 +215,8 @@ class PlaceEditController extends GetxController {
     final isValid = formKey.currentState?.validate() ?? false;
     if (!isValid) return false;
 
-    final user = _sessionService.rememberedUser;
-    if (user == null) {
+    // final user = _sessionService.rememberedUser;
+    if (!_storageService.isLoggedIn) {
       Get.snackbar(
         'Sesi berakhir',
         'Silakan masuk kembali untuk melanjutkan.',
@@ -228,13 +231,14 @@ class PlaceEditController extends GetxController {
       provinceController.text.trim(),
     ].where((element) => element.isNotEmpty).join(', ');
 
+    final userId = _storageService.userId;
     isSubmitting.value = true;
     try {
       final response = await _repository.updatePlace(
         placeId: _originalPlace!.id,
         placeName: nameController.text.trim(),
         address: address,
-        userId: user.id,
+        userId: userId,
         placePhoto: selectedPhoto.value,
       );
 
@@ -283,8 +287,8 @@ class PlaceEditController extends GetxController {
     required int stock,
     required String description,
   }) async {
-    final user = _sessionService.rememberedUser;
-    if (user == null) {
+    // final user = _sessionService.rememberedUser;
+    if (!_storageService.isLoggedIn) {
       Get.snackbar(
         'Sesi berakhir',
         'Silakan masuk kembali untuk melanjutkan.',
@@ -295,6 +299,7 @@ class PlaceEditController extends GetxController {
 
     addOnSubmitting[addOn.id] = true;
     addOnSubmitting.refresh();
+    final userId = _storageService.userId;
 
     try {
       final response = await _addOnRepository.updateAddOn(
@@ -304,7 +309,7 @@ class PlaceEditController extends GetxController {
           pricePerHour: pricePerHour,
           stock: stock,
           description: description,
-          userId: user.id,
+          userId: userId,
           placeId: _originalPlace?.id,
         ),
       );
@@ -365,8 +370,8 @@ class PlaceEditController extends GetxController {
   }
 
   Future<bool> deleteAddOn(AddOnModel addOn) async {
-    final user = _sessionService.rememberedUser;
-    if (user == null) {
+    // final user = _sessionService.rememberedUser;
+    if (!_storageService.isLoggedIn) {
       Get.snackbar(
         'Sesi berakhir',
         'Silakan masuk kembali untuk melanjutkan.',
@@ -381,11 +386,12 @@ class PlaceEditController extends GetxController {
 
     addOnDeleting[addOn.id] = true;
     addOnDeleting.refresh();
+    final userId = _storageService.userId;
 
     try {
       final response = await _addOnRepository.deleteAddOn(
         addOnId: addOn.id,
-        userId: user.id,
+        userId: userId,
       );
 
       final successMessage = response.message.isNotEmpty
