@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
-import 'package:lapangan_kita/app/data/services/session_service.dart';
+// import 'package:lapangan_kita/app/data/services/session_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
@@ -15,9 +15,9 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final hasCompletedOnboarding = prefs.getBool("onboarding") ?? false;
 
-  await LocalStorageService().init();
+  await LocalStorageService.init();
 
-  final localStorage = LocalStorageService();
+  final localStorage = LocalStorageService.instance;
   await Future.delayed(const Duration(milliseconds: 100));
   final isLoggedIn = localStorage.isLoggedIn;
   final userRole = localStorage.getUserRole();
@@ -29,9 +29,9 @@ void main() async {
       userRole: userRole,
     ),
   );
-//   Get.put<SessionService>(SessionService(prefs), permanent: true);
+  // Get.put<SessionService>(SessionService(prefs), permanent: true);
 
-//   runApp(MyApp(hasCompletedOnboarding: hasCompletedOnboarding));
+  //   runApp(MyApp(hasCompletedOnboarding: hasCompletedOnboarding));
 
   FlutterNativeSplash.remove();
 }
@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
       case 'field_owner':
       case 'field_manager':
         return AppRoutes.FIELD_MANAGER_NAVIGATION;
-      case 'field_admin':
+      case 'admin':
         return AppRoutes.FIELD_ADMIN_NAVIGATION;
       case 'user':
         return AppRoutes.CUSTOMER_NAVIGATION;

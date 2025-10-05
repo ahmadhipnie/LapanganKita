@@ -9,7 +9,8 @@ import '../navigation/fieldmanager/tabs_controller/fieldmanager_profile_controll
 import '../profile/customer_profile_controller.dart';
 
 class EditProfileFieldmanagerController extends GetxController {
-  final LocalStorageService _localStorage = LocalStorageService();
+  // ✅ PERBAIKAN: Gunakan .instance bukan constructor
+  final LocalStorageService _localStorage = LocalStorageService.instance;
   final AuthRepository _authRepository = Get.find<AuthRepository>();
 
   final nameController = TextEditingController();
@@ -37,13 +38,19 @@ class EditProfileFieldmanagerController extends GetxController {
   }
 
   void _loadUserData() {
+    // ✅ PERBAIKAN: Safe check sebelum akses data
+    if (_localStorage.getUserData() == null) {
+      _setDefaultValues();
+      return;
+    }
+
     final userData = _localStorage.getUserData();
     if (userData != null) {
       try {
         currentUser.value = UserModel.fromJson(userData);
         _populateFormFields(userData);
       } catch (e) {
-        // print('Error loading user data: $e');
+        print('Error loading user data: $e');
         _setDefaultValues();
       }
     } else {
@@ -127,7 +134,6 @@ class EditProfileFieldmanagerController extends GetxController {
     addressController.text = addressParts.join(', ');
   }
 
-  // ✅ UPDATE METHOD SAVE PROFILE DENGAN API
   Future<void> saveProfile() async {
     // Update the address before saving
     updateAddress();
@@ -161,7 +167,7 @@ class EditProfileFieldmanagerController extends GetxController {
       );
 
       if (response.success && response.user != null) {
-        // Update local storage dengan data terbaru dari API
+        // ✅ PERBAIKAN: Safe save user data
         await _localStorage.saveUserData(response.user!.toJson());
         currentUser.value = response.user;
 
@@ -185,21 +191,18 @@ class EditProfileFieldmanagerController extends GetxController {
 
   void _refreshProfileController() {
     try {
-      // Cari instance FieldManagerProfileController yang aktif
       final fieldAdminProfileController =
           Get.find<FieldManagerProfileController>();
       fieldAdminProfileController.reloadUserData();
     } catch (e) {
-      // Jika controller belum ada, tidak perlu dilakukan apa-apa
-      // print('Profile controller not found: $e');
+      print('FieldManager Profile controller not found: $e');
     }
 
     try {
       final customerProfileController = Get.find<CustomerProfileController>();
       customerProfileController.reloadUserData();
     } catch (e) {
-      // Jika controller belum ada, tidak perlu dilakukan apa-apa
-      // print('Customer Profile controller not found: $e');
+      print('Customer Profile controller not found: $e');
     }
   }
 
@@ -214,12 +217,11 @@ class EditProfileFieldmanagerController extends GetxController {
         return '$year-$month-$day';
       }
     } catch (e) {
-      // print('Error formatting date: $e');
+      print('Error formatting date: $e');
     }
     return null;
   }
 
-  // Format date for display
   String formatDate(DateTime? date) {
     if (date == null) return '';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';

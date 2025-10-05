@@ -4,7 +4,7 @@ import 'package:lapangan_kita/app/data/network/api_client.dart';
 import 'package:lapangan_kita/app/data/repositories/booking_repository.dart';
 import 'package:lapangan_kita/app/data/repositories/field_repository.dart';
 import 'package:lapangan_kita/app/data/repositories/place_repository.dart';
-import 'package:lapangan_kita/app/data/services/session_service.dart';
+// import 'package:lapangan_kita/app/data/services/session_service.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_booking_controller.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_history_controller.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_home_controller.dart';
@@ -41,7 +41,7 @@ class FieldManagerTabsBinding extends Bindings {
     Get.lazyPut<FieldManagerHomeController>(
       () => FieldManagerHomeController(
         placeRepository: Get.find<PlaceRepository>(),
-        sessionService: Get.find<SessionService>(),
+        // sessionService: Get.find<SessionService>(),
       ),
       fenix: true,
     );
