@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:lapangan_kita/app/data/models/user_model.dart';
 import 'package:lapangan_kita/app/data/repositories/auth_repository.dart';
-import 'package:lapangan_kita/app/modules/login/login_controller.dart';
+// import 'package:lapangan_kita/app/modules/login/login_controller.dart';
 import 'package:lapangan_kita/app/routes/app_routes.dart';
 
 class OTPController extends GetxController {
@@ -133,9 +133,9 @@ class OTPController extends GetxController {
       verifiedUser.value = response.user;
       clearAllFields();
 
-      if (Get.isRegistered<LoginController>()) {
-        Get.find<LoginController>().resetForm();
-      }
+      // if (Get.isRegistered<LoginController>()) {
+      //   Get.find<LoginController>().resetForm();
+      // }
 
       await Get.offAllNamed(AppRoutes.LOGIN);
     } catch (e) {

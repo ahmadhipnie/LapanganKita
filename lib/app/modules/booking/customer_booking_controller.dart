@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/customer/booking/court_model.dart';
-import '../../data/repositories/field_repository.dart';
+import '../../data/repositories/court_repositoy.dart';
 
 class CustomerBookingController extends GetxController {
   final CourtRepository _courtRepository = Get.find<CourtRepository>();

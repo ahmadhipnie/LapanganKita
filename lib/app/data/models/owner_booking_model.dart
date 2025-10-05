@@ -10,8 +10,10 @@ enum OwnerBookingStatus {
     final normalized = raw?.toLowerCase().trim();
     switch (normalized) {
       case 'pending':
+      case 'waiting_confirmation': 
         return OwnerBookingStatus.pending;
       case 'accepted':
+      case 'approved': 
         return OwnerBookingStatus.accepted;
       case 'rejected':
         return OwnerBookingStatus.rejected;

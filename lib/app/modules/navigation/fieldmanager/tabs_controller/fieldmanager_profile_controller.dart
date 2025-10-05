@@ -1,70 +1,77 @@
 import 'package:get/get.dart';
-import '../../../../services/local_storage_service.dart';
-
-import 'package:lapangan_kita/app/data/services/session_service.dart';
-import 'package:lapangan_kita/app/modules/login/login_controller.dart';
-import 'package:lapangan_kita/app/routes/app_routes.dart';
+import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
 class FieldManagerProfileController extends GetxController {
-  final LocalStorageService _localStorage = LocalStorageService();
+  final LocalStorageService _localStorage = LocalStorageService.instance;
 
-//   FieldManagerProfileController({SessionService? sessionService})
-//     : _sessionService = sessionService ?? Get.find<SessionService>();
-
-//   final SessionService _sessionService;
-  RxBool faceIdEnabled = false.obs;
-
-  // User data from shared preferences
-  final RxString name = ''.obs;
-  final RxString email = ''.obs;
-  final RxString avatarUrl = ''.obs;
+  // User data
+  final name = ''.obs;
+  final email = ''.obs;
+  final avatarUrl = ''.obs;
+  final isLoading = false.obs;
 
   @override
   void onInit() {
-    _loadUserData();
     super.onInit();
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    // Safe check: pastikan LocalStorageService sudah terinisialisasi
+    if (_localStorage.getUserData() == null) {
+      print('No user data found in LocalStorage');
+      return;
+    }
+
+    try {
+      final userData = _localStorage.getUserData();
+      if (userData != null) {
+        name.value = userData['name']?.toString() ?? 'Field Manager';
+        email.value = userData['email']?.toString() ?? 'email@example.com';
+        avatarUrl.value = userData['avatar_url']?.toString() ?? '';
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      // Set default values if error occurs
+      name.value = 'Field Manager';
+      email.value = 'email@example.com';
+      avatarUrl.value = '';
+    }
   }
 
   void reloadUserData() {
     _loadUserData();
   }
 
-  void _loadUserData() {
-    final userData = _localStorage.getUserData();
-    if (userData != null) {
-      try {
-        name.value = userData['name']?.toString() ?? '';
-        email.value = userData['email']?.toString() ?? '';
+  Future<void> logout() async {
+    isLoading.value = true;
 
-        // You can set avatar URL if available in your API
-        avatarUrl.value = userData['avatar_url']?.toString() ?? '';
-      } catch (e) {
-        // Fallback to default values
-        name.value = 'User';
-        email.value = 'user@example.com';
-      }
-    } else {
-      // If no user data found, set default values
-      name.value = 'User';
-      email.value = 'user@example.com';
+    try {
+      // Clear local storage data
+      await _localStorage.clearUserData();
+
+      // Navigate to login page
+      Get.offAllNamed('/login');
+
+      Get.snackbar(
+        'Success',
+        'You have been logged out',
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      print('Error during logout: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to logout. Please try again.',
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  void toggleFaceId(bool value) {
-    faceIdEnabled.value = value;
+  @override
+  void onClose() {
+    super.onClose();
   }
-
-  // Logout function
-  Future<void> logout() async {
-    await _localStorage.clearUserData();
-    Get.offAllNamed('/login');
-  // Add more profile logic here as needed
-
-//   Future<void> logout() async {
-//     await _sessionService.clearRememberedUser();
-//     if (Get.isRegistered<LoginController>()) {
-//       Get.find<LoginController>().resetForm();
-//     }
-//     await Get.offAllNamed(AppRoutes.LOGIN);
-//   }
 }
