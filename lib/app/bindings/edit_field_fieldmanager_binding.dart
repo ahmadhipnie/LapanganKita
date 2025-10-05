@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 
 import '../data/network/api_client.dart';
 import '../data/repositories/field_repository.dart';
-import '../data/services/session_service.dart';
 import '../modules/edit_field_fieldmanager/edit_field_fieldmanager_controller.dart';
 
 class EditFieldFieldmanagerBinding extends Bindings {
@@ -17,7 +16,6 @@ class EditFieldFieldmanagerBinding extends Bindings {
     Get.lazyPut<EditFieldFieldmanagerController>(
       () => EditFieldFieldmanagerController(
         repository: Get.find<FieldRepository>(),
-        sessionService: Get.find<SessionService>(),
       ),
     );
   }
