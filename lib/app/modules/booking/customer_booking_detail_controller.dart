@@ -1,17 +1,25 @@
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
-import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
 
 import '../../data/models/customer/booking/court_model.dart';
+import '../../data/models/add_on_model.dart';
+import '../../data/repositories/add_on_repository.dart';
+// import '../../services/local_storage_service.dart';
 
 class CustomerBookingDetailController extends GetxController {
   final Court court = Get.arguments;
+  // final LocalStorageService _storageService = LocalStorageService.instance;
+  final AddOnRepository _addOnRepository = Get.find<AddOnRepository>();
+
   final Rx<DateTime> selectedDate = DateTime.now().obs;
   final RxString selectedDuration = '1'.obs;
   final RxString selectedStartTime = ''.obs;
   final RxDouble totalPrice = 0.0.obs;
   final RxMap<String, int> selectedEquipment = <String, int>{}.obs;
+  final RxMap<String, int> selectedAddOns = <String, int>{}.obs;
+  final RxList<AddOnModel> availableAddOns = <AddOnModel>[].obs;
+  final RxBool isLoadingAddOns = false.obs;
+  final RxBool isRefreshingAddOns = false.obs;
 
   final List<String> durationOptions = ['1', '2', '3', '4', '5', '6'];
   final List<String> availableTimes = [
@@ -38,9 +46,35 @@ class CustomerBookingDetailController extends GetxController {
   void onInit() {
     super.onInit();
     _calculateTotalPrice();
+    _loadAddOns();
     ever(selectedDuration, (_) {
       selectedStartTime.value = ''; // Reset waktu saat durasi berubah
     });
+  }
+
+  Future<void> _loadAddOns() async {
+    isLoadingAddOns.value = true;
+    try {
+      final addOns = await _addOnRepository.getAddOnsByPlace(
+        placeId: court.placeId,
+      );
+      availableAddOns.assignAll(addOns);
+    } catch (e) {
+      print('Error loading add-ons: $e');
+    } finally {
+      isLoadingAddOns.value = false;
+    }
+  }
+
+  Future<void> refreshAddOns() async {
+    if (court.placeId == 0) return;
+
+    isRefreshingAddOns.value = true;
+    try {
+      await _loadAddOns();
+    } finally {
+      isRefreshingAddOns.value = false;
+    }
   }
 
   void selectDate(DateTime date) {
@@ -115,6 +149,7 @@ class CustomerBookingDetailController extends GetxController {
     return !busyTimes.contains(time);
   }
 
+  // Equipment methods
   void incrementEquipment(String equipmentName) {
     final currentCount = selectedEquipment[equipmentName] ?? 0;
     selectedEquipment[equipmentName] = currentCount + 1;
@@ -129,9 +164,29 @@ class CustomerBookingDetailController extends GetxController {
     }
   }
 
+  // Add-on methods
+  void incrementAddOn(String addOnName) {
+    final currentCount = selectedAddOns[addOnName] ?? 0;
+    selectedAddOns[addOnName] = currentCount + 1;
+    _calculateTotalPrice();
+  }
+
+  void decrementAddOn(String addOnName) {
+    final currentCount = selectedAddOns[addOnName] ?? 0;
+    if (currentCount > 0) {
+      selectedAddOns[addOnName] = currentCount - 1;
+      _calculateTotalPrice();
+    }
+  }
+
+  int getAddOnQuantity(String addOnName) {
+    return selectedAddOns[addOnName] ?? 0;
+  }
+
   void _calculateTotalPrice() {
     double basePrice = court.price * int.parse(selectedDuration.value);
 
+    // Calculate equipment price
     double equipmentPrice = 0;
     selectedEquipment.forEach((name, quantity) {
       final equipment = court.equipment.firstWhere(
@@ -141,10 +196,27 @@ class CustomerBookingDetailController extends GetxController {
       equipmentPrice += equipment.price * quantity;
     });
 
-    totalPrice.value = basePrice + equipmentPrice;
+    // Calculate add-on price
+    double addOnPrice = 0;
+    selectedAddOns.forEach((name, quantity) {
+      if (quantity > 0) {
+        final addOn = availableAddOns.firstWhere(
+          (a) => a.name == name,
+          orElse: () => AddOnModel(
+            id: 0,
+            name: name,
+            pricePerHour: 0,
+            stock: 0,
+            description: '',
+          ),
+        );
+        addOnPrice += addOn.pricePerHour * quantity;
+      }
+    });
+
+    totalPrice.value = basePrice + equipmentPrice + addOnPrice;
   }
 
-  // Di method bookNow() pada CustomerBookingDetailController
   void bookNow() {
     if (selectedStartTime.value.isEmpty) {
       Get.snackbar('Error', 'Please select start time');
@@ -153,50 +225,66 @@ class CustomerBookingDetailController extends GetxController {
 
     try {
       // Generate booking ID
-      final bookingId = 'BK${DateTime.now().millisecondsSinceEpoch}';
+      // final bookingId = 'BK${DateTime.now().millisecondsSinceEpoch}';
 
       // Hitung total equipment price
-      double equipmentTotal = 0;
       selectedEquipment.forEach((name, quantity) {
         if (quantity > 0) {
-          final equipment = court.equipment.firstWhere(
+          court.equipment.firstWhere(
             (e) => e.name == name,
             orElse: () => Equipment(name: name, price: 0, description: ''),
           );
-          equipmentTotal += equipment.price * quantity;
         }
       });
 
-      // Buat booking history
-      final bookingHistory = BookingHistory(
-        id: bookingId,
-        courtName: court.name,
-        courtImageUrl: court.imageUrl,
-        location: court.location,
-        date: selectedDate.value,
-        startTime: selectedStartTime.value,
-        duration: int.parse(selectedDuration.value),
-        totalAmount: totalPrice.value,
-        status: 'pending',
-        equipment: Map.from(selectedEquipment),
-        courtPrice: court.price,
-        equipmentTotal: equipmentTotal,
-        types: court.types,
-      );
+      // Hitung total add-on price
+      selectedAddOns.forEach((name, quantity) {
+        if (quantity > 0) {
+          availableAddOns.firstWhere(
+            (a) => a.name == name,
+            orElse: () => AddOnModel(
+              id: 0,
+              name: name,
+              pricePerHour: 0,
+              stock: 0,
+              description: '',
+            ),
+          );
+        }
+      });
 
-      // Simpan ke history controller - gunakan Get.find dengan tag jika perlu
-      final historyController = Get.find<CustomerHistoryController>();
-      historyController.addBooking(bookingHistory);
+      // // Buat booking history
+      // final bookingHistory = BookingHistory(
+      //   id: court.id,
+      //   courtName: court.name,
+      //   courtImageUrl: court.imageUrl,
+      //   location: court.location,
+      //   date: selectedDate.value,
+      //   startTime: selectedStartTime.value,
+      //   duration: int.parse(selectedDuration.value),
+      //   totalAmount: totalPrice.value,
+      //   status: 'pending',
+      //   equipment: Map.from(selectedEquipment),
+      //   addOns: Map.from(selectedAddOns), // Tambahkan add-ons
+      //   courtPrice: court.price,
+      //   equipmentTotal: equipmentTotal,
+      //   addOnTotal: addOnTotal, // Tambahkan add-on total
+      //   types: court.types,
+      // );
+
+      // Simpan ke history controller
+      // final historyController = Get.find<CustomerHistoryController>();
+      // historyController.addBooking(bookingHistory);
 
       // Redirect ke halaman history
       Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 3});
 
-      Get.snackbar(
-        'Success',
-        'Booking created successfully. ID: $bookingId',
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 3),
-      );
+      // Get.snackbar(
+      //   'Success',
+      //   'Booking created successfully. ID: $bookingId',
+      //   snackPosition: SnackPosition.TOP,
+      //   duration: const Duration(seconds: 3),
+      // );
     } catch (e) {
       Get.snackbar(
         'Error',

@@ -1,10 +1,15 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_controller.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../data/models/add_on_model.dart';
+// import '../../data/models/customer/booking/court_model.dart';
 import '../../data/network/api_client.dart';
 
 class CustomerBookingDetailView
@@ -15,40 +20,55 @@ class CustomerBookingDetailView
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.neutralColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            surfaceTintColor: AppColors.secondary,
-            backgroundColor: AppColors.neutralColor,
-            expandedHeight: 300,
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildCachedImage(controller.court.imageUrl),
-            ),
-            pinned: true,
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 16),
-                  _buildDescription(),
-                  const SizedBox(height: 16),
-                  _buildOpeningHours(),
-                  const SizedBox(height: 16),
-                  _buildDateTimeSelection(),
-                  const SizedBox(height: 16),
-                  _buildEquipmentRental(),
-                  const SizedBox(height: 16),
-                  _buildLocationMap(),
-                  const SizedBox(height: 80), // Space untuk bottom bar
-                ],
+      appBar: AppBar(
+        title: Text(
+          controller.court.placeName,
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+        ),
+        titleSpacing: 0,
+        backgroundColor: AppColors.neutralColor, // atau warna lain dari theme
+        elevation: 2,
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await controller.refreshAddOns();
+        },
+        color: AppColors.primary,
+        backgroundColor: AppColors.neutralColor,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image section
+              SizedBox(
+                height: 350, // atur tinggi sesuai kebutuhan
+                width: double.infinity,
+                child: _buildCachedImage(controller.court.imageUrl),
               ),
-            ),
+              // Content section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 16),
+                    _buildDescription(),
+                    const SizedBox(height: 16),
+                    _buildOpeningHours(),
+                    const SizedBox(height: 16),
+                    _buildDateTimeSelection(),
+                    const SizedBox(height: 16),
+                    _buildAddOnsSection(),
+                    const SizedBox(height: 16),
+                    _buildLocationMap(),
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       bottomSheet: _buildBottomBar(),
     );
@@ -388,52 +408,297 @@ class CustomerBookingDetailView
     );
   }
 
-  Widget _buildEquipmentRental() {
+  Widget _buildAddOnItem(
+    AddOnModel addOn,
+    int quantity,
+    bool isOutOfStock,
+    int availableStock,
+  ) {
+    final ApiClient apiClient = Get.find<ApiClient>();
+    final String imageUrl = addOn.photo != null && addOn.photo!.isNotEmpty
+        ? apiClient.getImageUrl(addOn.photo!)
+        : '';
+
+    return Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Section
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[100],
+              ),
+              child: imageUrl.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.local_offer,
+                            size: 28,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.local_offer,
+                            size: 28,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.local_offer, size: 28, color: Colors.grey),
+            ),
+            const SizedBox(width: 12),
+
+            // Content Section
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    addOn.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    addOn.description,
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isOutOfStock
+                              ? Colors.red[50]
+                              : Colors.green[50],
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isOutOfStock ? Colors.red : Colors.green,
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          isOutOfStock
+                              ? 'Out of stock'
+                              : 'Stock: $availableStock',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isOutOfStock ? Colors.red : Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Price and Quantity Section
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  controller.formatRupiah(addOn.pricePerHour.toDouble()),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove, size: 18),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: quantity <= 0
+                            ? null
+                            : () => controller.decrementAddOn(addOn.name),
+                        color: quantity <= 0 ? Colors.grey : AppColors.primary,
+                      ),
+                      Container(
+                        width: 30,
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$quantity',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add, size: 18),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: isOutOfStock || availableStock <= 0
+                            ? null
+                            : () => controller.incrementAddOn(addOn.name),
+                        color: (isOutOfStock || availableStock <= 0)
+                            ? Colors.grey
+                            : AppColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddOnsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Equipment Rental',
+          'Additional Services',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 8),
-        ...controller.court.equipment.map((equipment) {
+        Obx(() {
+          if (controller.court.placeId == 0) {
+            return _buildPlaceIdNotAvailable();
+          }
+
+          if (controller.isLoadingAddOns.value) {
+            return _buildLoadingAddOns();
+          }
+
+          if (controller.availableAddOns.isEmpty) {
+            return _buildNoAddOnsAvailable();
+          }
+
+          return _buildAddOnsList();
+        }),
+      ],
+    );
+  }
+
+  Widget _buildPlaceIdNotAvailable() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(
+        'Additional services not available for this court',
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.grey,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingAddOns() {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(Get.context!).size.height * 0.3,
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 8),
+            Text(
+              'Loading additional services...',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoAddOnsAvailable() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.local_offer_outlined, size: 48, color: Colors.grey),
+            SizedBox(height: 8),
+            Text(
+              'No additional services available',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddOnsList() {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(Get.context!).size.height * 0.4,
+      ),
+      child: ListView.builder(
+        physics: const ClampingScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: controller.availableAddOns.length,
+        itemBuilder: (context, index) {
+          final addOn = controller.availableAddOns[index];
           return Obx(() {
-            final quantity = controller.selectedEquipment[equipment.name] ?? 0;
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(equipment.name),
-              subtitle: Text(
-                equipment.description,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    controller.formatRupiah(equipment.price),
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed: quantity > 0
-                        ? () => controller.decrementEquipment(equipment.name)
-                        : null,
-                  ),
-                  Text('$quantity', style: TextStyle(fontSize: 16)),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () =>
-                        controller.incrementEquipment(equipment.name),
-                  ),
-                ],
+            final quantity = controller.getAddOnQuantity(addOn.name);
+            final isOutOfStock = addOn.stock <= 0;
+            final availableStock = addOn.stock - quantity;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: _buildAddOnItem(
+                addOn,
+                quantity,
+                isOutOfStock,
+                availableStock,
               ),
             );
           });
-        }),
-      ],
+        },
+      ),
     );
   }
 

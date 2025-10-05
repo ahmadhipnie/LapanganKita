@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
 import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
-import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
+import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
 
 class CustomerHomeController extends GetxController {
   // Tambahkan controller untuk history
