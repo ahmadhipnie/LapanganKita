@@ -166,14 +166,14 @@ class FieldManagerHistoryController extends GetxController {
     //     // ✅ PERBAIKAN: Gunakan LocalStorageService untuk mendapatkan user data
     if (!_localStorage.isLoggedIn) {
       bookings.clear();
-      errorMessage.value = 'Sesi berakhir. Silakan masuk kembali.';
+      errorMessage.value = 'Session expired. Please log back in.';
       return;
     }
 
     final userId = _localStorage.userId;
     if (userId == 0) {
       bookings.clear();
-      errorMessage.value = 'ID pengguna tidak valid.';
+      errorMessage.value = 'Invalid user ID.';
       return;
     }
 
@@ -191,7 +191,7 @@ class FieldManagerHistoryController extends GetxController {
     } catch (_) {
       bookings.clear();
       errorMessage.value =
-          'Gagal memuat riwayat booking. Silakan coba lagi nanti.';
+          'Failed to load booking history. Please try again later.';
     } finally {
       isLoading.value = false;
     }

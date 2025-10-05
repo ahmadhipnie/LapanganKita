@@ -69,9 +69,17 @@ class FieldadminTransactionController extends GetxController {
       refunds.assignAll(refundsResult);
 
       final bookingsResult = await _loadCancelledBookings();
-      cancelledBookings.assignAll(bookingsResult);
+      final refundedBookingIds = refundsResult
+          .map((refund) => refund.bookingId)
+          .whereType<int>()
+          .toSet();
+      final filteredBookings = bookingsResult
+          .where((booking) => !refundedBookingIds.contains(booking.id))
+          .toList();
 
-      _synchronizeStatusOptions(refundsResult, bookingsResult);
+      cancelledBookings.assignAll(filteredBookings);
+
+      _synchronizeStatusOptions(refundsResult, filteredBookings);
     } on RefundException catch (e) {
       refunds.clear();
       cancelledBookings.clear();
@@ -79,7 +87,8 @@ class FieldadminTransactionController extends GetxController {
     } catch (_) {
       refunds.clear();
       cancelledBookings.clear();
-      errorMessage.value = 'Gagal memuat data refund. Coba lagi nanti.';
+      errorMessage.value =
+          'Failed to load refund data. Please try again later.';
     } finally {
       if (showLoading) {
         isLoading.value = false;
@@ -102,7 +111,7 @@ class FieldadminTransactionController extends GetxController {
       return const <OwnerBooking>[];
     } catch (_) {
       bookingWarning.value =
-          'Gagal memuat data booking batal. Coba lagi nanti.';
+          'Failed to load booking data. Canceled booking. Please try again later.';
       return const <OwnerBooking>[];
     }
   }
@@ -195,8 +204,8 @@ class FieldadminTransactionController extends GetxController {
     final booking = item.booking;
     if (booking == null) {
       Get.snackbar(
-        'Tidak dapat diproses',
-        'Data booking tidak ditemukan.',
+        'Cannot be processed',
+        'Booking data not found.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange.shade100,
         colorText: Colors.orange.shade900,
@@ -223,10 +232,10 @@ class FieldadminTransactionController extends GetxController {
 
       final successMessage = result.message.isNotEmpty
           ? result.message
-          : 'Refund booking #${booking.id} berhasil diproses.';
+          : 'Refund booking #${booking.id} has been successfully processed.';
 
       Get.snackbar(
-        'Berhasil',
+        'Success',
         successMessage,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green.shade100,
@@ -234,7 +243,7 @@ class FieldadminTransactionController extends GetxController {
       );
     } on RefundException catch (e) {
       Get.snackbar(
-        'Gagal memproses refund',
+        'Failed to process refund',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
@@ -242,8 +251,8 @@ class FieldadminTransactionController extends GetxController {
       );
     } catch (_) {
       Get.snackbar(
-        'Gagal memproses refund',
-        'Terjadi kesalahan. Silakan coba lagi.',
+        'Failed to process refund',
+        'An error occurred. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,

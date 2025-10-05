@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
@@ -19,7 +20,7 @@ class FieldManagerProfileController extends GetxController {
   void _loadUserData() {
     // Safe check: pastikan LocalStorageService sudah terinisialisasi
     if (_localStorage.getUserData() == null) {
-      print('No user data found in LocalStorage');
+      debugPrint('No user data found in LocalStorage');
       return;
     }
 
@@ -31,7 +32,7 @@ class FieldManagerProfileController extends GetxController {
         avatarUrl.value = userData['avatar_url']?.toString() ?? '';
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      debugPrint('Error loading user data: $e');
       // Set default values if error occurs
       name.value = 'Field Manager';
       email.value = 'email@example.com';
@@ -59,7 +60,7 @@ class FieldManagerProfileController extends GetxController {
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
-      print('Error during logout: $e');
+      debugPrint('Error during logout: $e');
       Get.snackbar(
         'Error',
         'Failed to logout. Please try again.',

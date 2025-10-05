@@ -469,7 +469,7 @@ class FieldManagerHomeController extends GetxController {
       fieldsError.value = e.message;
       fields.clear();
     } catch (_) {
-      fieldsError.value = 'Gagal memuat data field. Coba lagi nanti.';
+      fieldsError.value = 'Failed to load field data. Please try again later.';
       fields.clear();
     } finally {
       isLoadingFields.value = false;
@@ -492,7 +492,7 @@ class FieldManagerHomeController extends GetxController {
     if (currentPlaceId == null) {
       Get.snackbar(
         'Register place first',
-        'Silakan daftar tempat sebelum memuat data lapangan.',
+        'Please register a place before loading field data.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -505,7 +505,7 @@ class FieldManagerHomeController extends GetxController {
     // ✅ PERBAIKAN: Gunakan LocalStorageService untuk mendapatkan user data
     if (!_localStorage.isLoggedIn) {
       setPlace(null);
-      placeError.value = 'Sesi berakhir. Silakan masuk kembali.';
+      placeError.value = 'Session expired. Please log in again.';
       _resetPerformanceReport(error: 'Unable to identify the current user.');
       return;
     }
@@ -513,14 +513,14 @@ class FieldManagerHomeController extends GetxController {
     final userData = _localStorage.getUserData();
     if (userData == null) {
       setPlace(null);
-      placeError.value = 'Data pengguna tidak ditemukan.';
+      placeError.value = 'User data not found.';
       return;
     }
 
     final userId = _userId;
     if (userId == 0) {
       setPlace(null);
-      placeError.value = 'ID pengguna tidak valid.';
+      placeError.value = 'Invalid user ID.';
       return;
     }
 
@@ -549,10 +549,10 @@ class FieldManagerHomeController extends GetxController {
       setPlace(null, syncCollection: false, refreshReport: true);
       _resetPerformanceReport(error: e.message);
     } catch (_) {
-      placeError.value = 'Gagal memuat data tempat. Coba lagi nanti.';
+      placeError.value = 'Failed to load place data. Please try again later.';
       setPlace(null, syncCollection: false, refreshReport: true);
       _resetPerformanceReport(
-        error: 'Gagal memuat laporan performa. Coba lagi nanti.',
+        error: 'Failed to load performance report. Please try again later.',
       );
     } finally {
       isLoadingPlace.value = false;
@@ -567,7 +567,7 @@ class FieldManagerHomeController extends GetxController {
     // }
 
     if (!_localStorage.isLoggedIn) {
-      _resetPerformanceReport(error: 'Sesi berakhir. Silakan masuk kembali.');
+      _resetPerformanceReport(error: 'Session expired. Please log in again.');
       return;
     }
 
@@ -589,20 +589,32 @@ class FieldManagerHomeController extends GetxController {
       profitMonth.value = report.profitMonth;
       recentTransactions.assignAll(report.transactions);
 
-      final totalCompleted = report.transactions.fold<int>(
-        0,
-        (sum, tx) => sum + tx.amount,
-      );
-      final currentPlaceBalance = place.value?.balance ?? _baseBalance;
-      final computedBalance = totalCompleted >= currentPlaceBalance
-          ? totalCompleted
-          : currentPlaceBalance;
-      balance.value = computedBalance;
+      final backendBalance = report.currentBalance;
+      if (backendBalance != null) {
+        balance.value = backendBalance;
+        _baseBalance = backendBalance;
+
+        final existingPlace = place.value;
+        if (existingPlace != null) {
+          final updatedPlace = existingPlace.copyWith(balance: backendBalance);
+          place.value = updatedPlace;
+
+          final index = places.indexWhere((p) => p.id == updatedPlace.id);
+          if (index >= 0) {
+            places[index] = updatedPlace;
+            places.refresh();
+          }
+        }
+      } else {
+        final fallbackBalance = place.value?.balance ?? _baseBalance;
+        balance.value = fallbackBalance;
+        _baseBalance = fallbackBalance;
+      }
     } on ReportException catch (e) {
       _resetPerformanceReport(error: e.message);
     } catch (_) {
       _resetPerformanceReport(
-        error: 'Gagal memuat laporan performa. Coba lagi nanti.',
+        error: 'Failed to load performance report. Please try again later.',
       );
     } finally {
       if (!silent) {

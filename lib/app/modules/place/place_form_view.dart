@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../navigation/fieldmanager/tabs_controller/fieldmanager_home_controller.dart';
 import '../../routes/app_routes.dart';
 import 'place_form_controller.dart';
 
@@ -350,7 +351,28 @@ class PlaceFormView extends GetView<PlaceFormController> {
                                             final success = await controller
                                                 .submit();
                                             if (success) {
-                                              Get.toNamed(AppRoutes.FIELD_ADD);
+                                              final placeArg =
+                                                  controller
+                                                      .lastCreatedPlace
+                                                      .value ??
+                                                  (Get.isRegistered<
+                                                        FieldManagerHomeController
+                                                      >()
+                                                      ? Get.find<
+                                                              FieldManagerHomeController
+                                                            >()
+                                                            .place
+                                                            .value
+                                                      : null);
+                                              Get.toNamed(
+                                                AppRoutes.FIELD_ADD,
+                                                arguments: {
+                                                  if (placeArg != null)
+                                                    'place': placeArg,
+                                                  if (placeArg != null)
+                                                    'placeId': placeArg.id,
+                                                },
+                                              );
                                             }
                                           },
                                     child: controller.isSubmitting.value
