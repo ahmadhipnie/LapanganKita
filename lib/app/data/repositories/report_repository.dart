@@ -48,6 +48,7 @@ class ReportRepository {
           profitWeek: 0,
           profitMonth: 0,
           transactions: <PerformanceTransaction>[],
+          currentBalance: null,
         );
       }
 
@@ -115,6 +116,7 @@ class ReportRepository {
         profitWeek: 0,
         profitMonth: 0,
         transactions: <PerformanceTransaction>[],
+        currentBalance: null,
       );
     }
 
@@ -130,6 +132,7 @@ class ReportRepository {
         profitWeek: 0,
         profitMonth: 0,
         transactions: <PerformanceTransaction>[],
+        currentBalance: null,
       );
     }
 
@@ -196,6 +199,7 @@ class ReportRepository {
       profitWeek: profitWeek,
       profitMonth: profitMonth,
       transactions: transactions,
+      currentBalance: null,
     );
   }
 

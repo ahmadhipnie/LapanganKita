@@ -105,6 +105,43 @@ class PlaceRepository {
     }
   }
 
+  Future<List<PlaceModel>> getAllPlaces() async {
+    try {
+      final response = await _apiClient.raw.get<Map<String, dynamic>>('places');
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        final data = body['data'];
+        if (data is List) {
+          return data
+              .whereType<Map<String, dynamic>>()
+              .map(PlaceModel.fromJson)
+              .toList();
+        }
+        return const <PlaceModel>[];
+      }
+
+      throw PlaceException(
+        _extractMessage(body) ??
+            'Gagal mengambil data place (status $statusCode).',
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const PlaceException(
+          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+        );
+      }
+      final message = _extractMessage(e.response?.data) ?? e.message;
+      throw PlaceException(message ?? 'Gagal mengambil data place.');
+    } on FormatException catch (e) {
+      throw PlaceException(e.message);
+    }
+  }
+
   Future<PlaceUpdateResponse> updatePlace({
     required int placeId,
     required String placeName,

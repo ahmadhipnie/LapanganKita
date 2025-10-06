@@ -116,7 +116,7 @@ class _FilterBar extends StatelessWidget {
             Expanded(
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Cari pelanggan, lapangan, ID refund...',
+                  hintText: 'Search for customers, field, refund ID...',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   border: InputBorder.none,
@@ -287,7 +287,7 @@ class _RefundCard extends GetView<FieldadminTransactionController> {
               _AmountHighlight(
                 title: 'Booking Total',
                 primaryAmount: controller.formatCurrency(item.bookingTotal),
-                subtitle: 'Belum diproses refund.',
+                subtitle: 'Refunds have not been processed yet.',
                 color: Colors.orange,
               ),
               const SizedBox(height: 12),
@@ -423,7 +423,7 @@ class _ErrorState extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh),
-            label: const Text('Coba lagi'),
+            label: const Text('Try Again'),
           ),
         ],
       ),
@@ -448,7 +448,7 @@ class _EmptyState extends StatelessWidget {
           SizedBox(height: 12),
           Center(
             child: Text(
-              'Belum ada data refund.',
+              'No refund data available.',
               style: TextStyle(color: Colors.grey),
             ),
           ),
@@ -505,14 +505,14 @@ Future<void> _showProcessRefundSheet(
 
               if (total == null || total <= 0) {
                 setState(() {
-                  validationError = 'Masukkan nominal refund yang valid.';
+                  validationError = 'Please enter a valid refund amount.';
                 });
                 return;
               }
 
               if (selectedFile == null) {
                 setState(() {
-                  validationError = 'Lampirkan bukti transfer terlebih dahulu.';
+                  validationError = 'Please attach the transfer proof.';
                 });
                 return;
               }
@@ -630,14 +630,14 @@ Future<void> _showProcessRefundSheet(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Ringkasan Booking',
+                          'Booking Summary',
                           style: Theme.of(context).textTheme.labelLarge
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 12),
                         buildInfoRow('Customer', item.customerLabel),
                         buildInfoRow(
-                          'Waktu',
+                          'Time',
                           item.bookingEnd != null
                               ? controller.formatDateRange(
                                   item.bookingCreatedAt,
@@ -649,7 +649,7 @@ Future<void> _showProcessRefundSheet(
                         ),
                         if (item.fieldLocation.trim().isNotEmpty &&
                             item.fieldLocation != '-')
-                          buildInfoRow('Lokasi', item.fieldLocation),
+                          buildInfoRow('Location', item.fieldLocation),
                         buildInfoRow(
                           'Total Booking',
                           controller.formatCurrency(item.bookingTotal),
@@ -672,7 +672,7 @@ Future<void> _showProcessRefundSheet(
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                     ],
                     decoration: InputDecoration(
-                      hintText: 'Masukkan nominal refund',
+                      hintText: 'Enter the refund amount',
                       prefixText: 'Rp ',
                       filled: true,
                       fillColor: Colors.grey.shade100,
@@ -713,14 +713,14 @@ Future<void> _showProcessRefundSheet(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Bukti Transfer',
+                                    'Prove Transfer',
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelLarge
                                         ?.copyWith(fontWeight: FontWeight.w700),
                                   ),
                                   Text(
-                                    'Unggah foto bukti transfer sebagai konfirmasi refund.',
+                                    'Upload a photo of proof of transfer as confirmation of refund.',
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(color: Colors.grey[600]),
                                   ),
@@ -736,7 +736,7 @@ Future<void> _showProcessRefundSheet(
                               child: OutlinedButton.icon(
                                 onPressed: () => pickFile(ImageSource.gallery),
                                 icon: const Icon(Icons.photo_library_outlined),
-                                label: const Text('Pilih dari Galeri'),
+                                label: const Text('Select from Gallery'),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -744,7 +744,7 @@ Future<void> _showProcessRefundSheet(
                               child: OutlinedButton.icon(
                                 onPressed: () => pickFile(ImageSource.camera),
                                 icon: const Icon(Icons.photo_camera_outlined),
-                                label: const Text('Ambil Foto'),
+                                label: const Text('Take a Photo'),
                               ),
                             ),
                           ],
@@ -808,10 +808,10 @@ Future<void> _showProcessRefundSheet(
                                     ),
                                   ),
                                   SizedBox(width: 12),
-                                  Text('Memproses...'),
+                                  Text('Processing...'),
                                 ],
                               )
-                            : const Text('Proses Refund'),
+                            : const Text('Process Refund'),
                       ),
                     );
                   }),

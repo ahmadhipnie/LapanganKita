@@ -5,7 +5,7 @@ class FieldmanagerWithdrawBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<FieldmanagerWithdrawController>(
-      () => FieldmanagerWithdrawController(),
+      FieldmanagerWithdrawController.new,
     );
   }
 }

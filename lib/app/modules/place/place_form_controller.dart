@@ -43,6 +43,8 @@ class PlaceFormController extends GetxController {
   final addOnDescController = TextEditingController();
   final addOnImage = Rx<File?>(null);
 
+  final Rxn<PlaceModel> lastCreatedPlace = Rxn<PlaceModel>();
+
   final ImagePicker _picker = ImagePicker();
 
   Future<void> pickPlaceImage() async {
@@ -157,6 +159,7 @@ class PlaceFormController extends GetxController {
       PlaceModel? createdPlace = response.data;
 
       if (createdPlace != null) {
+        lastCreatedPlace.value = createdPlace;
         _notifyHome(createdPlace);
 
         if (isAddOnChecked.value) {

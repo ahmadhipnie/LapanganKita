@@ -22,6 +22,8 @@ class FieldAddController extends GetxController {
   final FieldRepository _repository;
   // final SessionService _sessionService;
   final LocalStorageService _storageService = LocalStorageService.instance;
+  PlaceModel? _argumentPlace;
+  int? _argumentPlaceId;
 
   final formKey = GlobalKey<FormState>();
 
@@ -50,6 +52,12 @@ class FieldAddController extends GetxController {
 
   final ImagePicker _picker = ImagePicker();
 
+  @override
+  void onInit() {
+    super.onInit();
+    _hydrateArguments();
+  }
+
   Future<void> pickFieldPhoto() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
@@ -66,6 +74,7 @@ class FieldAddController extends GetxController {
       context: context,
       initialTime: _openTime.value ?? TimeOfDay.now(),
     );
+    if (!context.mounted) return;
     if (picked != null) {
       _openTime.value = picked;
       openHourController.text = picked.format(context);
@@ -77,6 +86,7 @@ class FieldAddController extends GetxController {
       context: context,
       initialTime: _closeTime.value ?? TimeOfDay.now(),
     );
+    if (!context.mounted) return;
     if (picked != null) {
       _closeTime.value = picked;
       closeHourController.text = picked.format(context);
@@ -148,7 +158,8 @@ class FieldAddController extends GetxController {
     }
 
     final place = _currentPlace();
-    if (place == null) {
+    final placeId = place?.id ?? _argumentPlaceId;
+    if (placeId == null) {
       Get.snackbar(
         'Place required',
         'Register your place before adding a field.',
@@ -170,7 +181,7 @@ class FieldAddController extends GetxController {
         fieldPhoto: photo,
         status: 'available',
         maxPerson: maxPerson,
-        placeId: place.id,
+        placeId: placeId,
         userId: userId,
       );
 
@@ -231,10 +242,66 @@ class FieldAddController extends GetxController {
   }
 
   PlaceModel? _currentPlace() {
-    if (Get.isRegistered<FieldManagerHomeController>()) {
-      return Get.find<FieldManagerHomeController>().place.value;
+    if (_argumentPlace != null) {
+      return _argumentPlace;
     }
+
+    if (Get.isRegistered<FieldManagerHomeController>()) {
+      final home = Get.find<FieldManagerHomeController>();
+      final current = home.place.value;
+      if (current != null) {
+        _argumentPlace ??= current;
+        if (_argumentPlaceId == null || current.id == _argumentPlaceId) {
+          return current;
+        }
+      }
+
+      if (_argumentPlaceId != null) {
+        for (final candidate in home.places) {
+          if (candidate.id == _argumentPlaceId) {
+            _argumentPlace = candidate;
+            return candidate;
+          }
+        }
+      }
+      if (current != null) {
+        _argumentPlace ??= current;
+        return current;
+      }
+    }
+
     return null;
+  }
+
+  void _hydrateArguments() {
+    final args = Get.arguments;
+    if (args == null) {
+      return;
+    }
+
+    if (args is PlaceModel) {
+      _argumentPlace = args;
+      _argumentPlaceId = args.id;
+      return;
+    }
+
+    if (args is Map) {
+      final place = args['place'];
+      if (place is PlaceModel) {
+        _argumentPlace = place;
+        _argumentPlaceId = place.id;
+      }
+
+      final rawPlaceId = args['placeId'];
+      if (rawPlaceId is int) {
+        _argumentPlaceId = rawPlaceId;
+      } else if (rawPlaceId is String) {
+        final parsed = int.tryParse(rawPlaceId);
+        if (parsed != null) {
+          _argumentPlaceId = parsed;
+        }
+      }
+    }
   }
 
   @override

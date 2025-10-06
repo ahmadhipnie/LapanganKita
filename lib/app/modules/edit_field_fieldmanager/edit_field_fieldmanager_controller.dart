@@ -7,16 +7,16 @@ import 'package:image_picker/image_picker.dart';
 import '../../data/models/field_model.dart';
 import '../../data/network/api_client.dart';
 import '../../data/repositories/field_repository.dart';
-import '../../data/services/session_service.dart';
+import '../../services/local_storage_service.dart';
 import '../navigation/fieldmanager/tabs_controller/fieldmanager_home_controller.dart';
 
 class EditFieldFieldmanagerController extends GetxController {
   EditFieldFieldmanagerController({
     FieldRepository? repository,
-    SessionService? sessionService,
+    LocalStorageService? localStorage,
     FieldManagerHomeController? homeController,
   }) : _repository = repository ?? Get.find<FieldRepository>(),
-       _sessionService = sessionService ?? Get.find<SessionService>(),
+       _localStorage = localStorage ?? LocalStorageService.instance,
        _homeController =
            homeController ??
            (Get.isRegistered<FieldManagerHomeController>()
@@ -24,7 +24,7 @@ class EditFieldFieldmanagerController extends GetxController {
                : null);
 
   final FieldRepository _repository;
-  final SessionService _sessionService;
+  final LocalStorageService _localStorage;
   final FieldManagerHomeController? _homeController;
 
   final formKey = GlobalKey<FormState>();
@@ -191,8 +191,8 @@ class EditFieldFieldmanagerController extends GetxController {
       return false;
     }
 
-    final user = _sessionService.rememberedUser;
-    if (user == null) {
+    final userId = _localStorage.userId;
+    if (userId <= 0) {
       Get.snackbar(
         'Sesi berakhir',
         'Silakan masuk kembali untuk melanjutkan.',
@@ -276,7 +276,7 @@ class EditFieldFieldmanagerController extends GetxController {
         status: _statusForApi(currentStatus),
         maxPerson: parsedMaxPerson,
         placeId: placeId,
-        userId: user.id,
+        userId: userId,
         fieldPhoto: selectedPhoto.value,
       );
 
@@ -461,8 +461,8 @@ class EditFieldFieldmanagerController extends GetxController {
       return false;
     }
 
-    final user = _sessionService.rememberedUser;
-    if (user == null) {
+    final userId = _localStorage.userId;
+    if (userId <= 0) {
       Get.snackbar(
         'Sesi berakhir',
         'Silakan masuk kembali untuk melanjutkan.',
@@ -475,7 +475,7 @@ class EditFieldFieldmanagerController extends GetxController {
     try {
       final response = await _repository.deleteField(
         fieldId: fieldId,
-        userId: user.id,
+        userId: userId,
       );
 
       final message = response.message.isNotEmpty

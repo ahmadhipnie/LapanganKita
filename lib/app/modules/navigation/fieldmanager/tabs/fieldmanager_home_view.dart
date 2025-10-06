@@ -1681,7 +1681,14 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
       );
       return;
     }
-    Get.toNamed(AppRoutes.FIELD_ADD);
+    final selectedPlace = c.place.value;
+    Get.toNamed(
+      AppRoutes.FIELD_ADD,
+      arguments: {
+        if (selectedPlace != null) 'place': selectedPlace,
+        if (selectedPlace != null) 'placeId': selectedPlace.id,
+      },
+    );
   }
 
   // void _showCreateOptions(BuildContext context, FieldManagerHomeController c) {

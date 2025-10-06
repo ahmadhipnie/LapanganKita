@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-enum BottomNavItem { withdraw, refund }
+enum BottomNavItem { withdraw, refund, logout }
 
 class FieldadminNavigationController extends GetxController {
   final RxInt currentIndex = 0.obs;

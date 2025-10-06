@@ -4,12 +4,14 @@ class PerformanceReport {
     required this.profitWeek,
     required this.profitMonth,
     required this.transactions,
+    this.currentBalance,
   });
 
   final int profitToday;
   final int profitWeek;
   final int profitMonth;
   final List<PerformanceTransaction> transactions;
+  final int? currentBalance;
 
   factory PerformanceReport.fromJson(Map<String, dynamic> json) {
     int parseInt(dynamic value) {
@@ -32,6 +34,12 @@ class PerformanceReport {
               .toList()
         : const <PerformanceTransaction>[];
 
+    int? parseNullableInt(dynamic value) {
+      if (value == null) return null;
+      final parsed = parseInt(value);
+      return parsed;
+    }
+
     return PerformanceReport(
       profitToday: parseInt(
         json['today'] ?? json['today_profit'] ?? json['profit_today'],
@@ -43,6 +51,12 @@ class PerformanceReport {
         json['this_month'] ?? json['month'] ?? json['profit_month'],
       ),
       transactions: transactions,
+      currentBalance: parseNullableInt(
+        json['balance'] ??
+            json['current_balance'] ??
+            json['saldo'] ??
+            json['total_balance'],
+      ),
     );
   }
 
@@ -51,12 +65,14 @@ class PerformanceReport {
     int? profitWeek,
     int? profitMonth,
     List<PerformanceTransaction>? transactions,
+    int? currentBalance,
   }) {
     return PerformanceReport(
       profitToday: profitToday ?? this.profitToday,
       profitWeek: profitWeek ?? this.profitWeek,
       profitMonth: profitMonth ?? this.profitMonth,
       transactions: transactions ?? this.transactions,
+      currentBalance: currentBalance ?? this.currentBalance,
     );
   }
 }
