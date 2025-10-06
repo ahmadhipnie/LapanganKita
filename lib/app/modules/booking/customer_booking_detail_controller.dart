@@ -8,8 +8,10 @@ import '../../data/models/customer/booking/booking_request.dart';
 import '../../data/models/customer/booking/booking_response.dart';
 import '../../data/models/customer/booking/court_model.dart';
 import '../../data/models/add_on_model.dart';
+import '../../data/models/customer/history/customer_history_model.dart';
 import '../../data/repositories/add_on_repository.dart';
 import '../../data/services/midtrans_service.dart';
+import '../history/customer_history_controller.dart';
 import '../midtrans/midtrans_webview.dart';
 
 class CustomerBookingDetailController extends GetxController {
@@ -30,26 +32,13 @@ class CustomerBookingDetailController extends GetxController {
   final RxBool isRefreshingAddOns = false.obs;
   final RxBool isBooking = false.obs;
 
+  // Data booking history yang sudah di-load (dari controller history)
+  final List<BookingHistory> allBookings = [];
+
+  final RxList<String> availableTimes = <String>[].obs;
+  final RxList<String> busyTimes = <String>[].obs;
+
   final List<String> durationOptions = ['1', '2', '3', '4', '5', '6'];
-  final List<String> availableTimes = [
-    '06:00',
-    '07:00',
-    '08:00',
-    '09:00',
-    '10:00',
-    '11:00',
-    '12:00',
-    '13:00',
-    '14:00',
-    '15:00',
-    '16:00',
-    '17:00',
-    '18:00',
-    '19:00',
-    '20:00',
-    '21:00',
-    '22:00',
-  ];
 
   int get userId => _localStorage.getUserData()?['id'] ?? 0;
 
@@ -58,9 +47,236 @@ class CustomerBookingDetailController extends GetxController {
     super.onInit();
     _calculateTotalPrice();
     _loadAddOns();
+    _generateAvailableTimes();
+    _loadApprovedBookingsFromHistory();
+
     ever(selectedDuration, (_) {
       selectedStartTime.value = '';
+      _updateBusyTimes(); // Update busy times ketika durasi berubah
     });
+
+    ever(selectedDate, (_) {
+      selectedStartTime.value = '';
+      _updateBusyTimes(); // Update busy times ketika tanggal berubah
+    });
+  }
+
+  void setApprovedBookings(List<BookingHistory> bookings) {
+    allBookings.clear();
+    allBookings.addAll(bookings);
+    _updateBusyTimes();
+  }
+
+  // Generate available times berdasarkan opening dan closing time court
+  void _generateAvailableTimes() {
+    try {
+      final openingTime = court.openingTime;
+      final closingTime = court.closingTime;
+
+      // Default fallback times
+      final List<String> defaultTimes = [
+        '06:00',
+        '07:00',
+        '08:00',
+        '09:00',
+        '10:00',
+        '11:00',
+        '12:00',
+        '13:00',
+        '14:00',
+        '15:00',
+        '16:00',
+        '17:00',
+        '18:00',
+        '19:00',
+        '20:00',
+        '21:00',
+        '22:00',
+        '23:00',
+      ];
+
+      if (openingTime.isEmpty || closingTime.isEmpty) {
+        availableTimes.assignAll(defaultTimes);
+        print('Using default available times: ${defaultTimes.join(', ')}');
+        return;
+      }
+
+      // Parse opening dan closing time
+      final opening = _parseTimeString(openingTime);
+      final closing = _parseTimeString(closingTime);
+
+      if (opening == null || closing == null) {
+        availableTimes.assignAll(defaultTimes);
+        print('Using default available times: ${defaultTimes.join(', ')}');
+        return;
+      }
+
+      // Generate times dari opening sampai closing (per jam)
+      final List<String> times = [];
+      int currentHour = opening.hour;
+
+      // Jika closing hour < opening hour, berarti buka sampai besok (misal 22:00 - 02:00)
+      if (closing.hour < opening.hour) {
+        // Dari opening hour sampai 23:00
+        for (int hour = opening.hour; hour <= 23; hour++) {
+          times.add('${hour.toString().padLeft(2, '0')}:00');
+        }
+        // Dari 00:00 sampai closing hour
+        for (int hour = 0; hour <= closing.hour; hour++) {
+          times.add('${hour.toString().padLeft(2, '0')}:00');
+        }
+      } else {
+        // Normal case: opening hour <= closing hour
+        while (currentHour <= closing.hour) {
+          final timeString = '${currentHour.toString().padLeft(2, '0')}:00';
+          times.add(timeString);
+          currentHour += 1;
+
+          // Safety break
+          if (currentHour > 23) break;
+        }
+      }
+
+      availableTimes.assignAll(times);
+      print('Court: ${court.name}');
+      print('Opening: $openingTime | Closing: $closingTime');
+      print('Generated available times: ${times.join(', ')}');
+    } catch (e) {
+      print('Error generating available times: $e');
+      // Fallback ke default times
+      availableTimes.assignAll([
+        '06:00',
+        '07:00',
+        '08:00',
+        '09:00',
+        '10:00',
+        '11:00',
+        '12:00',
+        '13:00',
+        '14:00',
+        '15:00',
+        '16:00',
+        '17:00',
+        '18:00',
+        '19:00',
+        '20:00',
+        '21:00',
+        '22:00',
+        '23:00',
+      ]);
+    }
+  }
+
+  TimeOfDay? _parseTimeString(String timeString) {
+    try {
+      // Hilangkan detik jika ada
+      final timeWithoutSeconds = timeString.split(':').sublist(0, 2).join(':');
+      final timeOfDay = TimeOfDay.fromDateTime(
+        DateFormat('HH:mm').parse(timeWithoutSeconds),
+      );
+      return timeOfDay;
+    } catch (e) {
+      print('Error parsing time string: $e');
+      return null;
+    }
+  }
+
+  // Load approved bookings dari history controller
+  void _loadApprovedBookingsFromHistory() {
+    try {
+      // Ambil dari CustomerHistoryController yang sudah ada
+      final historyController = Get.find<CustomerHistoryController>();
+      final allHistoryBookings = historyController.bookings;
+
+      // Filter hanya yang approved untuk court ini
+      final approvedBookings = allHistoryBookings.where((booking) {
+        return booking.status == 'approved' &&
+            booking.courtName ==
+                court.name; // Sesuaikan dengan field yang sesuai
+      }).toList();
+
+      allBookings.clear();
+      allBookings.addAll(approvedBookings);
+      _updateBusyTimes();
+    } catch (e) {
+      print('Error loading approved bookings from history: $e');
+    }
+  }
+
+  // Update busy times berdasarkan selected date dan approved bookings
+  void _updateBusyTimes() {
+    try {
+      final formattedSelectedDate = DateFormat(
+        'yyyy-MM-dd',
+      ).format(selectedDate.value);
+      final List<String> newBusyTimes = [];
+
+      print('=== UPDATING BUSY TIMES (GENERAL) ===');
+      print('Date: $formattedSelectedDate');
+
+      for (final booking in allBookings) {
+        // Cek apakah booking pada tanggal yang sama
+        final bookingDate = DateFormat('yyyy-MM-dd').format(booking.date);
+        if (bookingDate == formattedSelectedDate) {
+          print(
+            'Processing booking: ${booking.orderId} (${booking.startTime} for ${booking.duration} hours)',
+          );
+
+          final bookingTimeSlots = _getTimeSlotsFromBooking(booking);
+          newBusyTimes.addAll(bookingTimeSlots);
+
+          print('Added busy slots: ${bookingTimeSlots.join(', ')}');
+        }
+      }
+
+      busyTimes.assignAll(newBusyTimes.toSet().toList());
+      print('Final Busy Times: ${busyTimes.join(', ')}');
+      print('Total Busy Slots: ${busyTimes.length}');
+      print('=== END BUSY TIMES UPDATE ===');
+
+      _updateTimeAvailability();
+    } catch (e) {
+      print('Error updating busy times: $e');
+      busyTimes.clear();
+    }
+  }
+
+  // Update time availability berdasarkan durasi yang dipilih
+  void _updateTimeAvailability() {
+    // Trigger update di UI
+    update();
+  }
+
+  List<String> _getTimeSlotsFromBooking(BookingHistory booking) {
+    final List<String> timeSlots = [];
+
+    try {
+      final startTime = booking.startTime; // opening time
+      final bookingDuration = booking.duration;
+
+      // Parse start time (format: "HH:MM")
+      final startParts = startTime.split(':');
+      if (startParts.length >= 2) {
+        final startHour = int.tryParse(startParts[0]) ?? 0;
+
+        // SELALU ambil semua timeslot dari opening time berdasarkan duration booking
+        for (int i = 0; i < bookingDuration; i++) {
+          final slotHour = startHour + i;
+          if (slotHour < 24) {
+            final timeSlot = '${slotHour.toString().padLeft(2, '0')}:00';
+            timeSlots.add(timeSlot);
+          }
+        }
+
+        print(
+          '${bookingDuration}-hour booking: Added slots ${timeSlots.join(', ')}',
+        );
+      }
+    } catch (e) {
+      print('Error getting time slots from booking: $e');
+    }
+
+    return timeSlots;
   }
 
   Future<void> _loadAddOns() async {
@@ -79,6 +295,76 @@ class CustomerBookingDetailController extends GetxController {
     }
   }
 
+  // Method untuk refresh data dari history controller
+  Future<void> refreshAvailability() async {
+    _loadApprovedBookingsFromHistory();
+  }
+
+  // Update method isTimeAvailable untuk menggunakan busyTimes
+  bool isTimeAvailable(String time) {
+    return !busyTimes.contains(time);
+  }
+
+  // Update method isTimeAvailableWithDuration
+  bool isTimeAvailableWithDuration(String startTime, int duration) {
+    final startIndex = availableTimes.indexOf(startTime);
+    if (startIndex == -1) return false;
+
+    // Cek semua slot waktu dalam durasi
+    for (int i = 0; i < duration; i++) {
+      if (startIndex + i >= availableTimes.length) return false;
+      final timeSlot = availableTimes[startIndex + i];
+      if (busyTimes.contains(timeSlot)) return false;
+    }
+
+    return true;
+  }
+
+  // bool isTimeAvailable(String time) {
+  //   return !busyTimes.contains(time);
+  // }
+
+  // bool _isWithinOperatingHours(String startTime, int duration) {
+  //   try {
+  //     final opening = _parseTimeString(court.openingTime);
+  //     final closing = _parseTimeString(court.closingTime);
+
+  //     if (opening == null || closing == null) return true; // Fallback ke true
+
+  //     // Parse start time
+  //     final startParts = startTime.split(':');
+  //     if (startParts.length < 2) return false;
+
+  //     final startHour = int.tryParse(startParts[0]) ?? 0;
+  //     final endHour = startHour + duration;
+
+  //     // Cek apakah end time melebihi closing time
+  //     return endHour <= closing.hour;
+  //   } catch (e) {
+  //     print('Error checking operating hours: $e');
+  //     return true; // Fallback ke true jika error
+  //   }
+  // }
+
+  bool isTimeInSelectedRange(String time) {
+    if (selectedStartTime.value.isEmpty) return false;
+
+    final selectedIndex = availableTimes.indexOf(selectedStartTime.value);
+    final currentIndex = availableTimes.indexOf(time);
+    final duration = int.parse(selectedDuration.value);
+
+    if (selectedIndex == -1 || currentIndex == -1) return false;
+
+    return currentIndex >= selectedIndex &&
+        currentIndex < selectedIndex + duration;
+  }
+
+  void selectDate(DateTime date) {
+    selectedDate.value = date;
+    selectedStartTime.value = '';
+    _updateBusyTimes();
+  }
+
   Future<void> refreshAddOns() async {
     if (court.placeId == 0) return;
     isRefreshingAddOns.value = true;
@@ -87,11 +373,6 @@ class CustomerBookingDetailController extends GetxController {
     } finally {
       isRefreshingAddOns.value = false;
     }
-  }
-
-  void selectDate(DateTime date) {
-    selectedDate.value = date;
-    selectedStartTime.value = '';
   }
 
   void selectStartTime(String time) {
@@ -107,6 +388,7 @@ class CustomerBookingDetailController extends GetxController {
   void selectDuration(String duration) {
     selectedDuration.value = duration;
     _calculateTotalPrice();
+    _updateTimeAvailability(); // Update availability ketika durasi berubah
   }
 
   String formatRupiah(double amount) {
@@ -120,34 +402,34 @@ class CustomerBookingDetailController extends GetxController {
 
   String get formattedTotalPrice => formatRupiah(totalPrice.value);
 
-  bool isTimeAvailableWithDuration(String startTime, int duration) {
-    final startIndex = availableTimes.indexOf(startTime);
-    if (startIndex == -1) return false;
+  // bool isTimeAvailableWithDuration(String startTime, int duration) {
+  //   final startIndex = availableTimes.indexOf(startTime);
+  //   if (startIndex == -1) return false;
 
-    for (int i = 0; i < duration; i++) {
-      if (startIndex + i >= availableTimes.length) return false;
-      final timeSlot = availableTimes[startIndex + i];
-      if (!isTimeAvailable(timeSlot)) return false;
-    }
-    return true;
-  }
+  //   for (int i = 0; i < duration; i++) {
+  //     if (startIndex + i >= availableTimes.length) return false;
+  //     final timeSlot = availableTimes[startIndex + i];
+  //     if (!isTimeAvailable(timeSlot)) return false;
+  //   }
+  //   return true;
+  // }
 
-  bool isTimeInSelectedRange(String time) {
-    if (selectedStartTime.value.isEmpty) return false;
-    final selectedIndex = availableTimes.indexOf(selectedStartTime.value);
-    final currentIndex = availableTimes.indexOf(time);
-    final duration = int.parse(selectedDuration.value);
+  // bool isTimeInSelectedRange(String time) {
+  //   if (selectedStartTime.value.isEmpty) return false;
+  //   final selectedIndex = availableTimes.indexOf(selectedStartTime.value);
+  //   final currentIndex = availableTimes.indexOf(time);
+  //   final duration = int.parse(selectedDuration.value);
 
-    if (selectedIndex == -1 || currentIndex == -1) return false;
-    return currentIndex >= selectedIndex &&
-        currentIndex < selectedIndex + duration;
-  }
+  //   if (selectedIndex == -1 || currentIndex == -1) return false;
+  //   return currentIndex >= selectedIndex &&
+  //       currentIndex < selectedIndex + duration;
+  // }
 
-  bool isTimeAvailable(String time) {
-    // TODO: Implement real availability check via API
-    final busyTimes = ['18:00', '19:00', '20:00'];
-    return !busyTimes.contains(time);
-  }
+  // bool isTimeAvailable(String time) {
+  //   // TODO: Implement real availability check via API
+  //   final busyTimes = ['18:00', '19:00', '20:00'];
+  //   return !busyTimes.contains(time);
+  // }
 
   void incrementEquipment(String equipmentName) {
     final currentCount = selectedEquipment[equipmentName] ?? 0;
@@ -394,10 +676,6 @@ class CustomerBookingDetailController extends GetxController {
             addOns: addOnsList,
           );
 
-          print('===== SENDING BOOKING REQUEST =====');
-          print('Request: ${bookingRequest.toJson()}');
-          print('==================================');
-
           final BookingResponse bookingResponse = await _bookingRepository
               .createBooking(bookingRequest);
 
@@ -405,14 +683,6 @@ class CustomerBookingDetailController extends GetxController {
 
           await Future.delayed(Duration(milliseconds: 100));
           _handlePaymentResult(paymentResult, bookingResponse.id);
-
-          print('===== BOOKING SUCCESS =====');
-          print('Booking ID: ${bookingResponse.id}');
-          print('Order ID: ${bookingResponse.orderId}');
-          print('Total Price: ${bookingResponse.totalPrice}');
-          print('Status: ${bookingResponse.status}');
-          print('Message: ${bookingResponse.message}');
-          print('==========================');
 
           // 10. Navigate ke halaman success
           // WidgetsBinding.instance.addPostFrameCallback((_) {

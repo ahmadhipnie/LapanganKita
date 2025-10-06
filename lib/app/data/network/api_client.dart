@@ -3,8 +3,8 @@ import 'package:dio/dio.dart';
 class ApiClient {
   ApiClient({Dio? dio}) : _dio = dio ?? createDefaultDio();
 
-  static const String baseUrl = 'https://2745fbc6d01f.ngrok-free.app/api/';
-  static const String baseUrlWithoutApi = 'https://2745fbc6d01f.ngrok-free.app';
+  static const String baseUrl = 'https://3ecc94b66c20.ngrok-free.app/api/';
+  static const String baseUrlWithoutApi = 'https://3ecc94b66c20.ngrok-free.app';
 
   static final BaseOptions _defaultOptions = BaseOptions(
     baseUrl: baseUrl,
@@ -20,6 +20,25 @@ class ApiClient {
   Dio get raw => _dio;
 
   static Dio createDefaultDio() => Dio(_defaultOptions);
+
+  Future<Response<T>> postMultipart<T>(
+    String endpoint, {
+    required FormData data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _dio.post<T>(
+      endpoint,
+      data: data,
+      queryParameters: queryParameters,
+      options:
+          options ??
+          Options(
+            contentType: 'multipart/form-data',
+            headers: {'Content-Type': 'multipart/form-data'},
+          ),
+    );
+  }
 
   String getImageUrl(String imagePath) {
     if (imagePath.isEmpty) {

@@ -2,7 +2,7 @@
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
-
+import 'package:dio/dio.dart' as dio;
 import '../../data/network/api_client.dart';
 
 class CustomerHistoryController extends GetxController {
@@ -19,7 +19,49 @@ class CustomerHistoryController extends GetxController {
     loadData();
   }
 
-  // Method untuk load data dari API
+  Future<void> createCommunityPost({
+    required int bookingId,
+    required String title,
+    required String description,
+    required String? imagePath,
+  }) async {
+    try {
+      isLoading.value = true;
+
+      // ✅ Gunakan dio.FormData dengan prefix
+      final formData = dio.FormData.fromMap({
+        'id_booking': bookingId,
+        'post_title': title,
+        'post_description': description,
+        if (imagePath != null && imagePath.isNotEmpty)
+          'post_photo': await dio.MultipartFile.fromFile(
+            imagePath,
+            filename: 'post_${DateTime.now().millisecondsSinceEpoch}.png',
+          ),
+      });
+
+      final response = await _apiClient.raw.post(
+        'posts',
+        data: formData,
+        options: dio.Options(
+          contentType: 'multipart/form-data',
+          headers: {'Content-Type': 'multipart/form-data'},
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // ✅ Success - akan ditutup di view dan show snackbar
+        return; // Biarkan view yang handle success
+      } else {
+        throw Exception(response.data?['message'] ?? 'Failed to create post');
+      }
+    } catch (e) {
+      rethrow; // Lempar error ke view
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<void> loadData() async {
     isLoading.value = true;
     try {
@@ -34,22 +76,19 @@ class CustomerHistoryController extends GetxController {
         queryParameters: {'user_id': userId},
       );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final List<dynamic> bookingData = response.data['data'] ?? [];
-        bookings.assignAll(
-          bookingData
-              .map((data) => BookingHistory.fromApiResponse(data))
-              .toList(),
-        );
+      if (response.statusCode == 200) {
+        final bookingResponse = BookingHistoryResponse.fromJson(response.data);
 
-        if (bookingData.isEmpty) {
-          Get.snackbar('Info', 'No booking history found');
+        if (bookingResponse.success) {
+          bookings.assignAll(bookingResponse.data);
+          if (bookingResponse.data.isEmpty) {
+            Get.snackbar('Info', 'No booking history found');
+          }
+        } else {
+          Get.snackbar('Error', bookingResponse.message);
         }
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to load booking data: ${response.data['message'] ?? 'Unknown error'}',
-        );
+        Get.snackbar('Error', 'Failed to load booking data');
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to load data: $e');
@@ -58,7 +97,6 @@ class CustomerHistoryController extends GetxController {
     }
   }
 
-  // Method untuk refresh data
   Future<void> refreshData() async {
     isLoading.value = true;
     try {
@@ -73,24 +111,17 @@ class CustomerHistoryController extends GetxController {
         queryParameters: {'user_id': userId},
       );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final List<dynamic> bookingData = response.data['data'] ?? [];
-        bookings.assignAll(
-          bookingData
-              .map((data) => BookingHistory.fromApiResponse(data))
-              .toList(),
-        );
-        Get.snackbar(
-          'Success',
-          'Data refreshed successfully',
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
-        );
+      if (response.statusCode == 200) {
+        final bookingResponse = BookingHistoryResponse.fromJson(response.data);
+
+        if (bookingResponse.success) {
+          bookings.assignAll(bookingResponse.data);
+          Get.snackbar('Success', 'Data refreshed successfully');
+        } else {
+          Get.snackbar('Error', bookingResponse.message);
+        }
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to refresh booking data: ${response.data['message'] ?? 'Unknown error'}',
-        );
+        Get.snackbar('Error', 'Failed to refresh booking data');
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to refresh data: $e');
@@ -123,9 +154,10 @@ class CustomerHistoryController extends GetxController {
         date: bookings[index].date,
         startTime: bookings[index].startTime,
         duration: bookings[index].duration,
+        note: bookings[index].note,
         totalAmount: bookings[index].totalAmount,
         status: status,
-        equipment: bookings[index].equipment,
+        details: bookings[index].details,
         courtPrice: bookings[index].courtPrice,
         equipmentTotal: bookings[index].equipmentTotal,
         types: bookings[index].types,
