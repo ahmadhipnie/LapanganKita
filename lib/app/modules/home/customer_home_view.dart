@@ -84,98 +84,150 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
 
   // Carousel Widget
   Widget _buildCarouselSection() {
-    return CarouselSlider(
-      carouselController: controller.carouselController,
-      options: controller.carouselOptions,
-      items: controller.imgList.asMap().entries.map((entry) {
-        final index = entry.key;
-        final imageUrl = entry.value;
-        return GestureDetector(
-          onTap: () {
-            controller.showImageDialog(index, Get.context!);
-          },
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.error,
-                          color: Colors.red,
-                          size: 40,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+    return Obx(() {
+      final images = controller.imgList;
+      final isRemoteLoading = controller.isSliderLoading.value;
+      final sliderError = controller.sliderError.value;
 
-                // Gradient Overlay
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.2),
-                        Colors.transparent,
-                      ],
-                    ),
+      if (images.isEmpty) {
+        return Container(
+          height: 180,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.grey[200],
+          ),
+          child: Center(
+            child: isRemoteLoading
+                ? const CircularProgressIndicator()
+                : Text(
+                    sliderError.isNotEmpty
+                        ? sliderError
+                        : 'There are no promotions available yet',
+                    style: const TextStyle(color: Colors.black54),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-
-                // Title
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: Text(
-                    controller.titleList[index],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
           ),
         );
-      }).toList(),
-    );
+      }
+
+      return CarouselSlider(
+        carouselController: controller.carouselController,
+        options: controller.carouselOptions,
+        items: images.asMap().entries.map((entry) {
+          final index = entry.key;
+          final imageUrl = entry.value;
+          final title = controller.slideTitleForIndex(index);
+
+          return GestureDetector(
+            onTap: () {
+              controller.showImageDialog(index, Get.context!);
+            },
+            child: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Icon(
+                            Icons.error,
+                            color: Colors.red,
+                            size: 40,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Gradient Overlay
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.2),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Title
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isRemoteLoading)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    });
   }
 
   // Indicators Widget
