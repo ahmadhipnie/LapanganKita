@@ -2,7 +2,7 @@
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
-
+import 'package:dio/dio.dart' as dio;
 import '../../data/network/api_client.dart';
 
 class CustomerHistoryController extends GetxController {
@@ -17,6 +17,49 @@ class CustomerHistoryController extends GetxController {
   void onInit() {
     super.onInit();
     loadData();
+  }
+
+  Future<void> createCommunityPost({
+    required int bookingId,
+    required String title,
+    required String description,
+    required String? imagePath,
+  }) async {
+    try {
+      isLoading.value = true;
+
+      // ✅ Gunakan dio.FormData dengan prefix
+      final formData = dio.FormData.fromMap({
+        'id_booking': bookingId,
+        'post_title': title,
+        'post_description': description,
+        if (imagePath != null && imagePath.isNotEmpty)
+          'post_photo': await dio.MultipartFile.fromFile(
+            imagePath,
+            filename: 'post_${DateTime.now().millisecondsSinceEpoch}.png',
+          ),
+      });
+
+      final response = await _apiClient.raw.post(
+        'posts',
+        data: formData,
+        options: dio.Options(
+          contentType: 'multipart/form-data',
+          headers: {'Content-Type': 'multipart/form-data'},
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // ✅ Success - akan ditutup di view dan show snackbar
+        return; // Biarkan view yang handle success
+      } else {
+        throw Exception(response.data?['message'] ?? 'Failed to create post');
+      }
+    } catch (e) {
+      rethrow; // Lempar error ke view
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> loadData() async {

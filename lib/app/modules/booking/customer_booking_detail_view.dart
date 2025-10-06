@@ -2,8 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_controller.dart';
+import 'package:lapangan_kita/app/modules/booking/webview_maps.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/add_on_model.dart';
 // import '../../data/models/customer/booking/court_model.dart';
@@ -311,6 +311,7 @@ class CustomerBookingDetailView
       children: [
         const Text('Start Time', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
+
         Obx(() {
           final selectedDuration = int.parse(controller.selectedDuration.value);
 
@@ -328,16 +329,25 @@ class CustomerBookingDetailView
               final isSelected = controller.isTimeInSelectedRange(time);
               final isStartTime = controller.selectedStartTime.value == time;
 
+              // Tentukan tooltip message
+              String? tooltipMessage;
+              if (!isAvailable) {
+                if (selectedDuration == 1) {
+                  tooltipMessage = 'Time slot is booked';
+                } else {
+                  tooltipMessage =
+                      'Not available for $selectedDuration hours duration';
+                }
+              }
+
               return FilterChip(
                 label: Text(time),
                 selected: isSelected,
                 onSelected: isAvailable
                     ? (_) {
                         if (isStartTime) {
-                          // Unselect jika sudah terpilih
                           controller.unselectStartTime();
                         } else {
-                          // Select waktu baru
                           controller.selectStartTime(time);
                         }
                       }
@@ -355,9 +365,7 @@ class CustomerBookingDetailView
                       : Colors.grey,
                 ),
                 disabledColor: AppColors.neutralColor,
-                tooltip: isAvailable
-                    ? null
-                    : 'Not available for selected duration',
+                tooltip: tooltipMessage,
               );
             }).toList(),
           );
@@ -866,37 +874,25 @@ class CustomerBookingDetailView
   }
 
   Future<void> _openMaps() async {
-    // Pastikan controller.court.mapsUrl berisi link Google Maps
-    // Contoh: "https://maps.app.goo.gl/N9VYw66ZFU7BD6cg8"
-    final String mapsUrl = controller.court.mapsUrl;
-
-    if (mapsUrl.isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Link Google Maps tidak tersedia',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    final Uri mapsUri = Uri.parse(mapsUrl);
-
     try {
-      if (await canLaunchUrl(mapsUri)) {
-        await launchUrl(mapsUri);
-      } else {
-        Get.snackbar(
-          'Error',
-          'Tidak dapat membuka Google Maps',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      }
+      final controller = Get.find<CustomerBookingDetailController>();
+
+      // Buka Google Maps WebView dengan data court
+      Get.to(
+        () => GoogleSearchWebView(
+          courtName: controller.court.name,
+          courtLocation: controller.court.location,
+        ),
+        transition: Transition.cupertino,
+        duration: const Duration(milliseconds: 300),
+      );
+
+      print('Opening Google Maps for: ${controller.court.name}');
     } catch (e) {
+      print('Error opening Google Maps: $e');
       Get.snackbar(
         'Error',
-        'Terjadi kesalahan: $e',
+        'Tidak dapat membuka peta lokasi',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );

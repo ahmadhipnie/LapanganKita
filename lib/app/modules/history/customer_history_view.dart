@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
 import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
@@ -294,6 +297,11 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                 _buildDetailRow('Time', _formatTimeRange(booking)),
                 _buildDetailRow('Duration', '${booking.duration} hour(s)'),
                 _buildDetailRow('Note', booking.note),
+                if (booking.status == 'approved') ...[
+                  const SizedBox(height: 12),
+                  _buildCreatePostButton(booking),
+                ],
+
                 const SizedBox(height: 8),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
@@ -461,5 +469,542 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
       decimalDigits: 0,
     );
     return format.format(amount);
+  }
+
+  Widget _buildCreatePostButton(BookingHistory booking) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          _showCreatePostModal(booking);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[50],
+          foregroundColor: Colors.blue[700],
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.blue[200]!, width: 1),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Create Community Post',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // customer_history_view.dart - Ganti method _showCreatePostModal dengan yang baru
+  void _showCreatePostModal(BookingHistory booking) {
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    final RxString selectedImagePath = ''.obs;
+
+    // Set default title berdasarkan booking
+    titleController.text = 'Looking for players at ${booking.courtName}';
+
+    // Cek ukuran layar untuk menentukan tinggi modal
+    final mediaQuery = MediaQuery.of(Get.context!);
+    final isSmallScreen = mediaQuery.size.height < 600;
+    final maxHeight = mediaQuery.size.height * 0.85;
+
+    Get.bottomSheet(
+      Container(
+        width: double.infinity,
+        constraints: BoxConstraints(
+          maxHeight: isSmallScreen ? mediaQuery.size.height * 0.9 : maxHeight,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag Handle
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Create Community Post',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.close, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content yang bisa di-scroll
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Court Info Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.sports,
+                                size: 16,
+                                color: Colors.blue[700],
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                booking.types.isNotEmpty
+                                    ? booking.types.first
+                                    : 'General',
+                                style: TextStyle(
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            booking.courtName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            booking.location,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 12,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatDate(booking.date),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.access_time,
+                                size: 12,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatTimeRange(booking),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Form Fields
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Post Title *',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: titleController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter post title...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.blue[700]!,
+                                width: 2,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                          maxLines: 1,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        const Text(
+                          'Description',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: descriptionController,
+                          decoration: InputDecoration(
+                            hintText:
+                                'Describe your game, skill level, what you\'re looking for...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.blue[700]!,
+                                width: 2,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                          maxLines: 4,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Image Upload Section
+                        const Text(
+                          'Add Photo (Optional)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Obx(
+                          () => GestureDetector(
+                            onTap: () async {
+                              await _pickImage(selectedImagePath);
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.grey[300]!,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.grey[50],
+                              ),
+                              child: selectedImagePath.value.isEmpty
+                                  ? Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.camera_alt,
+                                          size: 32,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Tap to add photo',
+                                          style: TextStyle(
+                                            color: Colors.grey[500],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Stack(
+                                      children: [
+                                        // Display selected image
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: Image.file(
+                                            File(selectedImagePath.value),
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        // Remove button
+                                        Positioned(
+                                          top: 4,
+                                          right: 4,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              selectedImagePath.value = '';
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black54,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                Icons.close,
+                                                size: 16,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+                        Text(
+                          'Recommended: 1080x720 px',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+
+            // Bottom Action Bar
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey[200]!, width: 1),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Obx(
+                () => Row(
+                  children: [
+                    // Cancel Button
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: controller.isLoading.value
+                            ? null
+                            : () => Get.back(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey[700],
+                          side: BorderSide(color: Colors.grey[300]!),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Post Button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: controller.isLoading.value
+                            ? null
+                            : () async {
+                                if (titleController.text.trim().isEmpty) {
+                                  Get.snackbar(
+                                    'Required',
+                                    'Please enter a post title',
+                                    backgroundColor: Colors.red[50],
+                                    colorText: Colors.red[700],
+                                    snackPosition: SnackPosition.TOP,
+                                  );
+                                  return;
+                                }
+
+                                try {
+                                  await controller.createCommunityPost(
+                                    bookingId: booking.id,
+                                    title: titleController.text.trim(),
+                                    description: descriptionController.text
+                                        .trim(),
+                                    imagePath: selectedImagePath.value.isEmpty
+                                        ? null
+                                        : selectedImagePath.value,
+                                  );
+
+                                  // ✅ SUCCESS: Tutup modal dan show snackbar
+                                  Get.back(); // Tutup modal bottom sheet
+
+                                  Get.snackbar(
+                                    'Success 🎉',
+                                    'Community post created successfully!',
+                                    backgroundColor: Colors.green[50],
+                                    colorText: Colors.green[700],
+                                    snackPosition: SnackPosition.TOP,
+                                    duration: const Duration(seconds: 3),
+                                    icon: const Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green,
+                                    ),
+                                    shouldIconPulse: true,
+                                    margin: const EdgeInsets.all(16),
+                                    borderRadius: 12,
+                                  );
+                                } catch (e) {
+                                  // ✅ ERROR: Show error snackbar tanpa menutup modal
+                                  print(e);
+                                  Get.snackbar(
+                                    'Error',
+                                    'Failed to create post: $e',
+
+                                    backgroundColor: Colors.red[50],
+                                    colorText: Colors.red[700],
+                                    snackPosition: SnackPosition.TOP,
+                                    duration: const Duration(seconds: 4),
+                                    icon: const Icon(
+                                      Icons.error,
+                                      color: Colors.red,
+                                    ),
+                                    margin: const EdgeInsets.all(16),
+                                    borderRadius: 12,
+                                  );
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                        ),
+                        child: controller.isLoading.value
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Text(
+                                'Create Post',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      enableDrag: true,
+    );
+  }
+
+  // Tambahkan method untuk memilih gambar
+  Future<void> _pickImage(RxString selectedImagePath) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1080,
+        maxHeight: 720,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        selectedImagePath.value = image.path;
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: $e',
+        backgroundColor: Colors.red[50],
+        colorText: Colors.red[700],
+      );
+    }
   }
 }
