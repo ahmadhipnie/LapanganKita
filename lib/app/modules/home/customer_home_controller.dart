@@ -5,8 +5,29 @@ import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
 import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
 import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
+import 'package:lapangan_kita/app/data/models/promosi_slider_image.dart';
+import 'package:lapangan_kita/app/data/repositories/promosi_repository.dart';
 
 class CustomerHomeController extends GetxController {
+  CustomerHomeController({PromosiRepository? promosiRepository})
+    : _promosiRepository = promosiRepository ?? Get.find<PromosiRepository>();
+
+  final PromosiRepository _promosiRepository;
+
+  static const List<String> _fallbackImageUrls = [
+    'https://images.unsplash.com/photo-1520877880798-5ee004e3f11e?w=500',
+    'https://i.pinimg.com/736x/b4/4e/64/b44e64a9790169f518b6c8f612263944.jpg?w=500',
+    'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500',
+    'https://i.pinimg.com/736x/6d/4f/27/6d4f277d10b4fc819d17d3f1a3f217b7.jpg?w=500',
+  ];
+
+  static const List<String> _fallbackTitles = [
+    'Lapangan Futsal Premium',
+    'Lapangan Basket Standar NBA',
+    'Lapangan Tenis Berstandar Internasional',
+    'Lapangan Voli Pantai & Indoor',
+  ];
+
   // Tambahkan controller untuk history
   final CustomerHistoryController historyController =
       Get.find<CustomerHistoryController>();
@@ -26,21 +47,49 @@ class CustomerHomeController extends GetxController {
       .toString()
       .obs;
 
-  // Image data untuk carousel dengan timestamp parameter
-  List<String> get imgList => [
-    'https://images.unsplash.com/photo-1520877880798-5ee004e3f11e?w=500&t=$_timestamp',
-    'https://i.pinimg.com/736x/b4/4e/64/b44e64a9790169f518b6c8f612263944.jpg?w=500&t=$_timestamp',
-    'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500&t=$_timestamp',
-    'https://i.pinimg.com/736x/6d/4f/27/6d4f277d10b4fc819d17d3f1a3f217b7.jpg?w=500&t=$_timestamp',
-  ];
+  final RxList<PromosiSliderImage> sliderImages = <PromosiSliderImage>[].obs;
+  final RxBool isSliderLoading = false.obs;
+  final RxString sliderError = ''.obs;
 
-  // Title untuk setiap slide
-  final List<String> titleList = [
-    'Lapangan Futsal Premium',
-    'Lapangan Basket Standar NBA',
-    'Lapangan Tenis Berstandar Internasional',
-    'Lapangan Voli Pantai & Indoor',
-  ];
+  // Image data untuk carousel dengan timestamp parameter
+  List<String> get imgList {
+    String appendTimestamp(String url) {
+      if (url.isEmpty) return url;
+      final separator = url.contains('?') ? '&' : '?';
+      return '$url${separator}t=${_timestamp.value}';
+    }
+
+    final remoteImages = sliderImages
+        .map((image) => appendTimestamp(image.imageUrl))
+        .where((url) => url.isNotEmpty)
+        .toList();
+
+    if (remoteImages.isNotEmpty) {
+      return remoteImages;
+    }
+
+    return _fallbackImageUrls.map(appendTimestamp).toList();
+  }
+
+  String slideTitleForIndex(int index) {
+    if (sliderImages.length > index) {
+      final image = sliderImages[index];
+      final formatted = image.formattedDate(pattern: 'dd MMM yyyy • HH:mm');
+      return 'Promo terbaru • $formatted';
+    }
+
+    if (_fallbackTitles.isNotEmpty) {
+      return _fallbackTitles[index % _fallbackTitles.length];
+    }
+
+    return 'Promosi LapanganKita';
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchSliderImages();
+  }
 
   // Options untuk carousel
   CarouselOptions get carouselOptions => CarouselOptions(
@@ -146,9 +195,9 @@ class CustomerHomeController extends GetxController {
   // Method untuk refresh data
   Future<void> refreshData() async {
     isLoading.value = true;
+    sliderError.value = '';
 
-    // Update timestamp untuk force reload images
-    _timestamp.value = DateTime.now().millisecondsSinceEpoch.toString();
+    await fetchSliderImages(showNotification: true);
 
     // Refresh booking data juga
     final bookingController = Get.find<CustomerBookingController>();
@@ -158,6 +207,41 @@ class CustomerHomeController extends GetxController {
     await Future.delayed(const Duration(seconds: 1));
 
     isLoading.value = false;
+  }
+
+  Future<void> fetchSliderImages({bool showNotification = false}) async {
+    sliderError.value = '';
+    isSliderLoading.value = true;
+
+    try {
+      final images = await _promosiRepository.getSliderImages();
+      sliderImages.assignAll(images);
+    } on PromosiException catch (e) {
+      sliderError.value = e.message;
+      if (showNotification) {
+        Get.snackbar(
+          'Gagal memuat promosi',
+          e.message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFFFECACA),
+          colorText: const Color(0xFF7F1D1D),
+        );
+      }
+    } catch (e) {
+      sliderError.value = 'Terjadi kesalahan saat memuat slider promosi.';
+      if (showNotification) {
+        Get.snackbar(
+          'Gagal memuat promosi',
+          'Terjadi kesalahan. Silakan coba lagi.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFFFFF7ED),
+          colorText: const Color(0xFF92400E),
+        );
+      }
+    } finally {
+      isSliderLoading.value = false;
+      _timestamp.value = DateTime.now().millisecondsSinceEpoch.toString();
+    }
   }
 
   void _applyCategoryFilterWithRetry(String category, {int retryCount = 0}) {
@@ -247,6 +331,11 @@ class CustomerHomeController extends GetxController {
 
   // Tambahkan method untuk show image dialog
   void showImageDialog(int index, BuildContext context) {
+    final images = imgList;
+    if (images.isEmpty || index < 0 || index >= images.length) {
+      return;
+    }
+
     showGeneralDialog(
       context: context,
       pageBuilder: (context, animation, secondaryAnimation) {
@@ -275,7 +364,7 @@ class CustomerHomeController extends GetxController {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.network(
-                      imgList[index],
+                      images[index],
                       fit: BoxFit.contain,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;

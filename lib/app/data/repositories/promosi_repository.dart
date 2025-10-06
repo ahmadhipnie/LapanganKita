@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import 'package:lapangan_kita/app/data/models/promosi_model.dart';
+import 'package:lapangan_kita/app/data/models/promosi_slider_image.dart';
 import 'package:lapangan_kita/app/data/network/api_client.dart';
 
 class PromosiRepository {
@@ -74,6 +75,43 @@ class PromosiRepository {
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
       throw PromosiException(message ?? 'Gagal memuat detail promosi.');
+    } on FormatException catch (e) {
+      throw PromosiException(e.message);
+    }
+  }
+
+  Future<List<PromosiSliderImage>> getSliderImages() async {
+    try {
+      final response = await _apiClient.raw.get<Map<String, dynamic>>(
+        'promosi/slider',
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        final images = body['images'];
+        if (images is List) {
+          return images
+              .whereType<Map<String, dynamic>>()
+              .map(PromosiSliderImage.fromJson)
+              .toList();
+        }
+        return const <PromosiSliderImage>[];
+      }
+
+      throw PromosiException(
+        _extractMessage(body) ??
+            'Gagal memuat slider promosi (status $statusCode).',
+      );
+    } on DioException catch (e) {
+      if (_isTimeout(e)) {
+        throw const PromosiException(
+          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+        );
+      }
+      final message = _extractMessage(e.response?.data) ?? e.message;
+      throw PromosiException(message ?? 'Gagal memuat slider promosi.');
     } on FormatException catch (e) {
       throw PromosiException(e.message);
     }
