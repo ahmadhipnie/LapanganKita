@@ -3,7 +3,7 @@ import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangan_kita/app/modules/history/customer_history_controller.dart';
-import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
+import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 class CustomerHistoryView extends GetView<CustomerHistoryController> {
@@ -217,19 +217,25 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
               children: [
                 Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        booking.courtImageUrl,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.broken_image),
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: booking.getCategoryColor().withValues(
+                          alpha: 0.2,
                         ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: booking.getCategoryColor().withValues(
+                            alpha: 0.3,
+                          ),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        booking.getCategoryIcon(),
+                        size: 40,
+                        color: booking.getCategoryColor(),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -254,11 +260,23 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Booking Code: ${booking.id}',
+                            'Id: ${booking.orderId}',
                             style: TextStyle(
                               color: Colors.grey[600],
-                              fontSize: 12,
+                              fontSize: 14,
                             ),
+                          ),
+                          Wrap(
+                            spacing: 8,
+                            children: booking.types.map((type) {
+                              return Text(
+                                'Types: $type',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.secondary,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ],
                       ),
@@ -269,7 +287,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                 _buildDetailRow('Date', _formatDate(booking.date)),
                 _buildDetailRow('Time', _formatTimeRange(booking)),
                 _buildDetailRow('Duration', '${booking.duration} hour(s)'),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
                   shape: const RoundedRectangleBorder(

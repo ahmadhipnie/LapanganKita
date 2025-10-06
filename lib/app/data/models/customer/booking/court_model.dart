@@ -14,6 +14,7 @@ class Court {
   final String fieldType;
   final String status;
   final int maxPerson;
+  final int placeId; // ← TAMBAH INI
   final String placeName;
   final String placeAddress;
   final String placeOwnerName;
@@ -34,6 +35,7 @@ class Court {
     required this.fieldType,
     required this.status,
     required this.maxPerson,
+    required this.placeId, // ← TAMBAH INI
     required this.placeName,
     required this.placeAddress,
     required this.placeOwnerName,
@@ -58,6 +60,7 @@ class Court {
       fieldType: json['field_type'] ?? '',
       status: json['status'] ?? '',
       maxPerson: json['max_person'] ?? 0,
+      placeId: json['id_place'] ?? 0, // ← TAMBAH INI, ambil dari id_place
       placeName: json['place_name'] ?? '',
       placeAddress: json['place_address'] ?? '',
       placeOwnerName: json['place_owner_name'] ?? '',
@@ -98,6 +101,7 @@ class Court {
       'closing_time': closingTime,
       'status': status,
       'max_person': maxPerson,
+      'id_place': placeId, // ← TAMBAH INI
       'place_name': placeName,
       'place_owner_name': placeOwnerName,
     };

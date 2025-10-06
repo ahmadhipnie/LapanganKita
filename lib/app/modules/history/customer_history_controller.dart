@@ -1,23 +1,56 @@
+// customer_history_controller.dart
 import 'package:get/get.dart';
-import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
+import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
+import 'package:lapangan_kita/app/services/local_storage_service.dart';
+
+import '../../data/network/api_client.dart';
 
 class CustomerHistoryController extends GetxController {
   final RxList<BookingHistory> bookings = <BookingHistory>[].obs;
   final RxString selectedFilter = 'all'.obs;
   final RxBool isLoading = false.obs;
 
+  final ApiClient _apiClient = ApiClient();
+  final LocalStorageService _localStorage = LocalStorageService.instance;
+
   @override
   void onInit() {
     super.onInit();
-    _addDummyData();
+    loadData();
   }
 
-  // Method untuk load data
+  // Method untuk load data dari API
   Future<void> loadData() async {
     isLoading.value = true;
     try {
-      await Future.delayed(const Duration(seconds: 1)); // Simulasi loading
-      _addDummyData();
+      final userId = _localStorage.userId;
+      if (userId == 0) {
+        Get.snackbar('Error', 'User not logged in');
+        return;
+      }
+
+      final response = await _apiClient.get(
+        'bookings/me/bookings',
+        queryParameters: {'user_id': userId},
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> bookingData = response.data['data'] ?? [];
+        bookings.assignAll(
+          bookingData
+              .map((data) => BookingHistory.fromApiResponse(data))
+              .toList(),
+        );
+
+        if (bookingData.isEmpty) {
+          Get.snackbar('Info', 'No booking history found');
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to load booking data: ${response.data['message'] ?? 'Unknown error'}',
+        );
+      }
     } catch (e) {
       Get.snackbar('Error', 'Failed to load data: $e');
     } finally {
@@ -29,15 +62,36 @@ class CustomerHistoryController extends GetxController {
   Future<void> refreshData() async {
     isLoading.value = true;
     try {
-      await Future.delayed(const Duration(seconds: 2)); // Simulasi refresh
-      bookings.clear();
-      _addDummyData();
-      Get.snackbar(
-        'Success',
-        'Data refreshed successfully',
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 2),
+      final userId = _localStorage.userId;
+      if (userId == 0) {
+        Get.snackbar('Error', 'User not logged in');
+        return;
+      }
+
+      final response = await _apiClient.get(
+        'bookings/me/bookings',
+        queryParameters: {'user_id': userId},
       );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> bookingData = response.data['data'] ?? [];
+        bookings.assignAll(
+          bookingData
+              .map((data) => BookingHistory.fromApiResponse(data))
+              .toList(),
+        );
+        Get.snackbar(
+          'Success',
+          'Data refreshed successfully',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 2),
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to refresh booking data: ${response.data['message'] ?? 'Unknown error'}',
+        );
+      }
     } catch (e) {
       Get.snackbar('Error', 'Failed to refresh data: $e');
     } finally {
@@ -49,67 +103,23 @@ class CustomerHistoryController extends GetxController {
     selectedFilter.value = filter;
   }
 
-  void _addDummyData() {
-    // Dummy data 1
-    final dummy1 = BookingHistory(
-      id: 'BK1234567890',
-      courtName: 'Indoor Tennis Court',
-      courtImageUrl:
-          'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
-      location: 'Kemang, South Jakarta',
-      types: ['Futsal'],
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      startTime: '14:00',
-      duration: 2,
-      totalAmount: 480000,
-      status: 'approved',
-      equipment: {'Tennis Racket': 2, 'Towel rental': 1},
-      courtPrice: 240000,
-      equipmentTotal: 125000,
-    );
-
-    // Dummy data 2
-    final dummy2 = BookingHistory(
-      id: 'BK0987654321',
-      courtName: 'Premium Futsal Court',
-      courtImageUrl:
-          'https://images.unsplash.com/photo-1520877880798-5ee004e3f11e',
-      location: 'Senayan, Central Jakarta',
-      types: ['Tennis'],
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      startTime: '19:00',
-      duration: 1,
-      totalAmount: 100000,
-      status: 'pending',
-      equipment: {},
-      courtPrice: 100000,
-      equipmentTotal: 0,
-    );
-
-    bookings.addAll([dummy1, dummy2]);
-  }
-
   void refreshHistory() async {
-    isLoading.value = true;
-    // Jika data dari API, panggil API di sini. Jika lokal, bisa clear dan add ulang.
-    await Future.delayed(const Duration(seconds: 1)); // simulasi loading
-    // Misal: await fetchBookingHistory();
-    isLoading.value = false;
+    await loadData();
   }
 
   void addBooking(BookingHistory booking) {
-    bookings.insert(0, booking); // Tambahkan di awal list
+    bookings.insert(0, booking);
     update();
   }
 
-  void updateBookingStatus(String id, String status) {
+  void updateBookingStatus(int id, String status) {
     final index = bookings.indexWhere((booking) => booking.id == id);
     if (index != -1) {
       final updatedBooking = BookingHistory(
         id: bookings[index].id,
         courtName: bookings[index].courtName,
-        courtImageUrl: bookings[index].courtImageUrl,
         location: bookings[index].location,
+        orderId: bookings[index].orderId,
         date: bookings[index].date,
         startTime: bookings[index].startTime,
         duration: bookings[index].duration,
@@ -122,5 +132,11 @@ class CustomerHistoryController extends GetxController {
       );
       bookings[index] = updatedBooking;
     }
+  }
+
+  // Method untuk mendapatkan jumlah booking berdasarkan status
+  int getBookingCountByStatus(String status) {
+    if (status == 'all') return bookings.length;
+    return bookings.where((booking) => booking.status == status).length;
   }
 }

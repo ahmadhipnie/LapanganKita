@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
@@ -16,6 +17,7 @@ void main() async {
   final hasCompletedOnboarding = prefs.getBool("onboarding") ?? false;
 
   await LocalStorageService.init();
+  await dotenv.load(fileName: ".env");
 
   final localStorage = LocalStorageService.instance;
   await Future.delayed(const Duration(milliseconds: 100));

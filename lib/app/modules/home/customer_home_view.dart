@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
-import 'package:lapangan_kita/app/modules/history/customer_history_model.dart';
+import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
 import 'package:lapangan_kita/app/modules/home/customer_home_controller.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
