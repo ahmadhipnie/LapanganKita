@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 // import 'package:lapangan_kita/app/data/services/session_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +19,7 @@ void main() async {
 
   await LocalStorageService.init();
   await dotenv.load(fileName: ".env");
+  await initializeDateFormatting('id_ID', null);
 
   final localStorage = LocalStorageService.instance;
   await Future.delayed(const Duration(milliseconds: 100));
