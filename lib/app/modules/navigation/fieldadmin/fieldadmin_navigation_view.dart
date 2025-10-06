@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navigation_controller.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_logout_view.dart';
+import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_promosi_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_refund_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_withdraw_view.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
@@ -12,7 +13,8 @@ class FieldadminNavigationView extends GetView<FieldadminNavigationController> {
   final List<Widget> _pages = [
     FieldadminWithdrawView(), // index 0
     const FieldadminRefundView(), // index 1
-    const FieldadminLogoutView(), // index 2
+    const FieldadminPromosiView(), // index 2
+    const FieldadminLogoutView(), // index 3
   ];
 
   @override
@@ -33,6 +35,10 @@ class FieldadminNavigationView extends GetView<FieldadminNavigationController> {
             BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long),
               label: 'Refund',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.campaign_outlined),
+              label: 'Promosi',
             ),
             BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
           ],

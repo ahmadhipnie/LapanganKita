@@ -11,6 +11,8 @@ class WithdrawModel {
     required this.userName,
     required this.userEmail,
     required this.filePhotoUrl,
+    required this.bankType,
+    required this.accountNumber,
   });
 
   final int id;
@@ -22,6 +24,8 @@ class WithdrawModel {
   final String userName;
   final String userEmail;
   final String? filePhotoUrl;
+  final String bankType;
+  final String accountNumber;
 
   factory WithdrawModel.fromJson(Map<String, dynamic> json) {
     int parseInt(dynamic value) {
@@ -55,6 +59,8 @@ class WithdrawModel {
       userName: readString(json['user_name']),
       userEmail: readString(json['user_email']),
       filePhotoUrl: json['file_photo_url']?.toString(),
+      bankType: readString(json['bank_type']),
+      accountNumber: readString(json['account_number']),
     );
   }
 
@@ -70,5 +76,29 @@ class WithdrawModel {
       final fallbackFormatter = DateFormat(pattern);
       return fallbackFormatter.format(createdAt.toLocal());
     }
+  }
+
+  String get normalizedBankType {
+    final value = bankType.trim();
+    if (value.isEmpty) {
+      return '';
+    }
+    final lowered = value.toLowerCase();
+    if (lowered == 'null' || lowered == '-') {
+      return '';
+    }
+    return value;
+  }
+
+  String get normalizedAccountNumber {
+    final value = accountNumber.trim();
+    if (value.isEmpty) {
+      return '';
+    }
+    final lowered = value.toLowerCase();
+    if (lowered == 'null') {
+      return '';
+    }
+    return value;
   }
 }

@@ -30,6 +30,8 @@ class FieldadminTransactionController extends GetxController {
   final RxString filterStatus = 'All'.obs;
   final RxString searchQuery = ''.obs;
   final RxList<String> statusOptions = <String>['All'].obs;
+  final RxMap<int, String> _userBankTypes = <int, String>{}.obs;
+  final RxMap<int, String> _userAccountNumbers = <int, String>{}.obs;
 
   static final NumberFormat _currencyFormatter = NumberFormat.currency(
     locale: 'id_ID',
@@ -67,6 +69,7 @@ class FieldadminTransactionController extends GetxController {
     try {
       final refundsResult = await _refundRepository.getRefunds();
       refunds.assignAll(refundsResult);
+      _ingestRefundBankInfo(refundsResult);
 
       final bookingsResult = await _loadCancelledBookings();
       final refundedBookingIds = refundsResult
@@ -77,6 +80,7 @@ class FieldadminTransactionController extends GetxController {
           .where((booking) => !refundedBookingIds.contains(booking.id))
           .toList();
 
+      await _prefetchBankInfoForBookings(filteredBookings);
       cancelledBookings.assignAll(filteredBookings);
 
       _synchronizeStatusOptions(refundsResult, filteredBookings);
@@ -162,6 +166,20 @@ class FieldadminTransactionController extends GetxController {
       return b.sortDate.compareTo(a.sortDate);
     });
     return list;
+  }
+
+  String? bankTypeForUser(int userId) {
+    final value = _userBankTypes[userId];
+    if (value == null) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? accountNumberForUser(int userId) {
+    final value = _userAccountNumbers[userId];
+    if (value == null) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   Color statusColor(String status) {
@@ -261,6 +279,60 @@ class FieldadminTransactionController extends GetxController {
       isProcessingRefund.value = false;
     }
   }
+
+  void _ingestRefundBankInfo(List<RefundModel> items) {
+    for (final refund in items) {
+      final bank = refund.normalizedBankType;
+      final account = refund.normalizedAccountNumber;
+      if (bank.isEmpty && account.isEmpty) {
+        continue;
+      }
+      _storeBankInfo(refund.userId, {
+        if (bank.isNotEmpty) 'bank_type': bank,
+        if (account.isNotEmpty) 'account_number': account,
+      });
+    }
+  }
+
+  Future<void> _prefetchBankInfoForBookings(List<OwnerBooking> bookings) async {
+    final userIds = bookings
+        .map((booking) => booking.userId)
+        .where((userId) => !_hasBankMeta(userId))
+        .toSet();
+
+    if (userIds.isEmpty) {
+      return;
+    }
+
+    await Future.wait(
+      userIds.map((userId) async {
+        final info = await _refundRepository.getUserBankInfo(userId);
+        if (info != null && info.isNotEmpty) {
+          _storeBankInfo(userId, info);
+        }
+      }),
+    );
+  }
+
+  void _storeBankInfo(int userId, Map<String, String> info) {
+    final bank = info['bank_type'];
+    final account = info['account_number'];
+
+    if (bank != null && bank.trim().isNotEmpty) {
+      _userBankTypes[userId] = bank;
+    }
+
+    if (account != null && account.trim().isNotEmpty) {
+      _userAccountNumbers[userId] = account;
+    }
+  }
+
+  bool _hasBankMeta(int userId) {
+    final bank = _userBankTypes[userId]?.trim();
+    final account = _userAccountNumbers[userId]?.trim();
+    return (bank != null && bank.isNotEmpty) ||
+        (account != null && account.isNotEmpty);
+  }
 }
 
 enum FieldadminRefundItemType { refund, cancelledBooking }
@@ -324,6 +396,8 @@ class FieldadminRefundItem {
 
   int get bookingId => isRefund ? _refund.bookingId : _booking.id;
 
+  int get userId => isRefund ? _refund.userId : _booking.userId;
+
   DateTime get sortDate => isRefund ? _refund.createdAt : _booking.updatedAt;
 
   DateTime get bookingCreatedAt =>
@@ -349,6 +423,18 @@ class FieldadminRefundItem {
       ? _refund.fieldOwnerName
       : null;
 
+  String? get bankType {
+    if (!isRefund) return null;
+    final value = _refund.normalizedBankType;
+    return value.isEmpty ? null : value;
+  }
+
+  String? get accountNumber {
+    if (!isRefund) return null;
+    final value = _refund.normalizedAccountNumber;
+    return value.isEmpty ? null : value;
+  }
+
   String? get proofFile =>
       isRefund &&
           _refund.filePhoto != null &&
@@ -368,6 +454,8 @@ class FieldadminRefundItem {
           contains(_refund.userEmail) ||
           contains(_refund.fieldName) ||
           contains(_refund.placeName) ||
+          contains(_refund.normalizedBankType) ||
+          contains(_refund.normalizedAccountNumber) ||
           contains('#${_refund.id}'.toLowerCase()) ||
           contains('#${_refund.bookingId}'.toLowerCase());
     }

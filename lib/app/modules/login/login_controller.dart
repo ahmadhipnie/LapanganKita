@@ -282,7 +282,7 @@ class LoginController extends GetxController {
         );
       }
 
-//        final user = response.user!;
+      //        final user = response.user!;
       // if (user.isVerified != true) {
       //   throw const AuthException(
       //     'Akun belum diverifikasi. Silakan cek email Anda.',
@@ -368,10 +368,10 @@ class LoginController extends GetxController {
     return RxBool(isFormValid);
   }
 
-  @override
-  void onClose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.onClose();
-  }
+  // @override
+  // void onClose() {
+  //   emailController.dispose();
+  //   passwordController.dispose();
+  //   super.onClose();
+  // }
 }

@@ -118,7 +118,7 @@ class CustomerRegisterController extends GetxController {
       dateOfBirth: dobController.text.trim(),
       accountNumber: accountNumberController.text.trim(),
       bankType: bank.value,
-      role: 'customer',
+      role: 'user',
     );
 
     try {

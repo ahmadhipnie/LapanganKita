@@ -110,18 +110,8 @@ class LoginView extends GetView<LoginController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    Obx(
-                                      () => Checkbox(
-                                        value: controller.rememberMe.value,
-                                        onChanged: (v) {
-                                          controller.rememberMe.value =
-                                              v ?? false;
-                                        },
-                                      ),
-                                    ),
-                                    const Text('Remember me'),
+                                Row(children: [
+                                    
                                   ],
                                 ),
                                 TextButton(

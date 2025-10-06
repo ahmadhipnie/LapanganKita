@@ -39,6 +39,8 @@ class FieldadminWithdrawController extends GetxController {
   final Rxn<WithdrawBalanceSummary> balanceSummary =
       Rxn<WithdrawBalanceSummary>();
   final RxInt minimumBalanceThreshold = 100000.obs;
+  final RxMap<int, String> _userBankTypes = <int, String>{}.obs;
+  final RxMap<int, String> _userAccountNumbers = <int, String>{}.obs;
 
   // UI state: search & status filter
   final RxString searchQuery = ''.obs;
@@ -71,6 +73,7 @@ class FieldadminWithdrawController extends GetxController {
     try {
       final results = await _withdrawRepository.getWithdraws();
       withdraws.assignAll(results);
+      _ingestWithdrawBankInfo(results);
     } on WithdrawException catch (e) {
       errorMessage.value = e.message;
       withdraws.clear();
@@ -95,6 +98,7 @@ class FieldadminWithdrawController extends GetxController {
     try {
       final results = await _placeRepository.getAllPlaces();
       _places.assignAll(results);
+      await _prefetchBankInfoForPlaces(results);
     } on PlaceException catch (e) {
       placeError.value = e.message;
       _places.clear();
@@ -138,6 +142,7 @@ class FieldadminWithdrawController extends GetxController {
         userId: userId,
       );
       userWithdraws.assignAll(results);
+      _ingestWithdrawBankInfo(results);
     } on WithdrawException catch (e) {
       userWithdrawError.value = e.message;
       userWithdraws.clear();
@@ -168,10 +173,14 @@ class FieldadminWithdrawController extends GetxController {
         final email = item.userEmail.toLowerCase();
         final idString = '#${item.id}'.toLowerCase();
         final amount = item.amount.toString();
+        final bankType = item.normalizedBankType.toLowerCase();
+        final accountNumber = item.normalizedAccountNumber.toLowerCase();
         return name.contains(query) ||
             email.contains(query) ||
             idString.contains(query) ||
-            amount.contains(query);
+            amount.contains(query) ||
+            bankType.contains(query) ||
+            accountNumber.contains(query);
       });
     }
 
@@ -289,6 +298,77 @@ class FieldadminWithdrawController extends GetxController {
       Get.put<PlaceRepository>(repo, permanent: true);
     }
     return repo;
+  }
+
+  String? bankTypeForUser(int? userId) {
+    if (userId == null) return null;
+    final value = _userBankTypes[userId];
+    if (value == null) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? accountNumberForUser(int? userId) {
+    if (userId == null) return null;
+    final value = _userAccountNumbers[userId];
+    if (value == null) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  void _ingestWithdrawBankInfo(List<WithdrawModel> items) {
+    for (final withdraw in items) {
+      final bank = withdraw.normalizedBankType;
+      final account = withdraw.normalizedAccountNumber;
+      if (bank.isEmpty && account.isEmpty) {
+        continue;
+      }
+      _storeBankInfo(withdraw.userId, {
+        if (bank.isNotEmpty) 'bank_type': bank,
+        if (account.isNotEmpty) 'account_number': account,
+      });
+    }
+  }
+
+  Future<void> _prefetchBankInfoForPlaces(List<PlaceModel> places) async {
+    final userIds = places
+        .map((place) => place.userId)
+        .whereType<int>()
+        .where((userId) => !_hasBankMeta(userId))
+        .toSet();
+
+    if (userIds.isEmpty) {
+      return;
+    }
+
+    await Future.wait(
+      userIds.map((userId) async {
+        final info = await _withdrawRepository.getUserBankInfo(userId);
+        if (info != null && info.isNotEmpty) {
+          _storeBankInfo(userId, info);
+        }
+      }),
+    );
+  }
+
+  void _storeBankInfo(int userId, Map<String, String> info) {
+    final bank = info['bank_type'];
+    final account = info['account_number'];
+
+    if (bank != null && bank.trim().isNotEmpty) {
+      _userBankTypes[userId] = bank;
+    }
+
+    if (account != null && account.trim().isNotEmpty) {
+      _userAccountNumbers[userId] = account;
+    }
+  }
+
+  bool _hasBankMeta(int userId) {
+    final bank = _userBankTypes[userId]?.trim();
+    final account = _userAccountNumbers[userId]?.trim();
+    return (bank != null && bank.isNotEmpty) ||
+        (account != null && account.isNotEmpty);
   }
 
   Future<void> pickProof(int id) async {

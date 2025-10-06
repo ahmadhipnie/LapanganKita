@@ -1,6 +1,7 @@
 import 'package:lapangan_kita/app/bindings/customer_booking_detail_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_navigation_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_transaction_binding.dart';
+import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_promosi_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_withdraw_binding.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_view.dart';
 import 'package:lapangan_kita/app/bindings/edit_field_fieldmanager_binding.dart';
@@ -59,6 +60,7 @@ class AppPages {
         FieldadminNavigationBinding(),
         FieldadminWithdrawBinding(),
         FieldadminTransactionBinding(),
+        FieldadminPromosiBinding(),
         FieldadminHistoryBinding(),
       ],
     ),
@@ -157,7 +159,13 @@ class AppPages {
     GetPage(
       name: AppRoutes.FIELD_ADMIN_NAVIGATION,
       page: () => FieldadminNavigationView(),
-      binding: FieldadminNavigationBinding(),
+      bindings: [
+        FieldadminNavigationBinding(),
+        FieldadminWithdrawBinding(),
+        FieldadminTransactionBinding(),
+        FieldadminPromosiBinding(),
+        FieldadminHistoryBinding(),
+      ],
     ),
     GetPage(
       name: AppRoutes.FIELD_ADMIN_WITHDRAW,

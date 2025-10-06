@@ -8,6 +8,8 @@ class WithdrawRepository {
   WithdrawRepository(this._apiClient);
 
   final ApiClient _apiClient;
+  final Map<int, Map<String, String>> _userBankCache =
+      <int, Map<String, String>>{};
 
   Future<List<WithdrawModel>> getWithdraws() async {
     try {
@@ -21,10 +23,11 @@ class WithdrawRepository {
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final data = body['data'];
         if (data is List) {
-          return data
-              .whereType<Map<String, dynamic>>()
-              .map(WithdrawModel.fromJson)
-              .toList();
+          final payloads = data.whereType<Map<String, dynamic>>().toList(
+            growable: false,
+          );
+          final normalized = await _enrichWithdrawPayloads(payloads);
+          return normalized.map(WithdrawModel.fromJson).toList();
         }
         return const <WithdrawModel>[];
       }
@@ -76,7 +79,8 @@ class WithdrawRepository {
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final data = body['data'];
         if (data is Map<String, dynamic>) {
-          return _mapCreatedWithdraw(data);
+          final normalized = await _enrichSingleWithdrawPayload(data);
+          return WithdrawModel.fromJson(normalized);
         }
         return null;
       }
@@ -149,10 +153,11 @@ class WithdrawRepository {
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final data = body['data'];
         if (data is List) {
-          return data
-              .whereType<Map<String, dynamic>>()
-              .map(WithdrawModel.fromJson)
-              .toList();
+          final payloads = data.whereType<Map<String, dynamic>>().toList(
+            growable: false,
+          );
+          final normalized = await _enrichWithdrawPayloads(payloads);
+          return normalized.map(WithdrawModel.fromJson).toList();
         }
         return const <WithdrawModel>[];
       }
@@ -213,7 +218,8 @@ class WithdrawRepository {
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final data = body['data'];
         if (data is Map<String, dynamic>) {
-          return WithdrawModel.fromJson(data);
+          final normalized = await _enrichSingleWithdrawPayload(data);
+          return WithdrawModel.fromJson(normalized);
         }
         throw const WithdrawException('Respons server tidak valid.');
       }
@@ -260,26 +266,212 @@ class WithdrawRepository {
     return null;
   }
 
-  WithdrawModel? _mapCreatedWithdraw(Map<String, dynamic> payload) {
+  Map<String, dynamic> _normalizeWithdrawPayload(Map<String, dynamic> payload) {
     final userInfo = payload['user_info'];
 
-    final normalized = <String, dynamic>{
+    String? readMerged(Map<String, dynamic>? source, String key, String? base) {
+      if (source != null && source.containsKey(key)) {
+        final value = source[key];
+        if (value != null) return value;
+      }
+      return base;
+    }
+
+    return <String, dynamic>{
       'id': payload['withdraw_id'] ?? payload['id'],
-      'id_users': payload['id_users'],
+      'id_users':
+          payload['id_users'] ??
+          payload['user_id'] ??
+          (userInfo is Map<String, dynamic> ? userInfo['id_users'] : null),
       'amount': payload['amount'],
       'file_photo': payload['file_photo'],
       'file_photo_url': payload['file_photo_url'] ?? payload['file_photo'],
       'created_at': payload['created_at'],
       'updated_at': payload['updated_at'],
-      'user_name': userInfo is Map<String, dynamic>
-          ? userInfo['user_name']
-          : payload['user_name'],
-      'user_email': userInfo is Map<String, dynamic>
-          ? userInfo['user_email']
-          : payload['user_email'],
+      'user_name': readMerged(
+        userInfo is Map<String, dynamic> ? userInfo : null,
+        'user_name',
+        payload['user_name'],
+      ),
+      'user_email': readMerged(
+        userInfo is Map<String, dynamic> ? userInfo : null,
+        'user_email',
+        payload['user_email'],
+      ),
+      'bank_type': readMerged(
+        userInfo is Map<String, dynamic> ? userInfo : null,
+        'bank_type',
+        payload['bank_type'],
+      ),
+      'account_number': readMerged(
+        userInfo is Map<String, dynamic> ? userInfo : null,
+        'account_number',
+        payload['account_number'],
+      ),
     };
+  }
 
-    return WithdrawModel.fromJson(normalized);
+  Future<List<Map<String, dynamic>>> _enrichWithdrawPayloads(
+    List<Map<String, dynamic>> payloads,
+  ) async {
+    final normalized = payloads
+        .map(_normalizeWithdrawPayload)
+        .toList(growable: false);
+
+    final missingUserIds = <int>{};
+    for (final item in normalized) {
+      final bank = _sanitizeUserValue(item['bank_type']);
+      final account = _sanitizeUserValue(item['account_number']);
+      if (_hasMeaningfulValue(bank) && _hasMeaningfulValue(account)) {
+        continue;
+      }
+      final userId = _parseUserId(item['id_users']);
+      if (userId != null) {
+        missingUserIds.add(userId);
+      }
+    }
+
+    if (missingUserIds.isNotEmpty) {
+      final bankInfoMap = await _loadBankInfoForUsers(missingUserIds);
+      if (bankInfoMap.isNotEmpty) {
+        for (final item in normalized) {
+          final userId = _parseUserId(item['id_users']);
+          if (userId == null) continue;
+          final info = bankInfoMap[userId];
+          if (info == null) continue;
+
+          final existingBank = _sanitizeUserValue(item['bank_type']);
+          final existingAccount = _sanitizeUserValue(item['account_number']);
+          final fetchedBank = _sanitizeUserValue(info['bank_type']);
+          final fetchedAccount = _sanitizeUserValue(info['account_number']);
+
+          if (!_hasMeaningfulValue(existingBank) &&
+              _hasMeaningfulValue(fetchedBank)) {
+            item['bank_type'] = fetchedBank;
+          }
+          if (!_hasMeaningfulValue(existingAccount) &&
+              _hasMeaningfulValue(fetchedAccount)) {
+            item['account_number'] = fetchedAccount;
+          }
+        }
+      }
+    }
+
+    return normalized;
+  }
+
+  Future<Map<String, dynamic>> _enrichSingleWithdrawPayload(
+    Map<String, dynamic> payload,
+  ) async {
+    final normalized = _normalizeWithdrawPayload(payload);
+
+    final bank = _sanitizeUserValue(normalized['bank_type']);
+    final account = _sanitizeUserValue(normalized['account_number']);
+    if (_hasMeaningfulValue(bank) && _hasMeaningfulValue(account)) {
+      return normalized;
+    }
+
+    final userId = _parseUserId(normalized['id_users']);
+    if (userId == null) {
+      return normalized;
+    }
+
+    final info = await _fetchUserBankInfo(userId);
+    if (info != null) {
+      final fetchedBank = _sanitizeUserValue(info['bank_type']);
+      final fetchedAccount = _sanitizeUserValue(info['account_number']);
+
+      if (!_hasMeaningfulValue(bank) && _hasMeaningfulValue(fetchedBank)) {
+        normalized['bank_type'] = fetchedBank;
+      }
+      if (!_hasMeaningfulValue(account) &&
+          _hasMeaningfulValue(fetchedAccount)) {
+        normalized['account_number'] = fetchedAccount;
+      }
+    }
+
+    return normalized;
+  }
+
+  Future<Map<String, String>?> getUserBankInfo(int userId) async {
+    final info = await _fetchUserBankInfo(userId);
+    if (info == null) {
+      return null;
+    }
+
+    final bank = _sanitizeUserValue(info['bank_type']);
+    final account = _sanitizeUserValue(info['account_number']);
+
+    if (!_hasMeaningfulValue(bank) && !_hasMeaningfulValue(account)) {
+      return null;
+    }
+
+    return {
+      if (_hasMeaningfulValue(bank)) 'bank_type': bank,
+      if (_hasMeaningfulValue(account)) 'account_number': account,
+    };
+  }
+
+  Future<Map<int, Map<String, String>>> _loadBankInfoForUsers(
+    Set<int> userIds,
+  ) async {
+    final results = <int, Map<String, String>>{};
+
+    await Future.wait(
+      userIds.map((userId) async {
+        final info = await _fetchUserBankInfo(userId);
+        if (info != null) {
+          final bank = _sanitizeUserValue(info['bank_type']);
+          final account = _sanitizeUserValue(info['account_number']);
+          if (_hasMeaningfulValue(bank) || _hasMeaningfulValue(account)) {
+            results[userId] = {'bank_type': bank, 'account_number': account};
+          }
+        }
+      }),
+    );
+
+    return results;
+  }
+
+  Future<Map<String, String>?> _fetchUserBankInfo(int userId) async {
+    final cached = _userBankCache[userId];
+    if (cached != null) {
+      return cached;
+    }
+
+    try {
+      final response = await _apiClient.raw.get<Map<String, dynamic>>(
+        'users/$userId',
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        final success = body['success'];
+        if (success is bool && !success) {
+          return null;
+        }
+
+        final data = body['data'];
+        if (data is Map<String, dynamic>) {
+          final bank = _sanitizeUserValue(data['bank_type']);
+          final account = _sanitizeUserValue(data['account_number']);
+          final info = <String, String>{
+            'bank_type': bank,
+            'account_number': account,
+          };
+          _userBankCache[userId] = info;
+          if (_hasMeaningfulValue(bank) || _hasMeaningfulValue(account)) {
+            return info;
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore fetch errors and fall back to existing data if any.
+    }
+
+    return _userBankCache[userId];
   }
 }
 
@@ -290,4 +482,31 @@ class WithdrawException implements Exception {
 
   @override
   String toString() => 'WithdrawException: $message';
+}
+
+int? _parseUserId(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value);
+  }
+  return null;
+}
+
+String _sanitizeUserValue(dynamic value) {
+  if (value == null) return '';
+  final stringValue = value.toString().trim();
+  if (!_hasMeaningfulValue(stringValue)) {
+    return '';
+  }
+  return stringValue;
+}
+
+bool _hasMeaningfulValue(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return false;
+  }
+  final lowered = trimmed.toLowerCase();
+  return lowered != 'null' && lowered != '-' && lowered != 'undefined';
 }
