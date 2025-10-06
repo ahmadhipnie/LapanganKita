@@ -1,6 +1,30 @@
 // customer_history_model.dart
 import 'package:flutter/material.dart';
 
+class BookingHistoryResponse {
+  final bool success;
+  final String message;
+  final List<BookingHistory> data;
+
+  BookingHistoryResponse({
+    required this.success,
+    required this.message,
+    required this.data,
+  });
+
+  factory BookingHistoryResponse.fromJson(Map<String, dynamic> json) {
+    return BookingHistoryResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      data:
+          (json['data'] as List<dynamic>?)
+              ?.map((item) => BookingHistory.fromApiResponse(item))
+              .toList() ??
+          [],
+    );
+  }
+}
+
 class BookingHistory {
   final int id;
   final String courtName;
@@ -11,8 +35,9 @@ class BookingHistory {
   final String startTime;
   final int duration;
   final double totalAmount;
-  final String status; // waiting_confirmation, approved, rejected, completed
-  final Map<String, int> equipment;
+  final String status;
+  final String note; // ✅ Tambahkan field note
+  final List<BookingDetail> details;
   final double courtPrice;
   final double equipmentTotal;
 
@@ -27,40 +52,38 @@ class BookingHistory {
     required this.duration,
     required this.totalAmount,
     required this.status,
-    required this.equipment,
+    required this.note, // ✅ Tambahkan di constructor
+    required this.details,
     required this.courtPrice,
     required this.equipmentTotal,
   });
 
   // Factory method to create from API response
   factory BookingHistory.fromApiResponse(Map<String, dynamic> data) {
-    final bookingDate = DateTime.parse(data['booking_datetime_start']);
-    final startTime = _formatTime(
-      DateTime.parse(data['booking_datetime_start']),
-    );
-    final duration = _calculateDuration(
-      DateTime.parse(data['booking_datetime_start']),
-      DateTime.parse(data['booking_datetime_end']),
-    );
+    // Parse datetime dengan konversi timezone
+    final bookingStartUtc = DateTime.parse(data['booking_datetime_start']);
+    final bookingEndUtc = DateTime.parse(data['booking_datetime_end']);
 
-    // Parse equipment/add-ons
-    final equipment = <String, int>{};
+    // Convert UTC to local time
+    final bookingStartLocal = bookingStartUtc.toLocal();
+    final bookingEndLocal = bookingEndUtc.toLocal();
+
+    final startTime = _formatTime(bookingStartLocal);
+    final duration = _calculateDuration(bookingStartLocal, bookingEndLocal);
+
+    // Parse details
+    final List<BookingDetail> details = [];
     double equipmentTotal = 0;
 
     if (data['detail_bookings'] != null && data['detail_bookings'] is List) {
       for (final detail in data['detail_bookings']) {
-        if (detail['add_on_name'] != null) {
-          final equipmentName = detail['add_on_name'].toString();
-          final quantity = detail['quantity'] ?? 1;
-          final price = (detail['total_price'] ?? 0).toDouble();
-
-          equipment[equipmentName] = quantity;
-          equipmentTotal += price;
-        }
+        final bookingDetail = BookingDetail.fromApiResponse(detail);
+        details.add(bookingDetail);
+        equipmentTotal += bookingDetail.totalPrice;
       }
     }
 
-    // Calculate court price per hour
+    // Calculate court price
     final totalPrice = (data['total_price'] ?? 0).toDouble();
     final courtPrice = _calculateCourtPrice(
       totalPrice,
@@ -74,15 +97,27 @@ class BookingHistory {
       location: data['place_address'] ?? 'Unknown Location',
       orderId: data['order_id'] ?? 'unknown_id',
       types: [data['field_type'] ?? 'General'],
-      date: bookingDate,
+      date: bookingStartLocal,
       startTime: startTime,
       duration: duration,
       totalAmount: totalPrice,
       status: _mapStatus(data['status']),
-      equipment: equipment,
+      note: data['note']?.toString() ?? '', // ✅ Ambil note dari API
+      details: details,
       courtPrice: courtPrice,
       equipmentTotal: equipmentTotal,
     );
+  }
+
+  // Get equipment as Map untuk kompatibilitas dengan code existing
+  Map<String, int> get equipment {
+    final Map<String, int> result = {};
+    for (final detail in details) {
+      if (detail.addOnName.isNotEmpty) {
+        result[detail.addOnName] = detail.quantity;
+      }
+    }
+    return result;
   }
 
   static String _formatTime(DateTime dateTime) {
@@ -99,7 +134,6 @@ class BookingHistory {
     int duration,
   ) {
     final courtTotal = totalPrice - equipmentTotal;
-    // Return price per hour
     return duration > 0 ? courtTotal / duration : courtTotal;
   }
 
@@ -109,7 +143,7 @@ class BookingHistory {
         return 'pending';
       case 'approved':
         return 'approved';
-      case 'rejected':
+      case 'cancelled':
         return 'rejected';
       case 'completed':
         return 'completed';
@@ -118,10 +152,9 @@ class BookingHistory {
     }
   }
 
-  // Get icon for category
+  // Helper methods
   IconData getCategoryIcon() {
     if (types.isEmpty) return Icons.sports;
-    
     final category = types.first.toLowerCase();
     switch (category) {
       case 'tennis':
@@ -143,10 +176,8 @@ class BookingHistory {
     }
   }
 
-  // Get color for category
   Color getCategoryColor() {
     if (types.isEmpty) return Colors.grey;
-    
     final category = types.first.toLowerCase();
     switch (category) {
       case 'tennis':
@@ -168,6 +199,81 @@ class BookingHistory {
     }
   }
 
-  // Helper method to calculate court total (courtPrice * duration)
   double get courtTotal => courtPrice * duration;
+  String get endTime =>
+      '${(int.parse(startTime.split(':')[0]) + duration).toString().padLeft(2, '0')}:00';
+  String get formattedTimeRange => '$startTime - $endTime';
+
+  // ✅ Tambahkan copyWith method untuk memudahkan update
+  BookingHistory copyWith({
+    int? id,
+    String? courtName,
+    String? location,
+    String? orderId,
+    List<String>? types,
+    DateTime? date,
+    String? startTime,
+    int? duration,
+    double? totalAmount,
+    String? status,
+    String? note,
+    List<BookingDetail>? details,
+    double? courtPrice,
+    double? equipmentTotal,
+  }) {
+    return BookingHistory(
+      id: id ?? this.id,
+      courtName: courtName ?? this.courtName,
+      location: location ?? this.location,
+      orderId: orderId ?? this.orderId,
+      types: types ?? this.types,
+      date: date ?? this.date,
+      startTime: startTime ?? this.startTime,
+      duration: duration ?? this.duration,
+      totalAmount: totalAmount ?? this.totalAmount,
+      status: status ?? this.status,
+      note: note ?? this.note,
+      details: details ?? this.details,
+      courtPrice: courtPrice ?? this.courtPrice,
+      equipmentTotal: equipmentTotal ?? this.equipmentTotal,
+    );
+  }
+}
+
+class BookingDetail {
+  final int id;
+  final int bookingId;
+  final int addOnId;
+  final int quantity;
+  final double totalPrice;
+  final String addOnName;
+  final String addOnDescription;
+  final double pricePerHour;
+
+  BookingDetail({
+    required this.id,
+    required this.bookingId,
+    required this.addOnId,
+    required this.quantity,
+    required this.totalPrice,
+    required this.addOnName,
+    required this.addOnDescription,
+    required this.pricePerHour,
+  });
+
+  factory BookingDetail.fromApiResponse(Map<String, dynamic> data) {
+    return BookingDetail(
+      id: data['id'] ?? 0,
+      bookingId: data['id_booking'] ?? 0,
+      addOnId: data['id_add_on'] ?? 0,
+      quantity: (data['quantity'] ?? 1).toInt(),
+      totalPrice: (data['total_price'] ?? 0).toDouble(),
+      addOnName: data['add_on_name']?.toString() ?? '',
+      addOnDescription: data['add_on_description']?.toString() ?? '',
+      pricePerHour: (data['price_per_hour'] ?? 0).toDouble(),
+    );
+  }
+
+  // Price per item (totalPrice / quantity)
+  double get pricePerItem => quantity > 0 ? totalPrice / quantity : 0;
 }

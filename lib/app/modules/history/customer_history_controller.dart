@@ -19,7 +19,6 @@ class CustomerHistoryController extends GetxController {
     loadData();
   }
 
-  // Method untuk load data dari API
   Future<void> loadData() async {
     isLoading.value = true;
     try {
@@ -34,22 +33,19 @@ class CustomerHistoryController extends GetxController {
         queryParameters: {'user_id': userId},
       );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final List<dynamic> bookingData = response.data['data'] ?? [];
-        bookings.assignAll(
-          bookingData
-              .map((data) => BookingHistory.fromApiResponse(data))
-              .toList(),
-        );
+      if (response.statusCode == 200) {
+        final bookingResponse = BookingHistoryResponse.fromJson(response.data);
 
-        if (bookingData.isEmpty) {
-          Get.snackbar('Info', 'No booking history found');
+        if (bookingResponse.success) {
+          bookings.assignAll(bookingResponse.data);
+          if (bookingResponse.data.isEmpty) {
+            Get.snackbar('Info', 'No booking history found');
+          }
+        } else {
+          Get.snackbar('Error', bookingResponse.message);
         }
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to load booking data: ${response.data['message'] ?? 'Unknown error'}',
-        );
+        Get.snackbar('Error', 'Failed to load booking data');
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to load data: $e');
@@ -58,7 +54,6 @@ class CustomerHistoryController extends GetxController {
     }
   }
 
-  // Method untuk refresh data
   Future<void> refreshData() async {
     isLoading.value = true;
     try {
@@ -73,24 +68,17 @@ class CustomerHistoryController extends GetxController {
         queryParameters: {'user_id': userId},
       );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final List<dynamic> bookingData = response.data['data'] ?? [];
-        bookings.assignAll(
-          bookingData
-              .map((data) => BookingHistory.fromApiResponse(data))
-              .toList(),
-        );
-        Get.snackbar(
-          'Success',
-          'Data refreshed successfully',
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
-        );
+      if (response.statusCode == 200) {
+        final bookingResponse = BookingHistoryResponse.fromJson(response.data);
+
+        if (bookingResponse.success) {
+          bookings.assignAll(bookingResponse.data);
+          Get.snackbar('Success', 'Data refreshed successfully');
+        } else {
+          Get.snackbar('Error', bookingResponse.message);
+        }
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to refresh booking data: ${response.data['message'] ?? 'Unknown error'}',
-        );
+        Get.snackbar('Error', 'Failed to refresh booking data');
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to refresh data: $e');
@@ -123,9 +111,10 @@ class CustomerHistoryController extends GetxController {
         date: bookings[index].date,
         startTime: bookings[index].startTime,
         duration: bookings[index].duration,
+        note: bookings[index].note,
         totalAmount: bookings[index].totalAmount,
         status: status,
-        equipment: bookings[index].equipment,
+        details: bookings[index].details,
         courtPrice: bookings[index].courtPrice,
         equipmentTotal: bookings[index].equipmentTotal,
         types: bookings[index].types,

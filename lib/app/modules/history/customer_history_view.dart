@@ -152,6 +152,12 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
               ),
               const SizedBox(width: 8),
               _buildFilterChip(
+                label: 'Completed',
+                isSelected: controller.selectedFilter.value == 'completed',
+                onSelected: () => controller.setFilter('completed'),
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
                 label: 'Rejected',
                 isSelected: controller.selectedFilter.value == 'rejected',
                 onSelected: () => controller.setFilter('rejected'),
@@ -287,6 +293,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                 _buildDetailRow('Date', _formatDate(booking.date)),
                 _buildDetailRow('Time', _formatTimeRange(booking)),
                 _buildDetailRow('Duration', '${booking.duration} hour(s)'),
+                _buildDetailRow('Note', booking.note),
                 const SizedBox(height: 8),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
@@ -330,20 +337,32 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
   Widget _buildStatusChip(String status) {
     Color backgroundColor;
     Color textColor;
+    String displayText;
 
     switch (status) {
       case 'approved':
         backgroundColor = Colors.green[100]!;
         textColor = Colors.green[800]!;
+        displayText = 'APPROVED';
         break;
       case 'rejected':
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
+        displayText = 'REJECTED';
         break;
+      case 'completed':
+        backgroundColor = Colors.blue[100]!;
+        textColor = Colors.blue[800]!;
+        displayText = 'COMPLETED';
+        break;
+      case 'pending':
       default:
         backgroundColor = Colors.orange[100]!;
         textColor = Colors.orange[800]!;
+        displayText = 'PENDING';
+        break;
     }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -351,7 +370,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        status.toUpperCase(),
+        displayText,
         style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.bold,
@@ -368,7 +387,12 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[600])),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -379,23 +403,21 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
       children: [
         _buildPriceRow(
           'Court (${booking.duration} hour(s))',
-          booking.courtPrice * booking.duration,
+          booking.courtTotal,
         ),
-        if (booking.equipment.isNotEmpty) ...[
+        if (booking.details.isNotEmpty) ...[
           const SizedBox(height: 8),
           const Text(
-            'Equipment:',
+            'Additional Services:',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          ...booking.equipment.entries.map((entry) {
-            if (entry.value > 0) {
-              return _buildPriceRow(
-                '${entry.key} (x${entry.value})',
-                booking.equipmentTotal / entry.value * entry.value,
-              );
-            }
-            return const SizedBox.shrink();
+          ...booking.details.map((detail) {
+            return _buildPriceRow(
+              '${detail.addOnName} (x${detail.quantity})',
+              detail.totalPrice,
+            );
           }),
+          _buildPriceRow('Total Additional Services', booking.equipmentTotal),
         ],
       ],
     );
@@ -429,11 +451,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
   }
 
   String _formatTimeRange(BookingHistory booking) {
-    final startTime = booking.startTime;
-    final startHour = int.parse(startTime.split(':')[0]);
-    final endHour = startHour + booking.duration;
-
-    return '$startTime - ${endHour.toString().padLeft(2, '0')}:00';
+    return '${booking.startTime} - ${booking.endTime}';
   }
 
   String _formatCurrency(double amount) {
