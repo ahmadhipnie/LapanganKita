@@ -248,6 +248,10 @@ class _RefundCard extends GetView<FieldadminTransactionController> {
                 _DetailRow(label: 'Field Type', value: item.fieldType!),
               if (item.fieldOwner != null)
                 _DetailRow(label: 'Field Owner', value: item.fieldOwner!),
+              if (item.bankType != null && item.bankType!.isNotEmpty)
+                _DetailRow(label: 'Bank', value: item.bankType!),
+              if (item.accountNumber != null && item.accountNumber!.isNotEmpty)
+                _DetailRow(label: 'Account Number', value: item.accountNumber!),
               const SizedBox(height: 12),
               _AmountHighlight(
                 title: 'Total Refund',
@@ -278,6 +282,25 @@ class _RefundCard extends GetView<FieldadminTransactionController> {
               if (item.fieldLocation.trim().isNotEmpty &&
                   item.fieldLocation != '-')
                 _DetailRow(label: 'Place', value: item.fieldLocation),
+              Obx(() {
+                final bank =
+                    controller.bankTypeForUser(item.userId)?.trim() ?? '';
+                final account =
+                    controller.accountNumberForUser(item.userId)?.trim() ?? '';
+                final hasBank = bank.isNotEmpty;
+                final hasAccount = account.isNotEmpty;
+                if (!hasBank && !hasAccount) {
+                  return const SizedBox.shrink();
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (hasBank) _DetailRow(label: 'Bank', value: bank),
+                    if (hasAccount)
+                      _DetailRow(label: 'Account Number', value: account),
+                  ],
+                );
+              }),
               if (item.refundCreatedAt != null)
                 _DetailRow(
                   label: 'Cancelled At',
@@ -555,6 +578,27 @@ Future<void> _showProcessRefundSheet(
               );
             }
 
+            String sanitize(String value) => value.trim();
+
+            String resolveValue(String? primary, String? secondary) {
+              final first = sanitize(primary ?? '');
+              if (first.isNotEmpty) return first;
+              final fallback = sanitize(secondary ?? '');
+              if (fallback.isNotEmpty) return fallback;
+              return '';
+            }
+
+            final bankValue = resolveValue(
+              item.bankType,
+              controller.bankTypeForUser(item.userId),
+            );
+            final accountValue = resolveValue(
+              item.accountNumber,
+              controller.accountNumberForUser(item.userId),
+            );
+            final bankDisplay = bankValue.isNotEmpty ? bankValue : '-';
+            final accountDisplay = accountValue.isNotEmpty ? accountValue : '-';
+
             return SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -654,6 +698,8 @@ Future<void> _showProcessRefundSheet(
                           'Total Booking',
                           controller.formatCurrency(item.bookingTotal),
                         ),
+                        buildInfoRow('Bank', bankDisplay),
+                        buildInfoRow('Account Number', accountDisplay),
                       ],
                     ),
                   ),

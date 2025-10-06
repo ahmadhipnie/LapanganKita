@@ -18,6 +18,8 @@ class RefundModel {
     required this.placeName,
     required this.placeAddress,
     required this.fieldOwnerName,
+    required this.bankType,
+    required this.accountNumber,
   });
 
   final int id;
@@ -38,6 +40,8 @@ class RefundModel {
   final String placeName;
   final String placeAddress;
   final String fieldOwnerName;
+  final String bankType;
+  final String accountNumber;
 
   factory RefundModel.fromJson(Map<String, dynamic> json) {
     int parseInt(dynamic value) {
@@ -80,6 +84,8 @@ class RefundModel {
       placeName: readString(json['place_name']),
       placeAddress: readString(json['place_address']),
       fieldOwnerName: readString(json['field_owner_name']),
+      bankType: readString(json['bank_type']),
+      accountNumber: readString(json['account_number']),
     );
   }
 
@@ -112,5 +118,29 @@ class RefundModel {
       return userName;
     }
     return '$userName (${userEmail.trim()})';
+  }
+
+  String get normalizedBankType {
+    final value = bankType.trim();
+    if (value.isEmpty) {
+      return '';
+    }
+    final lowered = value.toLowerCase();
+    if (lowered == 'null' || lowered == '-') {
+      return '';
+    }
+    return value;
+  }
+
+  String get normalizedAccountNumber {
+    final value = accountNumber.trim();
+    if (value.isEmpty) {
+      return '';
+    }
+    final lowered = value.toLowerCase();
+    if (lowered == 'null') {
+      return '';
+    }
+    return value;
   }
 }

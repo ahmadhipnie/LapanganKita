@@ -165,6 +165,9 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                                 thresholdAmount:
                                     c.minimumBalanceThreshold.value,
                                 isProcessing: c.isAutoProcessing(place.id),
+                                bankType: c.bankTypeForUser(place.userId) ?? '',
+                                accountNumber:
+                                    c.accountNumberForUser(place.userId) ?? '',
                                 onProcess: () =>
                                     _showAutoWithdrawSheet(context, c, place),
                               ),
@@ -181,6 +184,14 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                                   statusColor: const Color(0xFFB45309),
                                   statusLabel: 'Waiting for Proof',
                                   currencyFormatter: _formatCurrency,
+                                  bankType: item.normalizedBankType.isNotEmpty
+                                      ? item.normalizedBankType
+                                      : (c.bankTypeForUser(item.userId) ?? ''),
+                                  accountNumber:
+                                      item.normalizedAccountNumber.isNotEmpty
+                                      ? item.normalizedAccountNumber
+                                      : (c.accountNumberForUser(item.userId) ??
+                                            ''),
                                   onApprove: () =>
                                       _showApproveSheet(context, c, item),
                                   onReject: () =>
@@ -212,6 +223,13 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                               statusColor: const Color(0xFF047857),
                               statusLabel: 'Completed Processing',
                               currencyFormatter: _formatCurrency,
+                              bankType: item.normalizedBankType.isNotEmpty
+                                  ? item.normalizedBankType
+                                  : (c.bankTypeForUser(item.userId) ?? ''),
+                              accountNumber:
+                                  item.normalizedAccountNumber.isNotEmpty
+                                  ? item.normalizedAccountNumber
+                                  : (c.accountNumberForUser(item.userId) ?? ''),
                               onViewProof: item.filePhotoUrl?.isNotEmpty == true
                                   ? () => _showProofDialog(context, item)
                                   : null,
@@ -359,8 +377,13 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Unggah bukti transfer untuk withdraw #${item.id}.',
+                    'Upload proof of transfer for withdrawal #${item.id}.',
                     style: const TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 12),
+                  _BankInfoTile(
+                    bankType: item.normalizedBankType,
+                    accountNumber: item.normalizedAccountNumber,
                   ),
                   const SizedBox(height: 16),
                   GestureDetector(
@@ -392,8 +415,8 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                           const SizedBox(height: 8),
                           Text(
                             hasProof
-                                ? 'Ketuk untuk mengganti gambar'
-                                : 'Ketuk untuk unggah gambar',
+                                ? 'Tap to replace image'
+                                : 'Tap to upload image',
                             style: TextStyle(
                               color: hasProof
                                   ? const Color(0xFF2563EB)
@@ -423,7 +446,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: isProcessing ? null : Get.back,
-                          child: const Text('Batal'),
+                          child: const Text('Cancel'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -449,7 +472,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                                     ),
                                   ),
                                 )
-                              : const Text('Konfirmasi Selesai'),
+                              : const Text('Confirmation Completed'),
                         ),
                       ),
                     ],
@@ -476,7 +499,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Bukti Transfer',
+                'Transfer Proof',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
@@ -501,7 +524,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: Get.back,
-                  child: const Text('Tutup'),
+                  child: const Text('Close'),
                 ),
               ),
             ],
@@ -545,7 +568,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
       if (amount < minAmount) {
         setState(() {
           validationError =
-              'Nominal withdraw minimal Rp ${_formatCurrency(minAmount)}.';
+              'Minimum withdrawal amount Rp ${_formatCurrency(minAmount)}.';
         });
         return;
       }
@@ -553,14 +576,14 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
       if (amount > place.balance) {
         setState(() {
           validationError =
-              'Nominal tidak boleh melebihi saldo tersedia (${_formatCurrency(place.balance)}).';
+              'The nominal amount cannot exceed the available balance (${_formatCurrency(place.balance)}).';
         });
         return;
       }
 
       if (selectedFile == null) {
         setState(() {
-          validationError = 'Lampirkan bukti transfer terlebih dahulu.';
+          validationError = 'Please attach the transfer proof.';
         });
         return;
       }
@@ -630,7 +653,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Ajukan Withdraw',
+                                'Withdrawal Request',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -677,7 +700,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Ringkasan Saldo',
+                            'Balance Summary',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -685,11 +708,11 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                           ),
                           const SizedBox(height: 12),
                           _summaryRow(
-                            label: 'Saldo tersedia',
+                            label: 'Available Balance',
                             value: 'Rp ${_formatCurrency(place.balance)}',
                           ),
                           _summaryRow(
-                            label: 'Minimal penarikan',
+                            label: 'Minimum Withdrawal',
                             value: 'Rp ${_formatCurrency(minAmount)}',
                           ),
                         ],
@@ -712,7 +735,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                       ],
                       decoration: InputDecoration(
                         prefixText: 'Rp ',
-                        hintText: 'Masukkan nominal withdraw',
+                        hintText: 'Enter the withdrawal amount',
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
                         border: OutlineInputBorder(
@@ -740,7 +763,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                               SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Bukti Transfer',
+                                  'Transfer Proof',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
@@ -759,7 +782,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                                   icon: const Icon(
                                     Icons.photo_library_outlined,
                                   ),
-                                  label: const Text('Dari Galeri'),
+                                  label: const Text('From Gallery'),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -768,7 +791,7 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                                   onPressed: () =>
                                       pickFile(ImageSource.camera, setState),
                                   icon: const Icon(Icons.photo_camera_outlined),
-                                  label: const Text('Ambil Foto'),
+                                  label: const Text('Take Photo'),
                                 ),
                               ),
                             ],
@@ -833,10 +856,10 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                                       ),
                                     ),
                                     SizedBox(width: 12),
-                                    Text('Memproses...'),
+                                    Text('Processing...'),
                                   ],
                                 )
-                              : const Text('Kirim Withdraw'),
+                              : const Text('Submit Withdraw'),
                         ),
                       );
                     }),
@@ -1025,7 +1048,7 @@ class _ErrorState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
+              label: const Text('Try Again'),
             ),
           ],
         ),
@@ -1073,6 +1096,61 @@ class _InfoBanner extends StatelessWidget {
   }
 }
 
+class _BankInfoTile extends StatelessWidget {
+  const _BankInfoTile({required this.bankType, required this.accountNumber});
+
+  final String bankType;
+  final String accountNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBank = bankType.trim().isNotEmpty;
+    final hasAccount = accountNumber.trim().isNotEmpty;
+    if (!hasBank && !hasAccount) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.account_balance_outlined, color: Color(0xFF2563EB)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasBank)
+                  Text(
+                    'Bank: $bankType',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                if (hasAccount) ...[
+                  if (hasBank) const SizedBox(height: 4),
+                  Text(
+                    'Account Number: $accountNumber',
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AutoWithdrawCard extends StatelessWidget {
   const _AutoWithdrawCard({
     required this.place,
@@ -1080,6 +1158,8 @@ class _AutoWithdrawCard extends StatelessWidget {
     required this.thresholdAmount,
     required this.onProcess,
     required this.isProcessing,
+    required this.bankType,
+    required this.accountNumber,
   });
 
   final PlaceModel place;
@@ -1087,12 +1167,16 @@ class _AutoWithdrawCard extends StatelessWidget {
   final int thresholdAmount;
   final VoidCallback onProcess;
   final bool isProcessing;
+  final String bankType;
+  final String accountNumber;
 
   @override
   Widget build(BuildContext context) {
     final ownerName = place.ownerName?.trim();
     final ownerEmail = place.ownerEmail?.trim();
     final address = place.address.trim();
+    final hasBankMeta =
+        bankType.trim().isNotEmpty || accountNumber.trim().isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -1144,7 +1228,7 @@ class _AutoWithdrawCard extends StatelessWidget {
                 ),
               ),
               const _StatusChip(
-                label: 'Siap diproses',
+                label: 'Ready To Process',
                 color: Color(0xFFF59E0B),
               ),
             ],
@@ -1157,7 +1241,7 @@ class _AutoWithdrawCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Saldo Tersedia',
+                      'available balance',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.black45,
@@ -1180,7 +1264,7 @@ class _AutoWithdrawCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   const Text(
-                    'Ambang Minimal',
+                    'Minimal Threshold',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.black45,
@@ -1201,9 +1285,13 @@ class _AutoWithdrawCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Saldo lapangan ini telah mencapai ambang minimal dan otomatis muncul untuk diproses withdraw oleh admin.',
+            'This field balance has reached the minimal threshold and is automatically eligible for withdrawal processing by the admin.',
             style: TextStyle(color: Colors.black54, fontSize: 12, height: 1.4),
           ),
+          if (hasBankMeta) ...[
+            const SizedBox(height: 12),
+            _BankInfoTile(bankType: bankType, accountNumber: accountNumber),
+          ],
           if (address.isNotEmpty) ...[
             const SizedBox(height: 12),
             Row(
@@ -1262,10 +1350,10 @@ class _AutoWithdrawCard extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: 12),
-                        Text('Memproses...'),
+                        Text('Processing...'),
                       ],
                     )
-                  : const Text('Ajukan Withdraw'),
+                  : const Text('Submit Withdraw'),
             ),
           ),
         ],
@@ -1280,6 +1368,8 @@ class _WithdrawCard extends StatelessWidget {
     required this.statusColor,
     required this.statusLabel,
     required this.currencyFormatter,
+    required this.bankType,
+    required this.accountNumber,
     this.onApprove,
     this.onReject,
     this.onViewProof,
@@ -1290,6 +1380,8 @@ class _WithdrawCard extends StatelessWidget {
   final Color statusColor;
   final String statusLabel;
   final String Function(int) currencyFormatter;
+  final String bankType;
+  final String accountNumber;
   final VoidCallback? onApprove;
   final VoidCallback? onReject;
   final VoidCallback? onViewProof;
@@ -1328,6 +1420,28 @@ class _WithdrawCard extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
+                    if (bankType.isNotEmpty || accountNumber.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      if (bankType.isNotEmpty)
+                        Text(
+                          'Bank: $bankType',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (accountNumber.isNotEmpty) ...[
+                        if (bankType.isNotEmpty) const SizedBox(height: 2),
+                        Text(
+                          'Account Number: $accountNumber',
+                          style: const TextStyle(
+                            color: Colors.black45,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               ),
@@ -1365,7 +1479,7 @@ class _WithdrawCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   const Text(
-                    'Diajukan',
+                    'Filed',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.black45,
@@ -1395,7 +1509,7 @@ class _WithdrawCard extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: isProcessing ? null : onReject,
-                    child: const Text('Tolak'),
+                    child: const Text('Reject'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1417,7 +1531,7 @@ class _WithdrawCard extends StatelessWidget {
                               ),
                             ),
                           )
-                        : const Text('Upload Bukti'),
+                        : const Text('Upload Proof'),
                   ),
                 ),
               ],
