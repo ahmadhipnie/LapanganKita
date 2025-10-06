@@ -1,15 +1,23 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:lapangan_kita/app/data/repositories/customer_booking_repository.dart';
+import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
+import '../../data/models/customer/booking/booking_request.dart';
+import '../../data/models/customer/booking/booking_response.dart';
 import '../../data/models/customer/booking/court_model.dart';
 import '../../data/models/add_on_model.dart';
 import '../../data/repositories/add_on_repository.dart';
-// import '../../services/local_storage_service.dart';
+import '../../data/services/midtrans_service.dart';
+import '../midtrans/midtrans_webview.dart';
 
 class CustomerBookingDetailController extends GetxController {
   final Court court = Get.arguments;
-  // final LocalStorageService _storageService = LocalStorageService.instance;
   final AddOnRepository _addOnRepository = Get.find<AddOnRepository>();
+  final CustomerBookingRepository _bookingRepository =
+      Get.find<CustomerBookingRepository>();
+  final LocalStorageService _localStorage = Get.find<LocalStorageService>();
 
   final Rx<DateTime> selectedDate = DateTime.now().obs;
   final RxString selectedDuration = '1'.obs;
@@ -20,6 +28,7 @@ class CustomerBookingDetailController extends GetxController {
   final RxList<AddOnModel> availableAddOns = <AddOnModel>[].obs;
   final RxBool isLoadingAddOns = false.obs;
   final RxBool isRefreshingAddOns = false.obs;
+  final RxBool isBooking = false.obs;
 
   final List<String> durationOptions = ['1', '2', '3', '4', '5', '6'];
   final List<String> availableTimes = [
@@ -42,17 +51,21 @@ class CustomerBookingDetailController extends GetxController {
     '22:00',
   ];
 
+  int get userId => _localStorage.getUserData()?['id'] ?? 0;
+
   @override
   void onInit() {
     super.onInit();
     _calculateTotalPrice();
     _loadAddOns();
     ever(selectedDuration, (_) {
-      selectedStartTime.value = ''; // Reset waktu saat durasi berubah
+      selectedStartTime.value = '';
     });
   }
 
   Future<void> _loadAddOns() async {
+    if (court.placeId == 0) return;
+
     isLoadingAddOns.value = true;
     try {
       final addOns = await _addOnRepository.getAddOnsByPlace(
@@ -68,7 +81,6 @@ class CustomerBookingDetailController extends GetxController {
 
   Future<void> refreshAddOns() async {
     if (court.placeId == 0) return;
-
     isRefreshingAddOns.value = true;
     try {
       await _loadAddOns();
@@ -79,7 +91,7 @@ class CustomerBookingDetailController extends GetxController {
 
   void selectDate(DateTime date) {
     selectedDate.value = date;
-    selectedStartTime.value = ''; // Reset waktu saat ganti tanggal
+    selectedStartTime.value = '';
   }
 
   void selectStartTime(String time) {
@@ -108,48 +120,35 @@ class CustomerBookingDetailController extends GetxController {
 
   String get formattedTotalPrice => formatRupiah(totalPrice.value);
 
-  // Cek apakah waktu dan durasi berikutnya tersedia
   bool isTimeAvailableWithDuration(String startTime, int duration) {
     final startIndex = availableTimes.indexOf(startTime);
     if (startIndex == -1) return false;
 
-    // Cek apakah semua slot waktu untuk durasi yang diminta tersedia
     for (int i = 0; i < duration; i++) {
       if (startIndex + i >= availableTimes.length) return false;
-
       final timeSlot = availableTimes[startIndex + i];
-      if (!isTimeAvailable(timeSlot)) {
-        return false;
-      }
+      if (!isTimeAvailable(timeSlot)) return false;
     }
-
     return true;
   }
 
-  // Cek apakah waktu tertentu termasuk dalam range yang dipilih
   bool isTimeInSelectedRange(String time) {
     if (selectedStartTime.value.isEmpty) return false;
-
     final selectedIndex = availableTimes.indexOf(selectedStartTime.value);
     final currentIndex = availableTimes.indexOf(time);
     final duration = int.parse(selectedDuration.value);
 
     if (selectedIndex == -1 || currentIndex == -1) return false;
-
     return currentIndex >= selectedIndex &&
         currentIndex < selectedIndex + duration;
   }
 
-  // Method original untuk cek availability per jam
   bool isTimeAvailable(String time) {
-    // Logic untuk cek availability berdasarkan tanggal dan waktu
-    // Ini bisa diintegrasikan dengan API nanti
-    // Contoh dummy: jam 18:00-20:00 sudah dipesan
+    // TODO: Implement real availability check via API
     final busyTimes = ['18:00', '19:00', '20:00'];
     return !busyTimes.contains(time);
   }
 
-  // Equipment methods
   void incrementEquipment(String equipmentName) {
     final currentCount = selectedEquipment[equipmentName] ?? 0;
     selectedEquipment[equipmentName] = currentCount + 1;
@@ -164,7 +163,6 @@ class CustomerBookingDetailController extends GetxController {
     }
   }
 
-  // Add-on methods
   void incrementAddOn(String addOnName) {
     final currentCount = selectedAddOns[addOnName] ?? 0;
     selectedAddOns[addOnName] = currentCount + 1;
@@ -186,7 +184,6 @@ class CustomerBookingDetailController extends GetxController {
   void _calculateTotalPrice() {
     double basePrice = court.price * int.parse(selectedDuration.value);
 
-    // Calculate equipment price
     double equipmentPrice = 0;
     selectedEquipment.forEach((name, quantity) {
       final equipment = court.equipment.firstWhere(
@@ -196,7 +193,6 @@ class CustomerBookingDetailController extends GetxController {
       equipmentPrice += equipment.price * quantity;
     });
 
-    // Calculate add-on price
     double addOnPrice = 0;
     selectedAddOns.forEach((name, quantity) {
       if (quantity > 0) {
@@ -217,30 +213,32 @@ class CustomerBookingDetailController extends GetxController {
     totalPrice.value = basePrice + equipmentPrice + addOnPrice;
   }
 
-  void bookNow() {
+  Future<void> bookNow() async {
+    // Validations
+    if (userId == 0) {
+      Get.snackbar('Error', 'Please login to book a court');
+      return;
+    }
+
     if (selectedStartTime.value.isEmpty) {
       Get.snackbar('Error', 'Please select start time');
       return;
     }
 
+    if (isBooking.value) return;
+
+    isBooking.value = true;
+
     try {
-      // Generate booking ID
-      // final bookingId = 'BK${DateTime.now().millisecondsSinceEpoch}';
+      // 1. Calculate booking times
+      final startDateTime = _calculateStartDateTime();
+      final endDateTime = _calculateEndDateTime();
 
-      // Hitung total equipment price
-      selectedEquipment.forEach((name, quantity) {
-        if (quantity > 0) {
-          court.equipment.firstWhere(
-            (e) => e.name == name,
-            orElse: () => Equipment(name: name, price: 0, description: ''),
-          );
-        }
-      });
-
-      // Hitung total add-on price
+      // 2. Prepare add-ons data
+      final List<Map<String, dynamic>> addOnsList = [];
       selectedAddOns.forEach((name, quantity) {
         if (quantity > 0) {
-          availableAddOns.firstWhere(
+          final addOn = availableAddOns.firstWhere(
             (a) => a.name == name,
             orElse: () => AddOnModel(
               id: 0,
@@ -250,47 +248,304 @@ class CustomerBookingDetailController extends GetxController {
               description: '',
             ),
           );
+          if (addOn.id != 0) {
+            addOnsList.add({'id_add_on': addOn.id, 'quantity': quantity});
+          }
         }
       });
 
-      // // Buat booking history
-      // final bookingHistory = BookingHistory(
-      //   id: court.id,
-      //   courtName: court.name,
-      //   courtImageUrl: court.imageUrl,
-      //   location: court.location,
-      //   date: selectedDate.value,
-      //   startTime: selectedStartTime.value,
-      //   duration: int.parse(selectedDuration.value),
-      //   totalAmount: totalPrice.value,
-      //   status: 'pending',
-      //   equipment: Map.from(selectedEquipment),
-      //   addOns: Map.from(selectedAddOns), // Tambahkan add-ons
-      //   courtPrice: court.price,
-      //   equipmentTotal: equipmentTotal,
-      //   addOnTotal: addOnTotal, // Tambahkan add-on total
-      //   types: court.types,
-      // );
+      // 3. Prepare transaction items
+      final List<Map<String, dynamic>> items = [];
 
-      // Simpan ke history controller
-      // final historyController = Get.find<CustomerHistoryController>();
-      // historyController.addBooking(bookingHistory);
+      // Court booking item
+      items.add({
+        'id': court.id.toString(),
+        'price': court.price.toInt(),
+        'quantity': int.parse(selectedDuration.value),
+        'name': court.name,
+      });
 
-      // Redirect ke halaman history
-      Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 3});
+      // Equipment items
+      selectedEquipment.forEach((name, quantity) {
+        if (quantity > 0) {
+          final equipment = court.equipment.firstWhere(
+            (e) => e.name == name,
+            orElse: () => Equipment(name: name, price: 0, description: ''),
+          );
+          if (equipment.price > 0) {
+            items.add({
+              'id': 'equipment_${name.toLowerCase().replaceAll(' ', '_')}',
+              'price': equipment.price.toInt(),
+              'quantity': quantity,
+              'name': 'Equipment: $name',
+            });
+          }
+        }
+      });
 
-      // Get.snackbar(
-      //   'Success',
-      //   'Booking created successfully. ID: $bookingId',
-      //   snackPosition: SnackPosition.TOP,
-      //   duration: const Duration(seconds: 3),
-      // );
+      // Add-on items
+      selectedAddOns.forEach((name, quantity) {
+        if (quantity > 0) {
+          final addOn = availableAddOns.firstWhere(
+            (a) => a.name == name,
+            orElse: () => AddOnModel(
+              id: 0,
+              name: name,
+              pricePerHour: 0,
+              stock: 0,
+              description: '',
+            ),
+          );
+          if (addOn.id != 0 && addOn.pricePerHour > 0) {
+            items.add({
+              'id': 'addon_${addOn.id}',
+              'price': addOn.pricePerHour.toInt(),
+              'quantity': quantity,
+              'name': addOn.name,
+            });
+          }
+        }
+      });
+
+      // 4. Prepare customer details
+      final userData = _localStorage.getUserData();
+      final userName = userData?['name']?.toString() ?? 'Customer';
+      final nameParts = userName.split(' ');
+
+      final customerDetails = {
+        'first_name': nameParts.first,
+        'last_name': nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '',
+        'email': userData?['email']?.toString() ?? 'customer@example.com',
+        'phone': userData?['phone']?.toString() ?? '+6281234567890',
+      };
+
+      // 5. Generate order ID
+      final orderId = 'BOOKING-${DateTime.now().millisecondsSinceEpoch}';
+
+      // 6. Create snap token
+      Get.dialog(
+        const Center(child: CircularProgressIndicator(color: Colors.white)),
+        barrierDismissible: false,
+      );
+
+      final snapToken = await MidtransService.instance.createSnapToken(
+        orderId: orderId,
+        grossAmount: totalPrice.value,
+        items: items,
+        customerDetails: customerDetails,
+      );
+
+      if (snapToken.isEmpty) {
+        Get.back(); // Close loading
+        Get.snackbar('Error', 'Failed to get payment token');
+        return;
+      }
+
+      Get.back(); // Close loading
+
+      // 7. Open WebView for payment DULU
+      final snapUrl = MidtransService.instance.getSnapUrl(snapToken);
+
+      final paymentResult = await Navigator.push(
+        Get.context!,
+        MaterialPageRoute(
+          builder: (context) =>
+              MidtransWebView(snapUrl: snapUrl, orderId: orderId),
+        ),
+      );
+
+      // 8. CEK payment result dulu
+      if (paymentResult == null ||
+          paymentResult['status'] == 'cancelled' ||
+          paymentResult['status'] == 'failed') {
+        // Payment cancelled/failed, jangan buat booking
+        if (paymentResult?['status'] == 'cancelled') {
+          Get.snackbar(
+            'Cancelled',
+            'Payment was cancelled',
+            snackPosition: SnackPosition.TOP,
+          );
+        } else if (paymentResult?['status'] == 'failed') {
+          Get.snackbar(
+            'Failed',
+            'Payment failed',
+            snackPosition: SnackPosition.TOP,
+          );
+        }
+        return;
+      }
+
+      // 9. HANYA jika payment success/pending, baru create booking
+      if (paymentResult['status'] == 'success' ||
+          paymentResult['status'] == 'pending') {
+        Get.dialog(
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+          barrierDismissible: false,
+        );
+
+        try {
+          final bookingRequest = BookingRequest(
+            idUsers: userId,
+            fieldId: court.id,
+            bookingDatetimeStart: startDateTime,
+            bookingDatetimeEnd: endDateTime,
+            snapToken: snapToken,
+            note: 'Booking untuk ${court.name}',
+            addOns: addOnsList,
+          );
+
+          print('===== SENDING BOOKING REQUEST =====');
+          print('Request: ${bookingRequest.toJson()}');
+          print('==================================');
+
+          final BookingResponse bookingResponse = await _bookingRepository
+              .createBooking(bookingRequest);
+
+          Get.back(); // Close loading
+
+          await Future.delayed(Duration(milliseconds: 100));
+          _handlePaymentResult(paymentResult, bookingResponse.id);
+
+          print('===== BOOKING SUCCESS =====');
+          print('Booking ID: ${bookingResponse.id}');
+          print('Order ID: ${bookingResponse.orderId}');
+          print('Total Price: ${bookingResponse.totalPrice}');
+          print('Status: ${bookingResponse.status}');
+          print('Message: ${bookingResponse.message}');
+          print('==========================');
+
+          // 10. Navigate ke halaman success
+          // WidgetsBinding.instance.addPostFrameCallback((_) {
+          //   _handlePaymentResult(paymentResult, bookingResponse.id);
+          // });
+        } catch (e, stackTrace) {
+          Get.back(); // Close loading
+          print('Error creating booking after payment: $e');
+          print('Stack trace: $stackTrace');
+
+          // Tampilkan error yang lebih spesifik
+          Get.offAllNamed(
+            '/booking/error',
+            arguments: {
+              'orderId': orderId,
+              'message':
+                  'Payment successful but booking failed. Error: ${e.toString()}',
+            },
+          );
+        }
+      }
     } catch (e) {
+      Get.back(); // Close loading if still open
+      print('Booking error: $e');
       Get.snackbar(
         'Error',
-        'Failed to create booking: $e',
+        'Failed to create booking: ${e.toString()}',
         snackPosition: SnackPosition.TOP,
       );
+    } finally {
+      isBooking.value = false;
     }
+  }
+
+  void _handlePaymentResult(Map<String, dynamic> result, int bookingId) {
+    final status = result['status'];
+
+    print('===== HANDLING PAYMENT RESULT =====');
+    print('Status: $status');
+    print('Booking ID: $bookingId');
+    print('==============================');
+
+    // Delay kecil untuk memastikan UI ready
+    Future.delayed(Duration(milliseconds: 300), () {
+      try {
+        // Navigate ke customer navigation dengan initialTab 3 (booking history)
+        Get.offAllNamed('/customer/navigation', arguments: {'initialTab': 3});
+
+        // Tampilkan snackbar sesuai status
+        _showStatusSnackbar(status, bookingId);
+      } catch (e, stackTrace) {
+        print('Navigation error: $e');
+        print('Stack trace: $stackTrace');
+
+        // Fallback ke home dengan snackbar
+        Get.offAllNamed('/home');
+        _showStatusSnackbar(status, bookingId);
+      }
+    });
+  }
+
+  void _showStatusSnackbar(String status, int bookingId) {
+    // Delay sedikit agar navigasi selesai dulu
+    Future.delayed(Duration(milliseconds: 500), () {
+      switch (status) {
+        case 'success':
+          Get.snackbar(
+            'Booking Success! 🎉',
+            'Booking ID: $bookingId telah berhasil dibuat',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: Duration(seconds: 5),
+            icon: Icon(Icons.check_circle, color: Colors.white),
+          );
+          break;
+
+        case 'pending':
+          Get.snackbar(
+            'Booking Pending ⏳',
+            'Booking ID: $bookingId menunggu konfirmasi pembayaran',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: Duration(seconds: 5),
+            icon: Icon(Icons.pending, color: Colors.white),
+          );
+          break;
+
+        case 'cancelled':
+          Get.snackbar(
+            'Booking Cancelled ❌',
+            'Pembayaran dibatalkan',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.grey,
+            colorText: Colors.white,
+            duration: Duration(seconds: 4),
+            icon: Icon(Icons.cancel, color: Colors.white),
+          );
+          break;
+
+        case 'failed':
+          Get.snackbar(
+            'Booking Failed 😞',
+            'Pembayaran gagal, silakan coba lagi',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            duration: Duration(seconds: 4),
+            icon: Icon(Icons.error, color: Colors.white),
+          );
+          break;
+
+        default:
+          Get.snackbar(
+            'Booking Completed',
+            'Status: $status. Booking ID: $bookingId',
+            snackPosition: SnackPosition.TOP,
+            duration: Duration(seconds: 4),
+          );
+          break;
+      }
+    });
+  }
+
+  DateTime _calculateStartDateTime() {
+    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate.value);
+    return DateTime.parse('$dateStr ${selectedStartTime.value}:00');
+  }
+
+  DateTime _calculateEndDateTime() {
+    final startDateTime = _calculateStartDateTime();
+    final duration = int.parse(selectedDuration.value);
+    return startDateTime.add(Duration(hours: duration));
   }
 }
