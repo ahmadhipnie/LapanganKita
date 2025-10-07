@@ -498,7 +498,7 @@ class CustomerHistoryController extends GetxController {
   }
 
   // Rating Methods
-  Future<void> submitRating({
+  Future<bool> submitRating({
     required String bookingId,
     required int ratingValue,
     required String review,
@@ -536,6 +536,7 @@ class CustomerHistoryController extends GetxController {
 
         // Refresh data to show any updates
         await refreshData();
+        return true;
       } else {
         // Show error message from API
         Get.snackbar(
@@ -549,6 +550,7 @@ class CustomerHistoryController extends GetxController {
           snackPosition: SnackPosition.TOP,
           icon: const Icon(Icons.error, color: Colors.white),
         );
+        return false;
       }
     } catch (e) {
       print('💥 Rating submission exception: $e');
@@ -563,6 +565,7 @@ class CustomerHistoryController extends GetxController {
         snackPosition: SnackPosition.TOP,
         icon: const Icon(Icons.warning, color: Colors.white),
       );
+      return false;
     } finally {
       isLoading.value = false;
     }
