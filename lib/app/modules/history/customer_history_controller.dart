@@ -558,7 +558,7 @@ class CustomerHistoryController extends GetxController {
       // Show detailed error message
       Get.snackbar(
         'Error',
-        'Failed to submit rating. Please check your connection and try again.',
+        'Already rated this bookings',
         backgroundColor: Colors.red,
         colorText: Colors.white,
         duration: const Duration(seconds: 4),
