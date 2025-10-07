@@ -326,10 +326,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           const SizedBox(height: 16),
           _buildPostHeader(post),
           const SizedBox(height: 16),
-          if (post.postPhoto.isNotEmpty) ...[
-            _buildPostImage(post.postPhoto),
-            const SizedBox(height: 16),
-          ],
+          // if (post.postPhoto.isNotEmpty) ...[
+          //   _buildPostImage(post.postPhoto),
+          //   const SizedBox(height: 16),
+          // ],
           Text(
             post.title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -779,11 +779,11 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCardHeader(post),
-          const SizedBox(height: 12),
-          if (post.postPhoto.isNotEmpty) ...[
-            _buildCompactPostImage(post),
-            const SizedBox(height: 12),
-          ],
+          // const SizedBox(height: 12),
+          // if (post.postPhoto.isNotEmpty) ...[
+          //   _buildCompactPostImage(post),
+          //   const SizedBox(height: 12),
+          // ],
           Text(
             post.title,
             maxLines: 2,
