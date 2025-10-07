@@ -127,11 +127,23 @@ class CustomerHomeController extends GetxController {
 
       final Map<String, int> categoryCount = {};
 
-      for (final court in bookingController.allCourts) {
+      // ✅ FILTER HANYA YANG AVAILABLE
+      final availableCourts = bookingController.allCourts
+          .where((court) => court.status == 'available')
+          .toList();
+
+      print('=== POPULAR CATEGORIES DEBUG ===');
+      print('Total courts: ${bookingController.allCourts.length}');
+      print('Available courts: ${availableCourts.length}');
+
+      for (final court in availableCourts) {
         for (final type in court.types) {
           categoryCount[type] = (categoryCount[type] ?? 0) + 1;
+          print('Court: ${court.name}, Type: $type, Status: ${court.status}');
         }
       }
+
+      print('Category count: $categoryCount');
 
       final sortedCategories = categoryCount.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
@@ -145,6 +157,7 @@ class CustomerHomeController extends GetxController {
         };
       }).toList();
     } catch (e) {
+      print('Error in popularCategoriesWithIcon: $e');
       return [];
     }
   }
