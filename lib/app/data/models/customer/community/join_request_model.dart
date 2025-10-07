@@ -9,6 +9,17 @@ class JoinRequest {
   final String userEmail;
   final String gender;
   final DateTime dateOfBirth;
+  final String bookingId;
+  final DateTime bookingStart;
+  final DateTime bookingEnd;
+  final int posterUserId;
+  final String posterName;
+  final String fieldName;
+  final String fieldType;
+  final int maxPerson;
+  final String placeName;
+  final String postTitle;
+  final int currentJoinedCount;
 
   const JoinRequest({
     required this.id,
@@ -21,6 +32,17 @@ class JoinRequest {
     required this.userEmail,
     required this.gender,
     required this.dateOfBirth,
+    required this.bookingId,
+    required this.bookingStart,
+    required this.bookingEnd,
+    required this.posterUserId,
+    required this.posterName,
+    required this.fieldName,
+    required this.fieldType,
+    required this.maxPerson,
+    required this.placeName,
+    required this.postTitle,
+    required this.currentJoinedCount,
   });
 
   factory JoinRequest.fromJson(Map<String, dynamic> json) {
@@ -41,7 +63,20 @@ class JoinRequest {
       requestedAt: parseDateTime(json['created_at']),
       userEmail: json['joiner_email']?.toString() ?? '',
       gender: json['gender']?.toString() ?? 'male',
-      dateOfBirth: parseDateTime(json['date_of_birth']),
+      dateOfBirth: parseDateTime(json['date_of_birth'] ?? json['created_at']),
+      bookingId: parseId(json['id_booking']),
+      bookingStart: parseDateTime(json['booking_datetime_start']),
+      bookingEnd: parseDateTime(json['booking_datetime_end']),
+      posterUserId:
+          int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
+      posterName: json['poster_name']?.toString() ?? 'Unknown',
+      fieldName: json['field_name']?.toString() ?? '',
+      fieldType: json['field_type']?.toString() ?? '',
+      maxPerson: int.tryParse(json['max_person']?.toString() ?? '0') ?? 0,
+      placeName: json['place_name']?.toString() ?? '',
+      postTitle: json['post_title']?.toString() ?? '',
+      currentJoinedCount:
+          int.tryParse(json['current_joined_count']?.toString() ?? '0') ?? 0,
     );
   }
 
@@ -56,6 +91,17 @@ class JoinRequest {
     String? userEmail,
     String? gender,
     DateTime? dateOfBirth,
+    String? bookingId,
+    DateTime? bookingStart,
+    DateTime? bookingEnd,
+    int? posterUserId,
+    String? posterName,
+    String? fieldName,
+    String? fieldType,
+    int? maxPerson,
+    String? placeName,
+    String? postTitle,
+    int? currentJoinedCount,
   }) {
     return JoinRequest(
       id: id ?? this.id,
@@ -68,6 +114,17 @@ class JoinRequest {
       userEmail: userEmail ?? this.userEmail,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      bookingId: bookingId ?? this.bookingId,
+      bookingStart: bookingStart ?? this.bookingStart,
+      bookingEnd: bookingEnd ?? this.bookingEnd,
+      posterUserId: posterUserId ?? this.posterUserId,
+      posterName: posterName ?? this.posterName,
+      fieldName: fieldName ?? this.fieldName,
+      fieldType: fieldType ?? this.fieldType,
+      maxPerson: maxPerson ?? this.maxPerson,
+      placeName: placeName ?? this.placeName,
+      postTitle: postTitle ?? this.postTitle,
+      currentJoinedCount: currentJoinedCount ?? this.currentJoinedCount,
     );
   }
 
@@ -108,9 +165,13 @@ class JoinRequestsResponse {
     return JoinRequestsResponse(
       success: json['success'] ?? false,
       message: json['message']?.toString() ?? '',
-      data: (json['data'] as List<dynamic>?)
-          ?.map((item) => JoinRequest.fromJson(item as Map<String, dynamic>))
-          .toList() ?? [],
+      data:
+          (json['data'] as List<dynamic>?)
+              ?.map(
+                (item) => JoinRequest.fromJson(item as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
     );
   }
 }

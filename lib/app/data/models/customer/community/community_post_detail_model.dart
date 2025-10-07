@@ -115,7 +115,8 @@ class CommunityPostDetail {
       bookingDatetimeEnd: parseDateTime(json['booking_datetime_end']),
       bookingStatus: json['booking_status']?.toString() ?? '',
       totalPrice: (json['total_price'] ?? 0).toDouble(),
-      posterUserId: int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
+      posterUserId:
+          int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
       posterName: json['poster_name']?.toString() ?? 'Unknown User',
       posterEmail: json['poster_email']?.toString() ?? '',
       fieldName: json['field_name']?.toString() ?? '',
@@ -127,9 +128,10 @@ class CommunityPostDetail {
       fieldOwnerName: json['field_owner_name']?.toString() ?? '',
       joinedCount: json['joined_count'] ?? 0,
       pendingCount: json['pending_count'] ?? 0,
-      joinedUsers: (json['joined_users'] as List<dynamic>?)
-          ?.map((item) => JoinedUser.fromJson(item as Map<String, dynamic>))
-          .toList() ??
+      joinedUsers:
+          (json['joined_users'] as List<dynamic>?)
+              ?.map((item) => JoinedUser.fromJson(item as Map<String, dynamic>))
+              .toList() ??
           [],
     );
   }

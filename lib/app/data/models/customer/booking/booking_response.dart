@@ -33,7 +33,7 @@ class BookingResponse {
     try {
       // Handle nested data structure
       Map<String, dynamic> data = json;
-      
+
       // Jika response memiliki 'data' field, gunakan itu
       if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
         data = json['data'];

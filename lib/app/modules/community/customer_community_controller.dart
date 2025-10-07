@@ -31,6 +31,7 @@ class CustomerCommunityController extends GetxController {
 
   // Get current user ID
   int get _currentUserId => _localStorageService.userId;
+  int get currentUserId => _currentUserId;
 
   @override
   void onInit() {
@@ -39,6 +40,7 @@ class CustomerCommunityController extends GetxController {
     scrollController.addListener(_handleScroll);
     _loadFeaturedPosts();
     _loadPostsFromApi();
+    loadAllJoinRequests();
   }
 
   @override
@@ -499,6 +501,123 @@ class CustomerCommunityController extends GetxController {
       decimalDigits: 0,
     );
     return format.format(amount);
+  }
+
+  // Load all join requests for the current user's posts (as poster)
+  Future<void> loadAllJoinRequests() async {
+    try {
+      isLoadingJoinRequests.value = true;
+      joinRequestsError.value = '';
+
+      final response = await _repository.getAllJoinRequests();
+
+      if (response.success) {
+        // Filter join requests where current user is the poster
+        final myPostJoinRequests = response.data
+            .where((request) => request.posterUserId == _currentUserId)
+            .toList();
+
+        joinRequests.assignAll(myPostJoinRequests);
+        print(
+          '✅ Loaded ${myPostJoinRequests.length} join requests for user posts',
+        );
+      } else {
+        joinRequestsError.value = response.message;
+        print('❌ Failed to load join requests: ${response.message}');
+      }
+    } catch (e) {
+      joinRequestsError.value = 'Failed to load join requests';
+      print('❌ Exception loading join requests: $e');
+    } finally {
+      isLoadingJoinRequests.value = false;
+    }
+  }
+
+  // Get pending join requests for a specific booking
+  List<JoinRequest> getPendingJoinRequestsForBooking(String bookingId) {
+    return joinRequests
+        .where(
+          (request) =>
+              request.bookingId == bookingId && request.status == 'pending',
+        )
+        .toList();
+  }
+
+  // Handle approve/reject action
+  Future<void> handleJoinRequestAction(String joinId, String action) async {
+    if (_decisionLoading[joinId] == true) return;
+
+    try {
+      _decisionLoading[joinId] = true;
+
+      print('🔄 Handling join request action: $joinId -> $action');
+
+      final response = await _repository.updateJoinRequestStatusById(
+        joinId,
+        action,
+      );
+
+      print('📥 Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Update local join request status
+        final requestIndex = joinRequests.indexWhere((req) => req.id == joinId);
+        if (requestIndex != -1) {
+          final updatedRequest = joinRequests[requestIndex].copyWith(
+            status: action,
+          );
+          joinRequests[requestIndex] = updatedRequest;
+        }
+
+        // Reload featured posts to update join counts
+        await _loadFeaturedPosts();
+
+        final message = action == 'approved'
+            ? 'Join request approved successfully!'
+            : 'Join request rejected successfully!';
+
+        Get.snackbar(
+          'Success',
+          message,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+
+        print('✅ Join request $joinId $action successfully');
+      } else {
+        throw Exception('Failed to update join request status');
+      }
+    } catch (e) {
+      final message =
+          'Failed to ${action == 'approved' ? 'approve' : 'reject'} join request';
+      Get.snackbar(
+        'Error',
+        message,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      print('❌ Error ${action}ing join request: $e');
+    } finally {
+      _decisionLoading.remove(joinId);
+    }
+  }
+
+  // Get user's own join request status for a specific booking
+  Future<String?> getUserJoinStatus(String bookingId) async {
+    try {
+      final response = await _repository.getJoinRequestsByUserId(
+        _currentUserId,
+      );
+      if (response.success) {
+        final userRequest = response.data.firstWhereOrNull(
+          (request) => request.bookingId == bookingId,
+        );
+        return userRequest?.status;
+      }
+    } catch (e) {
+      print('❌ Error getting user join status: $e');
+    }
+    return null;
   }
 
   String? _extractMessage(dynamic data) {

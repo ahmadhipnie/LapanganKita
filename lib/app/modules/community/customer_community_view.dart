@@ -490,8 +490,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
               return IconButton(
                 onPressed: isLoading
                     ? null
-                    : () =>
-                          controller.fetchJoinRequestsByBooking(post.bookingId),
+                    : () => controller.loadAllJoinRequests(),
                 icon: isLoading
                     ? const SizedBox(
                         width: 20,
@@ -507,8 +506,13 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         const SizedBox(height: 12),
         Obx(() {
           final isLoading = controller.isLoadingJoinRequests.value;
-          final requests = controller.joinRequests;
+          final allRequests = controller.joinRequests;
           final errorMessage = controller.joinRequestsError.value;
+
+          // Filter join requests for this specific booking
+          final bookingRequests = allRequests
+              .where((request) => request.bookingId == post.bookingId)
+              .toList();
 
           if (isLoading) {
             return const Padding(
@@ -517,7 +521,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             );
           }
 
-          if (requests.isEmpty) {
+          if (bookingRequests.isEmpty) {
             return Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -535,7 +539,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           }
 
           return Column(
-            children: requests
+            children: bookingRequests
                 .map(
                   (request) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -624,7 +628,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                     child: ElevatedButton.icon(
                       onPressed: isProcessing
                           ? null
-                          : () => controller.approveJoinRequest(request),
+                          : () => controller.handleJoinRequestAction(
+                              request.id,
+                              'approved',
+                            ),
                       icon: const Icon(Icons.check_circle_outline, size: 18),
                       label: isProcessing
                           ? const SizedBox(
@@ -650,7 +657,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                     child: OutlinedButton.icon(
                       onPressed: isProcessing
                           ? null
-                          : () => controller.rejectJoinRequest(request),
+                          : () => controller.handleJoinRequestAction(
+                              request.id,
+                              'rejected',
+                            ),
                       icon: Icon(
                         Icons.close,
                         size: 18,
@@ -856,13 +866,59 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       final isJoining = controller.isJoining(post.id);
       final isFull = post.joinedPlayers >= post.playersNeeded;
 
+      // Check user's join request status for this booking
+      final userJoinRequest = controller.joinRequests.firstWhereOrNull(
+        (request) =>
+            request.bookingId == post.bookingId &&
+            request.userId == controller.currentUserId,
+      );
+
+      // Determine button state based on join request status
+      String buttonText;
+      Color backgroundColor;
+      Color foregroundColor;
+      bool isEnabled;
+
+      if (userJoinRequest != null) {
+        switch (userJoinRequest.status) {
+          case 'pending':
+            buttonText = 'Pending';
+            backgroundColor = Colors.orange;
+            foregroundColor = Colors.white;
+            isEnabled = false;
+            break;
+          case 'approved':
+            buttonText = 'Approved';
+            backgroundColor = Colors.green;
+            foregroundColor = Colors.white;
+            isEnabled = false;
+            break;
+          case 'rejected':
+            buttonText = 'Rejected';
+            backgroundColor = Colors.red;
+            foregroundColor = Colors.white;
+            isEnabled = false;
+            break;
+          default:
+            buttonText = isFull ? 'Full' : 'Join';
+            backgroundColor = AppColors.primary;
+            foregroundColor = Colors.white;
+            isEnabled = !isJoining && !isFull;
+        }
+      } else {
+        buttonText = isFull ? 'Full' : 'Join';
+        backgroundColor = AppColors.primary;
+        foregroundColor = Colors.white;
+        isEnabled = !isJoining && !isFull;
+      }
+
       return ElevatedButton(
-        onPressed: (isJoining || isFull)
+        onPressed: (isJoining || !isEnabled)
             ? null
             : () => controller.joinGame(post.id),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
@@ -877,7 +933,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : Text(isFull ? 'Full' : 'Join'),
+            : Text(buttonText),
       );
     });
   }
