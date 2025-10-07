@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../models/customer/rating/rating_model.dart';
 import '../network/api_client.dart';
 
@@ -14,19 +13,16 @@ class RatingRepository {
     required String review,
   }) async {
     try {
-      // Create URL-encoded data string exactly like Postman
-      final data =
-          'id_booking=$idBooking&rating_value=$ratingValue&review=${Uri.encodeComponent(review)}';
+      // Create JSON data matching the required format
+      final data = {
+        'id_booking': idBooking,
+        'rating_value': ratingValue,
+        'review': review,
+      };
 
-      print('🔄 Submitting rating with URL-encoded data: $data');
+      print('🔄 Submitting rating with JSON data: $data');
 
-      final response = await _apiClient.raw.post(
-        'ratings',
-        data: data,
-        options: Options(
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        ),
-      );
+      final response = await _apiClient.post('ratings', data: data);
 
       print(
         '✅ Rating submission response: ${response.statusCode} - ${response.data}',
@@ -38,6 +34,23 @@ class RatingRepository {
     }
   }
 
+  /// Get all ratings from the API
+  Future<RatingsListResponse> getAllRatings() async {
+    try {
+      print('🔄 Fetching all ratings from API');
+
+      final response = await _apiClient.get('ratings');
+
+      print(
+        '✅ Ratings fetch response: ${response.statusCode} - Count: ${response.data['count']}',
+      );
+      return RatingsListResponse.fromJson(response.data);
+    } catch (e) {
+      print('❌ Rating fetch error: $e');
+      throw Exception('Failed to get ratings: $e');
+    }
+  }
+
   /// Get ratings for a specific booking (optional, for future use)
   Future<RatingResponse> getRatingByBooking(String bookingId) async {
     try {
@@ -46,5 +59,39 @@ class RatingRepository {
     } catch (e) {
       throw Exception('Failed to get rating: $e');
     }
+  }
+
+  /// Get rating summary for a specific place
+  PlaceRatingSummary getPlaceRatingSummary(
+    String placeName,
+    List<RatingDetailData> allRatings,
+  ) {
+    // Filter ratings for this place
+    final placeRatings = allRatings
+        .where((rating) => rating.placeName == placeName)
+        .toList();
+
+    if (placeRatings.isEmpty) {
+      return PlaceRatingSummary(
+        placeName: placeName,
+        averageRating: 0.0,
+        totalReviews: 0,
+        reviews: [],
+      );
+    }
+
+    // Calculate average rating
+    final totalRating = placeRatings.fold<double>(
+      0,
+      (sum, rating) => sum + rating.ratingValue,
+    );
+    final averageRating = totalRating / placeRatings.length;
+
+    return PlaceRatingSummary(
+      placeName: placeName,
+      averageRating: averageRating,
+      totalReviews: placeRatings.length,
+      reviews: placeRatings,
+    );
   }
 }

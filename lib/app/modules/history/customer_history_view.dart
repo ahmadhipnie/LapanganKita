@@ -1498,14 +1498,16 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
 
   void _submitRating(BookingHistory booking, int rating, String review) async {
     try {
-      await controller.submitRating(
+      final success = await controller.submitRating(
         bookingId: booking.id.toString(),
         ratingValue: rating,
         review: review.trim(),
       );
 
-      // Close dialog after successful submission
-      Get.back();
+      // Close dialog only if submission was successful
+      if (success) {
+        Get.back();
+      }
     } catch (e) {
       // Error handling is already done in controller
       print('Rating submission error: $e');
