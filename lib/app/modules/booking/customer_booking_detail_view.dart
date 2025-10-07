@@ -880,7 +880,7 @@ class CustomerBookingDetailView
       // Buka Google Maps WebView dengan data court
       Get.to(
         () => GoogleSearchWebView(
-          courtName: controller.court.name,
+          courtName: controller.court.placeName,
           courtLocation: controller.court.location,
         ),
         transition: Transition.cupertino,

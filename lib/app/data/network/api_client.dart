@@ -3,8 +3,8 @@ import 'package:dio/dio.dart';
 class ApiClient {
   ApiClient({Dio? dio}) : _dio = dio ?? createDefaultDio();
 
-  static const String baseUrl = 'https://3ecc94b66c20.ngrok-free.app/api/';
-  static const String baseUrlWithoutApi = 'https://3ecc94b66c20.ngrok-free.app';
+  static const String baseUrl = 'https://61473d0e18b7.ngrok-free.app/api/';
+  static const String baseUrlWithoutApi = 'https://61473d0e18b7.ngrok-free.app';
 
   static final BaseOptions _defaultOptions = BaseOptions(
     baseUrl: baseUrl,

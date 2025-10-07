@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangan_kita/app/data/network/api_client.dart';
 import 'package:lapangan_kita/app/modules/community/customer_community_controller.dart';
-import 'package:lapangan_kita/app/modules/community/custommer_community_model.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
+
+import '../../data/models/customer/community/community_post_model.dart';
+import '../../data/models/customer/community/join_request_model.dart';
 
 class CustomerCommunityView extends GetView<CustomerCommunityController> {
   CustomerCommunityView({super.key});
@@ -21,6 +23,12 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         elevation: 0,
         backgroundColor: AppColors.neutralColor,
         foregroundColor: Colors.black87,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: controller.refreshPosts,
+          ),
+        ],
       ),
       body: SafeArea(
         child: Obx(() {
@@ -39,10 +47,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             return _buildEmptyState();
           }
 
-          _ensureSelectedPost(posts);
-
-          final selectedPost = controller.selectedPost.value ?? posts.first;
-
           return RefreshIndicator(
             onRefresh: controller.refreshPosts,
             color: AppColors.primary,
@@ -50,8 +54,11 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                _buildFeaturedPost(context, selectedPost),
+                // SECTION 1: Featured Post by ID dari local storage
+                _buildFeaturedPostSection(context),
                 const SizedBox(height: 24),
+
+                // SECTION 2: All Community Posts (tanpa featured post)
                 Text(
                   'Community Posts',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -61,11 +68,9 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                 ),
                 const SizedBox(height: 12),
                 ...posts.map((post) {
-                  final isSelected =
-                      controller.selectedPost.value?.id == post.id;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildPostCard(context, post, isSelected),
+                    child: _buildPostCard(context, post),
                   );
                 }),
               ],
@@ -93,7 +98,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: controller.refreshPosts,
-              child: const Text('Coba lagi'),
+              child: const Text('Try Again'),
             ),
           ],
         ),
@@ -111,7 +116,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             Icon(Icons.forum_outlined, size: 48, color: Colors.grey),
             SizedBox(height: 12),
             Text(
-              'Belum ada post community. Jadilah yang pertama membuat post!',
+              'No community posts yet. Be the first to create one!',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14),
             ),
@@ -121,19 +126,103 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
     );
   }
 
-  void _ensureSelectedPost(List<CommunityPost> posts) {
-    if (controller.selectedPost.value != null || posts.isEmpty) return;
+  // SECTION 1: Featured Post by ID dari local storage
+  Widget _buildFeaturedPostSection(BuildContext context) {
+    return Obx(() {
+      if (controller.isLoadingFeaturedPost.value) {
+        return _buildFeaturedPostSkeleton();
+      }
 
-    final binding = WidgetsBinding.instance;
-    binding.addPostFrameCallback((_) {
-      if (controller.selectedPost.value == null && posts.isNotEmpty) {
-        final firstPost = posts.first;
-        controller.selectedPost.value = firstPost;
-        controller.joinRequests.clear();
-        controller.joinRequestsError.value = '';
-        controller.fetchJoinRequests(firstPost.id);
+      final featuredPost = controller.featuredPost.value;
+      if (featuredPost != null) {
+        return _buildFeaturedPost(context, featuredPost);
+      } else {
+        return _buildNoFeaturedPost();
       }
     });
+  }
+
+  Widget _buildFeaturedPostSkeleton() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Skeleton header
+          Row(
+            children: [
+              CircleAvatar(radius: 24, backgroundColor: Colors.grey[300]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(width: 120, height: 16, color: Colors.grey[300]),
+                    const SizedBox(height: 4),
+                    Container(width: 80, height: 12, color: Colors.grey[300]),
+                  ],
+                ),
+              ),
+              Container(width: 60, height: 24, color: Colors.grey[300]),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(width: 200, height: 20, color: Colors.grey[300]),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            height: 16,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 16),
+          Container(width: 150, height: 14, color: Colors.grey[300]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoFeaturedPost() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.featured_play_list, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          const Text(
+            'Featured Post',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'No featured post available',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFeaturedPost(BuildContext context, CommunityPost post) {
@@ -144,7 +233,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 18,
             offset: const Offset(0, 12),
           ),
@@ -153,6 +242,31 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Featured badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.amber[50],
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.amber),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.star, color: Colors.amber[700], size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  'FEATURED POST',
+                  style: TextStyle(
+                    color: Colors.amber[700],
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildPostHeader(post),
           const SizedBox(height: 16),
           Text(
@@ -237,14 +351,14 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.12),
+        color: AppColors.secondary.withOpacity(0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           Icon(
             Icons.location_on_rounded,
-            color: AppColors.primary.withValues(alpha: 0.9),
+            color: AppColors.primary.withOpacity(0.9),
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -319,7 +433,8 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
               return IconButton(
                 onPressed: isLoading
                     ? null
-                    : () => controller.fetchJoinRequests(post.id),
+                    : () =>
+                          controller.fetchJoinRequestsByBooking(post.bookingId),
                 icon: isLoading
                     ? const SizedBox(
                         width: 20,
@@ -390,7 +505,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -418,6 +533,11 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                     const SizedBox(height: 4),
                     Text(
                       formattedTime,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${request.formattedGender} • ${request.age} tahun • ${request.userEmail}',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                     if (request.note?.isNotEmpty == true) ...[
@@ -546,100 +666,88 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
     );
   }
 
-  Widget _buildPostCard(
-    BuildContext context,
-    CommunityPost post,
-    bool isSelected,
-  ) {
-    return InkWell(
-      onTap: () => _onPostSelected(post),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            width: 1.5,
+  Widget _buildPostCard(BuildContext context, CommunityPost post) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCardHeader(post),
+          const SizedBox(height: 12),
+          Text(
+            post.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCardHeader(post, isSelected),
-            const SizedBox(height: 12),
-            Text(
-              post.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            post.subtitle,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.black54, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildMetaChip(
+                Icons.calendar_today,
+                DateFormat('dd MMM').format(post.gameDate),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              post.subtitle,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.black54, height: 1.4),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildMetaChip(
-                  Icons.calendar_today,
-                  DateFormat('dd MMM').format(post.gameDate),
-                ),
-                const SizedBox(width: 8),
-                _buildMetaChip(Icons.access_time, post.gameTime),
-                const SizedBox(width: 8),
-                _buildMetaChip(
-                  Icons.people_outline,
-                  '${post.joinedPlayers}/${post.playersNeeded}',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Total Cost',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              const SizedBox(width: 8),
+              _buildMetaChip(Icons.access_time, post.gameTime),
+              const SizedBox(width: 8),
+              _buildMetaChip(
+                Icons.people_outline,
+                '${post.joinedPlayers}/${post.playersNeeded}',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total Cost',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      controller.formatRupiah(post.totalCost),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        controller.formatRupiah(post.totalCost),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                _buildJoinButton(post),
-              ],
-            ),
-          ],
-        ),
+              ),
+              _buildJoinButton(post),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCardHeader(CommunityPost post, bool isSelected) {
+  Widget _buildCardHeader(CommunityPost post) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -664,31 +772,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             ],
           ),
         ),
-        Wrap(
-          spacing: 8,
-          children: [
-            if (isSelected)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Selected',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            _buildCategoryChip(post.category),
-          ],
-        ),
+        _buildCategoryChip(post.category),
       ],
     );
   }
@@ -741,15 +825,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
     });
   }
 
-  void _onPostSelected(CommunityPost post) {
-    if (controller.selectedPost.value?.id == post.id) return;
-
-    controller.selectedPost.value = post;
-    controller.joinRequests.clear();
-    controller.joinRequestsError.value = '';
-    controller.fetchJoinRequests(post.id);
-  }
-
   Widget _buildAvatar(String imagePath, {double radius = 18}) {
     final imageUrl = _apiClient.getImageUrl(imagePath);
 
@@ -781,7 +856,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.15),
+        color: AppColors.secondary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
