@@ -3,10 +3,12 @@ import 'package:lapangan_kita/app/data/models/customer/history/customer_history_
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 import 'package:dio/dio.dart' as dio;
 import '../../data/helper/error_helper.dart';
+import '../../data/models/customer/community/community_post_model.dart';
 import '../../data/network/api_client.dart';
 
 class CustomerHistoryController extends GetxController {
   final RxList<BookingHistory> bookings = <BookingHistory>[].obs;
+  final RxList<CommunityPost> existingPosts = <CommunityPost>[].obs;
   final RxString selectedFilter = 'all'.obs;
   final RxBool isLoading = false.obs;
   final RxBool hasError = false.obs;
@@ -22,73 +24,34 @@ class CustomerHistoryController extends GetxController {
     loadData();
   }
 
-  Future<void> createCommunityPost({
-    required int bookingId,
-    required String title,
-    required String description,
-    required String? imagePath,
-  }) async {
+  Future<void> _loadExistingPosts() async {
     try {
-      isLoading.value = true;
-      errorHandler.clearError(hasError: hasError, errorMessage: errorMessage);
-
-      // ✅ Gunakan dio.FormData dengan prefix
-      final formData = dio.FormData.fromMap({
-        'id_booking': bookingId,
-        'post_title': title,
-        'post_description': description,
-        if (imagePath != null && imagePath.isNotEmpty)
-          'post_photo': await dio.MultipartFile.fromFile(
-            imagePath,
-            filename: 'post_${DateTime.now().millisecondsSinceEpoch}.png',
-          ),
-      });
-
-      final response = await errorHandler.handleFutureError(
-        future: _apiClient.raw.post(
-          'posts',
-          data: formData,
-          options: dio.Options(
-            contentType: 'multipart/form-data',
-            headers: {'Content-Type': 'multipart/form-data'},
-          ),
-        ),
-        context: 'Failed to create community post',
-        hasError: hasError,
-        errorMessage: errorMessage,
-        showSnackbar: false, // Biarkan view yang handle snackbar
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // ✅ Success - akan ditutup di view dan show snackbar
-        return; // Biarkan view yang handle success
-      } else {
-        throw Exception(response.data?['message'] ?? 'Failed to create post');
+      final response = await _apiClient.get('posts');
+      if (response.statusCode == 200) {
+        final postsResponse = CommunityPostsResponse.fromJson(response.data);
+        if (postsResponse.success) {
+          existingPosts.assignAll(postsResponse.data);
+        }
       }
     } catch (e) {
-      errorHandler.handleGeneralError(
-        context: 'Failed to create community post',
-        error: e,
-        hasError: hasError,
-        errorMessage: errorMessage,
-        showSnackbar: false, // Biarkan view yang handle
-      );
-      rethrow; // Lempar error ke view
-    } finally {
-      isLoading.value = false;
+      print('Error loading existing posts: $e');
+      // Tidak perlu handle error karena tidak critical
     }
   }
 
-  String _getHistorySpecificError(dynamic error) {
-    final generalMessage = errorHandler.getSimpleErrorMessage(error);
+  bool _hasPostedForBooking(int bookingId) {
+    return existingPosts.any(
+      (post) =>
+          post.bookingId == bookingId.toString() ||
+          post.bookingId == bookingId.toString(),
+    );
+  }
 
-    // Custom message untuk kasus khusus history
-    if (error.toString().toLowerCase().contains('booking') ||
-        error.toString().toLowerCase().contains('history')) {
-      return 'Unable to load booking history. $generalMessage';
-    }
-
-    return generalMessage;
+  // ✅ Method untuk enrich booking data dengan status posting
+  List<BookingHistory> _enrichWithPostStatus(List<BookingHistory> apiBookings) {
+    return apiBookings.map((booking) {
+      return booking.copyWith(hasPosted: _hasPostedForBooking(booking.id));
+    }).toList();
   }
 
   Future<void> loadData() async {
@@ -108,6 +71,9 @@ class CustomerHistoryController extends GetxController {
         return;
       }
 
+      // ✅ Load existing posts terlebih dahulu
+      await _loadExistingPosts();
+
       final response = await errorHandler.handleFutureError(
         future: _apiClient.get(
           'bookings/me/bookings',
@@ -116,14 +82,16 @@ class CustomerHistoryController extends GetxController {
         context: 'Failed to load booking history',
         hasError: hasError,
         errorMessage: errorMessage,
-        showSnackbar: false, // Tidak tampilkan snackbar untuk initial load
+        showSnackbar: false,
       );
 
       if (response.statusCode == 200) {
         final bookingResponse = BookingHistoryResponse.fromJson(response.data);
 
         if (bookingResponse.success) {
-          bookings.assignAll(bookingResponse.data);
+          // ✅ Enrich data dengan status posting dari existing posts
+          final enrichedBookings = _enrichWithPostStatus(bookingResponse.data);
+          bookings.assignAll(enrichedBookings);
 
           if (bookingResponse.data.isEmpty) {
             errorHandler.showInfoMessage('No booking history found');
@@ -154,7 +122,7 @@ class CustomerHistoryController extends GetxController {
       final userFriendlyMessage = _getHistorySpecificError(e);
       errorHandler.handleGeneralError(
         context: 'Failed to load booking history',
-        error: userFriendlyMessage, // Pass string langsung, bukan exception
+        error: userFriendlyMessage,
         hasError: hasError,
         errorMessage: errorMessage,
         showSnackbar: true,
@@ -162,6 +130,119 @@ class CustomerHistoryController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> createCommunityPost({
+    required int bookingId,
+    required String title,
+    required String description,
+    required String? imagePath,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorHandler.clearError(hasError: hasError, errorMessage: errorMessage);
+
+      final formData = dio.FormData.fromMap({
+        'id_booking': bookingId,
+        'post_title': title,
+        'post_description': description,
+        if (imagePath != null && imagePath.isNotEmpty)
+          'post_photo': await dio.MultipartFile.fromFile(
+            imagePath,
+            filename: 'post_${DateTime.now().millisecondsSinceEpoch}.png',
+          ),
+      });
+
+      final response = await errorHandler.handleFutureError(
+        future: _apiClient.raw.post(
+          'posts',
+          data: formData,
+          options: dio.Options(
+            contentType: 'multipart/form-data',
+            headers: {'Content-Type': 'multipart/form-data'},
+          ),
+        ),
+        context: 'Failed to create community post',
+        hasError: hasError,
+        errorMessage: errorMessage,
+        showSnackbar: false,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // ✅ SUCCESS: Refresh existing posts untuk update cache
+        await _loadExistingPosts();
+
+        // ✅ Update status posting di local data
+        _updateBookingPostStatus(bookingId, true);
+        return;
+      } else {
+        throw Exception(response.data?['message'] ?? 'Failed to create post');
+      }
+    } catch (e) {
+      errorHandler.handleGeneralError(
+        context: 'Failed to create community post',
+        error: e,
+        hasError: hasError,
+        errorMessage: errorMessage,
+        showSnackbar: false,
+      );
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void _updateBookingPostStatus(int bookingId, bool hasPosted) {
+    try {
+      final index = bookings.indexWhere((booking) => booking.id == bookingId);
+      if (index != -1) {
+        final updatedBooking = bookings[index].copyWith(hasPosted: hasPosted);
+        bookings[index] = updatedBooking;
+        update(); // Trigger UI update
+      }
+    } catch (e) {
+      print('Error updating post status: $e');
+    }
+  }
+
+  // ✅ Method untuk manual check post status (optional)
+  Future<bool> checkPostStatus(int bookingId) async {
+    try {
+      await _loadExistingPosts(); // Refresh cache
+      return _hasPostedForBooking(bookingId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  String _getHistorySpecificError(dynamic error) {
+    final generalMessage = errorHandler.getSimpleErrorMessage(error);
+
+    // Custom message untuk kasus khusus history
+    if (error.toString().toLowerCase().contains('booking') ||
+        error.toString().toLowerCase().contains('history')) {
+      return 'Unable to load booking history. $generalMessage';
+    }
+
+    // Custom message untuk network issues
+    if (error.toString().toLowerCase().contains('socket') ||
+        error.toString().toLowerCase().contains('connection') ||
+        error.toString().toLowerCase().contains('network')) {
+      return 'Network connection issue. Please check your internet and try again.';
+    }
+
+    // Custom message untuk timeout
+    if (error.toString().toLowerCase().contains('timeout')) {
+      return 'Request timeout. Please try again.';
+    }
+
+    // Custom message untuk authentication
+    if (error.toString().toLowerCase().contains('unauthorized') ||
+        error.toString().toLowerCase().contains('authentication')) {
+      return 'Authentication failed. Please login again.';
+    }
+
+    return generalMessage;
   }
 
   Future<void> refreshData() async {
@@ -181,6 +262,9 @@ class CustomerHistoryController extends GetxController {
         return;
       }
 
+      // ✅ Refresh existing posts juga
+      await _loadExistingPosts();
+
       final response = await errorHandler.handleFutureError(
         future: _apiClient.get(
           'bookings/me/bookings',
@@ -189,14 +273,17 @@ class CustomerHistoryController extends GetxController {
         context: 'Failed to refresh booking history',
         hasError: hasError,
         errorMessage: errorMessage,
-        showSnackbar: false, // Tidak tampilkan snackbar untuk refresh
+        showSnackbar: false,
       );
 
       if (response.statusCode == 200) {
         final bookingResponse = BookingHistoryResponse.fromJson(response.data);
 
         if (bookingResponse.success) {
-          bookings.assignAll(bookingResponse.data);
+          // ✅ Enrich data dengan status posting dari existing posts
+          final enrichedBookings = _enrichWithPostStatus(bookingResponse.data);
+          bookings.assignAll(enrichedBookings);
+
           errorHandler.showSuccessMessage(
             'Booking history refreshed successfully',
           );
@@ -219,7 +306,6 @@ class CustomerHistoryController extends GetxController {
         );
       }
     } catch (e) {
-      // Error sudah dihandle oleh handleFutureError
       print('Error refreshing booking history: $e');
     } finally {
       isLoading.value = false;
