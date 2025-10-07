@@ -14,6 +14,7 @@ class CommunityPost {
   final double totalCost;
   final int joinedPlayers;
   final int posterUserId;
+  final String bookingStatus;
 
   CommunityPost({
     required this.id,
@@ -31,6 +32,7 @@ class CommunityPost {
     required this.totalCost,
     required this.joinedPlayers,
     required this.posterUserId,
+    required this.bookingStatus,
   });
 
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
@@ -79,6 +81,7 @@ class CommunityPost {
       joinedPlayers: json['joined_count'] ?? 0,
       posterUserId:
           int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
+      bookingStatus: json['booking_status']?.toString() ?? 'approved',
     );
   }
 
@@ -117,6 +120,7 @@ class CommunityPost {
     double? totalCost,
     int? joinedPlayers,
     int? posterUserId,
+    String? bookingStatus,
   }) {
     return CommunityPost(
       id: id ?? this.id,
@@ -134,6 +138,7 @@ class CommunityPost {
       totalCost: totalCost ?? this.totalCost,
       joinedPlayers: joinedPlayers ?? this.joinedPlayers,
       posterUserId: posterUserId ?? this.posterUserId,
+      bookingStatus: bookingStatus ?? this.bookingStatus,
     );
   }
 }

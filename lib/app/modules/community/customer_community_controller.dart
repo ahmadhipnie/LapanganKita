@@ -18,7 +18,10 @@ class CustomerCommunityController extends GetxController {
   final RxString errorMessage = ''.obs;
   final ScrollController scrollController = ScrollController();
   final RxMap<String, bool> _joiningStates = <String, bool>{}.obs;
-  final RxList<JoinRequest> joinRequests = <JoinRequest>[].obs;
+  final RxList<JoinRequest> joinRequests =
+      <JoinRequest>[].obs; // Join requests TO user's posts
+  final RxList<JoinRequest> userJoinRequests =
+      <JoinRequest>[].obs; // Join requests FROM user
   final RxBool isLoadingJoinRequests = false.obs;
   final RxString joinRequestsError = ''.obs;
   final RxMap<String, bool> _decisionLoading = <String, bool>{}.obs;
@@ -41,6 +44,7 @@ class CustomerCommunityController extends GetxController {
     _loadFeaturedPosts();
     _loadPostsFromApi();
     loadAllJoinRequests();
+    loadUserJoinRequests(); // Load user's own join requests
   }
 
   @override
@@ -78,18 +82,27 @@ class CustomerCommunityController extends GetxController {
             response.data,
           );
 
-          // Debug: Print raw data untuk cek field yang tersedia
-          print('🔍 First post data: ${enrichedPosts.first.userName}');
-          print('🔍 Poster User ID: ${enrichedPosts.first.posterUserId}');
+          // Filter out completed bookings - don't show in featured posts
+          final activePosts = enrichedPosts
+              .where((post) => post.bookingStatus.toLowerCase() != 'completed')
+              .toList();
 
-          featuredPosts.assignAll(enrichedPosts);
+          // Debug: Print filtering results
+          print('🔍 Total enriched posts: ${enrichedPosts.length}');
+          print('🔍 Active posts (excluding completed): ${activePosts.length}');
+          if (activePosts.isNotEmpty) {
+            print('🔍 First active post: ${activePosts.first.userName}');
+            print('🔍 First post status: ${activePosts.first.bookingStatus}');
+          }
+
+          featuredPosts.assignAll(activePosts);
           print(
-            '✅ Found ${enrichedPosts.length} featured posts for current user',
+            '✅ Found ${activePosts.length} active featured posts for current user',
           );
 
           // Load join requests untuk featured post pertama jika ada
-          if (enrichedPosts.isNotEmpty) {
-            await fetchJoinRequestsByBooking(enrichedPosts.first.bookingId);
+          if (activePosts.isNotEmpty) {
+            await fetchJoinRequestsByBooking(activePosts.first.bookingId);
           }
         } else {
           print('⚠️ No posts found for current user ID: $_currentUserId');
@@ -132,10 +145,11 @@ class CustomerCommunityController extends GetxController {
               userName: bookingInfo['user_name']?.toString() ?? post.userName,
               totalCost: (bookingInfo['total_price'] ?? post.totalCost)
                   .toDouble(),
+              bookingStatus: bookingInfo['status']?.toString() ?? 'approved',
             );
 
             print(
-              '✅ Enriched post ${post.id}: ${enrichedPost.userName} - ${enrichedPost.totalCost}',
+              '✅ Enriched post ${post.id}: ${enrichedPost.userName} - ${enrichedPost.totalCost} - Status: ${enrichedPost.bookingStatus}',
             );
             enrichedPosts.add(enrichedPost);
           } else {
@@ -344,6 +358,9 @@ class CustomerCommunityController extends GetxController {
             backgroundColor: Colors.green,
             colorText: Colors.white,
           );
+
+          // Reload user join requests to update UI
+          loadUserJoinRequests();
         } else {
           Get.snackbar(
             'Failed',
@@ -572,6 +589,9 @@ class CustomerCommunityController extends GetxController {
         // Reload featured posts to update join counts
         await _loadFeaturedPosts();
 
+        // Reload user join requests to update status in other users' views
+        loadUserJoinRequests();
+
         final message = action == 'approved'
             ? 'Join request approved successfully!'
             : 'Join request rejected successfully!';
@@ -599,6 +619,26 @@ class CustomerCommunityController extends GetxController {
       print('❌ Error ${action}ing join request: $e');
     } finally {
       _decisionLoading.remove(joinId);
+    }
+  }
+
+  // Load current user's own join requests (where user is the joiner)
+  Future<void> loadUserJoinRequests() async {
+    try {
+      print('🔄 Loading user join requests for user ID: $_currentUserId');
+
+      final response = await _repository.getJoinRequestsByUserId(
+        _currentUserId,
+      );
+
+      if (response.success) {
+        userJoinRequests.assignAll(response.data);
+        print('✅ Loaded ${response.data.length} user join requests');
+      } else {
+        print('❌ Failed to load user join requests: ${response.message}');
+      }
+    } catch (e) {
+      print('❌ Exception loading user join requests: $e');
     }
   }
 

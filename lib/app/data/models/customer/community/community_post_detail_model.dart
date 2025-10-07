@@ -154,6 +154,7 @@ class CommunityPostDetail {
       totalCost: totalPrice,
       joinedPlayers: joinedCount,
       posterUserId: posterUserId,
+      bookingStatus: 'approved', // Default untuk post detail
     );
   }
 

@@ -867,7 +867,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       final isFull = post.joinedPlayers >= post.playersNeeded;
 
       // Check user's join request status for this booking
-      final userJoinRequest = controller.joinRequests.firstWhereOrNull(
+      final userJoinRequest = controller.userJoinRequests.firstWhereOrNull(
         (request) =>
             request.bookingId == post.bookingId &&
             request.userId == controller.currentUserId,
