@@ -678,14 +678,6 @@ class FieldadminWithdrawView extends GetView<FieldadminWithdrawController> {
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            if (Get.isBottomSheetOpen ?? false) {
-                              Get.back();
-                            }
-                          },
-                          icon: const Icon(Icons.close_rounded),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 20),

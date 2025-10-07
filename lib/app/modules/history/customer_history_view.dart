@@ -1095,7 +1095,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
 
                         // Image Upload Section
                         const Text(
-                          'Add Photo (Optional)',
+                          'Add Photo ',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
@@ -1289,7 +1289,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                                   print(e);
                                   Get.snackbar(
                                     'Error',
-                                    'Failed to create post: $e',
+                                    'Failed to create post: need image',
 
                                     backgroundColor: Colors.red[50],
                                     colorText: Colors.red[700],

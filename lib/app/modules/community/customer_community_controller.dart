@@ -191,6 +191,9 @@ class CustomerCommunityController extends GetxController {
       isLoading.value = true;
       hasError.value = false;
       errorMessage.value = '';
+      
+      // Clear existing posts to ensure fresh data
+      posts.clear();
 
       final response = await _repository.getCommunityPosts();
 
@@ -247,10 +250,32 @@ class CustomerCommunityController extends GetxController {
 
   // Update refreshPosts method
   Future<void> refreshPosts() async {
-    // Load featured posts dulu, baru community posts
-    // Agar filter di community posts bisa bekerja dengan benar
-    await _loadFeaturedPosts();
-    await _loadPostsFromApi();
+    try {
+      print('🔄 Starting refresh posts...');
+      
+      // Clear error states when starting refresh
+      hasError.value = false;
+      errorMessage.value = '';
+      
+      // Clear join requests cache to ensure fresh data
+      joinRequests.clear();
+      
+      // Load featured posts dulu, baru community posts
+      // Agar filter di community posts bisa bekerja dengan benar
+      await _loadFeaturedPosts();
+      await _loadPostsFromApi();
+      
+      // Refresh join requests for the first featured post if available
+      if (featuredPosts.isNotEmpty) {
+        await fetchJoinRequestsByBooking(featuredPosts.first.bookingId);
+      }
+      
+      print('✅ Posts refresh completed successfully');
+    } catch (e) {
+      print('❌ Error during refresh: $e');
+      hasError.value = true;
+      errorMessage.value = 'Failed to refresh posts. Please try again.';
+    }
   }
 
   bool isJoining(String postId) => _joiningStates[postId] ?? false;

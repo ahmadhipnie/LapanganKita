@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:lapangan_kita/app/data/network/api_client.dart';
+import '../network/api_client.dart';
 import '../models/customer/community/community_post_model.dart';
 import '../models/customer/community/join_request_model.dart';
 
@@ -11,7 +11,9 @@ class CommunityRepository {
   // Get all community posts
   Future<CommunityPostsResponse> getCommunityPosts() async {
     try {
-      final response = await _apiClient.get('posts');
+      // Add timestamp to prevent caching issues
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final response = await _apiClient.get('posts?_t=$timestamp');
       return CommunityPostsResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to load community posts: $e');
@@ -21,7 +23,9 @@ class CommunityRepository {
   // Get post by ID
   Future<CommunityPostsResponse> getPostsByUserId(int userId) async {
     try {
-      final response = await _apiClient.get('posts/user?user_id=$userId');
+      // Add timestamp to prevent caching issues
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final response = await _apiClient.get('posts/user?user_id=$userId&_t=$timestamp');
       return CommunityPostsResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to load user posts: $e');
@@ -45,7 +49,9 @@ class CommunityRepository {
     String bookingId,
   ) async {
     try {
-      final response = await _apiClient.get('joined/booking/$bookingId');
+      // Add timestamp to prevent caching issues
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final response = await _apiClient.get('joined/booking/$bookingId?_t=$timestamp');
       return JoinRequestsResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to load join requests: $e');
@@ -82,7 +88,9 @@ class CommunityRepository {
   // Get booking details by booking ID
   Future<Map<String, dynamic>?> getBookingDetails(String bookingId) async {
     try {
-      final response = await _apiClient.get('bookings/$bookingId');
+      // Add timestamp to prevent caching issues
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final response = await _apiClient.get('bookings/$bookingId?_t=$timestamp');
       return response.data;
     } catch (e) {
       print('⚠️ Failed to get booking details for ID $bookingId: $e');
@@ -93,7 +101,9 @@ class CommunityRepository {
   // Get all join requests
   Future<JoinRequestsResponse> getAllJoinRequests() async {
     try {
-      final response = await _apiClient.get('joined');
+      // Add timestamp to prevent caching issues
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final response = await _apiClient.get('joined?_t=$timestamp');
       return JoinRequestsResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to load all join requests: $e');
@@ -129,7 +139,9 @@ class CommunityRepository {
   // Get join requests by user ID
   Future<JoinRequestsResponse> getJoinRequestsByUserId(int userId) async {
     try {
-      final response = await _apiClient.get('joined/user?user_id=$userId');
+      // Add timestamp to prevent caching issues
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final response = await _apiClient.get('joined/user?user_id=$userId&_t=$timestamp');
       return JoinRequestsResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to load join requests by user: $e');
@@ -139,7 +151,9 @@ class CommunityRepository {
   // Get post details (including post_photo) from posts API
   Future<Map<String, dynamic>?> getPostDetails(String postId) async {
     try {
-      final response = await _apiClient.get('posts/$postId');
+      // Add timestamp to prevent caching issues
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final response = await _apiClient.get('posts/$postId?_t=$timestamp');
       return response.data;
     } catch (e) {
       print('Failed to load post details for post $postId: $e');
