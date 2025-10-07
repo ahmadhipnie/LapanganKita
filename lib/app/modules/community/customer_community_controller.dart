@@ -41,10 +41,9 @@ class CustomerCommunityController extends GetxController {
     super.onInit();
     print('🟡 Controller initialized, user ID: $_currentUserId');
     scrollController.addListener(_handleScroll);
-    _loadFeaturedPosts();
-    _loadPostsFromApi();
-    loadAllJoinRequests();
-    loadUserJoinRequests(); // Load user's own join requests
+
+    // Ganti pemanggilan terpisah dengan method berurutan
+    loadInitialData();
   }
 
   @override
@@ -57,6 +56,28 @@ class CustomerCommunityController extends GetxController {
     isScrolled.value = scrollController.offset > 50;
   }
 
+  Future<void> loadInitialData() async {
+    try {
+      isLoading.value = true;
+
+      // Load featured posts terlebih dahulu
+      await _loadFeaturedPosts();
+
+      // Tunggu sebentar untuk memastikan featuredPosts terisi
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Kemudian load community posts dengan filter yang tepat
+      await _loadPostsFromApi();
+
+      // Load data join requests
+      await loadAllJoinRequests();
+      await loadUserJoinRequests();
+    } catch (e) {
+      hasError.value = true;
+      errorMessage.value = 'Failed to load data. Please try again.';
+    }
+  }
+
   // Method untuk load featured post (post milik user sendiri)
   Future<void> _loadFeaturedPosts() async {
     try {
@@ -64,7 +85,6 @@ class CustomerCommunityController extends GetxController {
       featuredPosts.clear();
 
       if (_currentUserId <= 0) {
-        print('❌ User not logged in, cannot load featured posts');
         isLoadingFeaturedPost.value = false;
         return;
       }
@@ -191,15 +211,20 @@ class CustomerCommunityController extends GetxController {
       isLoading.value = true;
       hasError.value = false;
       errorMessage.value = '';
-      
+
       // Clear existing posts to ensure fresh data
       posts.clear();
 
       final response = await _repository.getCommunityPosts();
 
       if (response.success) {
-        // PERBAIKAN: Filter out posts yang sudah ada di featured posts
-        // Dengan membandingkan post ID
+        // PERBAIKAN: Tunggu featuredPosts selesai load sebelum filter
+        // Tunggu hingga featuredPosts sudah terisi (tidak loading)
+        while (isLoadingFeaturedPost.value) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+
+        // Filter out posts yang sudah ada di featured posts
         final Set<String> featuredPostIds = featuredPosts
             .map((p) => p.id)
             .toSet();
@@ -215,6 +240,7 @@ class CustomerCommunityController extends GetxController {
           '👥 Community posts: ${otherUsersPosts.length} posts from other users (filtered from ${response.data.length} total)',
         );
         print('🎯 Featured posts count: ${featuredPosts.length}');
+        print('🎯 Featured post IDs: $featuredPostIds');
         print('🔍 Current user ID: $_currentUserId');
 
         // Enrich community posts dengan data booking
@@ -252,24 +278,29 @@ class CustomerCommunityController extends GetxController {
   Future<void> refreshPosts() async {
     try {
       print('🔄 Starting refresh posts...');
-      
+
       // Clear error states when starting refresh
       hasError.value = false;
       errorMessage.value = '';
-      
+
       // Clear join requests cache to ensure fresh data
       joinRequests.clear();
-      
-      // Load featured posts dulu, baru community posts
-      // Agar filter di community posts bisa bekerja dengan benar
+
+      // PERBAIKAN: Load featured posts dulu dan TUNGGU selesai
+      // sebelum load community posts
       await _loadFeaturedPosts();
+
+      // Pastikan featuredPosts sudah terisi sebelum melanjutkan
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Sekarang load community posts dengan filter yang akurat
       await _loadPostsFromApi();
-      
+
       // Refresh join requests for the first featured post if available
       if (featuredPosts.isNotEmpty) {
         await fetchJoinRequestsByBooking(featuredPosts.first.bookingId);
       }
-      
+
       print('✅ Posts refresh completed successfully');
     } catch (e) {
       print('❌ Error during refresh: $e');
