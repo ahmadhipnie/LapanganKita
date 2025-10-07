@@ -285,9 +285,9 @@ class CustomerCommunityController extends GetxController {
 
       // Clear join requests cache to ensure fresh data
       joinRequests.clear();
+      userJoinRequests.clear();
 
-      // PERBAIKAN: Load featured posts dulu dan TUNGGU selesai
-      // sebelum load community posts
+      // Load featured posts dulu dan TUNGGU selesai
       await _loadFeaturedPosts();
 
       // Pastikan featuredPosts sudah terisi sebelum melanjutkan
@@ -295,6 +295,9 @@ class CustomerCommunityController extends GetxController {
 
       // Sekarang load community posts dengan filter yang akurat
       await _loadPostsFromApi();
+
+      // PERBAIKAN: Load semua join requests secara parallel
+      await Future.wait([loadAllJoinRequests(), loadUserJoinRequests()]);
 
       // Refresh join requests for the first featured post if available
       if (featuredPosts.isNotEmpty) {
@@ -426,15 +429,15 @@ class CustomerCommunityController extends GetxController {
             }
           }
 
+          // PERBAIKAN: Langsung refresh user join requests untuk update status button
+          await loadUserJoinRequests();
+
           Get.snackbar(
             'Success',
             message,
             backgroundColor: Colors.green,
             colorText: Colors.white,
           );
-
-          // Reload user join requests to update UI
-          loadUserJoinRequests();
         } else {
           Get.snackbar(
             'Failed',
@@ -651,7 +654,7 @@ class CustomerCommunityController extends GetxController {
       print('📥 Response status: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Update local join request status
+        // PERBAIKAN: Update local join request status di SEMUA list
         final requestIndex = joinRequests.indexWhere((req) => req.id == joinId);
         if (requestIndex != -1) {
           final updatedRequest = joinRequests[requestIndex].copyWith(
@@ -660,11 +663,22 @@ class CustomerCommunityController extends GetxController {
           joinRequests[requestIndex] = updatedRequest;
         }
 
-        // Reload featured posts to update join counts
-        await _loadFeaturedPosts();
+        // PERBAIKAN: Juga update di userJoinRequests jika ada
+        final userRequestIndex = userJoinRequests.indexWhere(
+          (req) => req.id == joinId,
+        );
+        if (userRequestIndex != -1) {
+          final updatedUserRequest = userJoinRequests[userRequestIndex]
+              .copyWith(status: action);
+          userJoinRequests[userRequestIndex] = updatedUserRequest;
+        }
 
-        // Reload user join requests to update status in other users' views
-        loadUserJoinRequests();
+        // PERBAIKAN: Force refresh untuk update UI
+        userJoinRequests.refresh();
+        joinRequests.refresh();
+
+        // PERBAIKAN: Reload data untuk memastikan konsistensi
+        await Future.wait([_loadFeaturedPosts(), loadUserJoinRequests()]);
 
         final message = action == 'approved'
             ? 'Join request approved successfully!'
@@ -706,13 +720,47 @@ class CustomerCommunityController extends GetxController {
       );
 
       if (response.success) {
+        // PERBAIKAN: Clear dulu lalu assign untuk memastikan data fresh
+        userJoinRequests.clear();
         userJoinRequests.assignAll(response.data);
+
+        // PERBAIKAN: Force refresh observable list
+        userJoinRequests.refresh();
+
         print('✅ Loaded ${response.data.length} user join requests');
+
+        // PERBAIKAN: Debug print untuk melihat status
+        for (final request in response.data) {
+          print(
+            '🔍 User Join Request - ID: ${request.id}, Status: ${request.status}, Booking: ${request.bookingId}',
+          );
+        }
       } else {
         print('❌ Failed to load user join requests: ${response.message}');
       }
     } catch (e) {
       print('❌ Exception loading user join requests: $e');
+    }
+  }
+
+  String? getUserJoinStatusForBooking(String bookingId) {
+    try {
+      final userRequest = userJoinRequests.firstWhereOrNull(
+        (request) => request.bookingId == bookingId,
+      );
+
+      if (userRequest != null) {
+        print(
+          '🎯 Found join status for booking $bookingId: ${userRequest.status}',
+        );
+        return userRequest.status;
+      } else {
+        print('🎯 No join request found for booking $bookingId');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error getting user join status for booking $bookingId: $e');
+      return null;
     }
   }
 

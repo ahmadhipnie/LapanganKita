@@ -3,8 +3,8 @@ import 'package:dio/dio.dart';
 class ApiClient {
   ApiClient({Dio? dio}) : _dio = dio ?? createDefaultDio();
 
-  static const String baseUrl = 'https://61473d0e18b7.ngrok-free.app/api/';
-  static const String baseUrlWithoutApi = 'https://61473d0e18b7.ngrok-free.app';
+  static const String baseUrl = 'https://3a320df197b7.ngrok-free.app/api/';
+  static const String baseUrlWithoutApi = 'https://3a320df197b7.ngrok-free.app';
 
   static final BaseOptions _defaultOptions = BaseOptions(
     baseUrl: baseUrl,
@@ -45,10 +45,20 @@ class ApiClient {
       return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=300&fit=crop';
     }
     if (imagePath.startsWith('http')) return imagePath;
-    if (imagePath.startsWith('/')) {
-      return '$baseUrlWithoutApi$imagePath';
+
+    String cleanPath = imagePath;
+    if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
     }
-    return '$baseUrlWithoutApi/$imagePath';
+    if (cleanPath.startsWith('posts/')) {
+      cleanPath = cleanPath.replaceFirst('posts/', 'uploads/posts/');
+    } else if (!cleanPath.contains('/')) {
+      cleanPath = 'uploads/posts/$cleanPath';
+    } else if (cleanPath.startsWith('uploads/')) {}
+
+    final finalUrl = '$baseUrlWithoutApi/$cleanPath';
+
+    return finalUrl;
   }
 
   Future<Response<T>> get<T>(
