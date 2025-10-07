@@ -90,17 +90,29 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        Text(
-          'Ads Field',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-        ),
-        SizedBox(height: 4),
-        Text(
-          'Manage promotional materials to be displayed to users.',
-          style: TextStyle(color: Colors.black54),
+      children: [
+        const Icon(Icons.campaign_outlined, color: AppColors.primary, size: 28),
+        const SizedBox(width: 12),
+        // Gunakan Expanded agar teks membungkus layar kecil
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Field Promotion',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Manage promotional banners that appear to users',
+                style: TextStyle(color: Colors.black54, fontSize: 13),
+                softWrap: true,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -238,89 +250,66 @@ class _PromosiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDeleting = controller.isDeleting(item.id);
-    final isUpdating = controller.isUpdating(item.id);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      padding: const EdgeInsets.all(16),
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: item.filePhotoUrl.isNotEmpty
-                  ? Image.network(
-                      item.filePhotoUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: const Color(0xFFF1F5F9),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.broken_image_outlined,
-                          color: Colors.black38,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: const Color(0xFFF1F5F9),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.image_not_supported_outlined,
-                        color: Colors.black26,
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Updated ${item.formattedDate()}',
-            style: const TextStyle(color: Colors.black54, fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          Row(
+          Stack(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: isUpdating
-                      ? null
-                      : () => _showEditPromosiSheet(context, controller, item),
-                  icon: isUpdating
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.edit_outlined),
-                  label: const Text('Edit'),
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  item.filePhotoUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFFF1F5F9),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.black26,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
+              Positioned(
+                top: 8,
+                right: 8,
+                child: PopupMenuButton<String>(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  onPressed: isDeleting
-                      ? null
-                      : () => _confirmDelete(context, controller, item),
-                  icon: isDeleting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.delete_outline),
-                  label: const Text('Delete'),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEditPromosiSheet(context, controller, item);
+                    } else if (value == 'delete') {
+                      _confirmDelete(context, controller, item);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                  icon: const Icon(Icons.more_vert, color: Colors.black),
                 ),
               ),
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Updated ${item.formattedDate()}',
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 4),
+              ],
+            ),
           ),
         ],
       ),

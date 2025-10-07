@@ -343,6 +343,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
           : transactions.take(limit).toList();
       final isLoading = c.isLoadingReport.value;
       final errorMessage = c.reportError.value;
+      if (errorMessage.isNotEmpty) {
+        debugPrint('Performance report error: $errorMessage');
+      }
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,9 +403,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        errorMessage,
-                        style: const TextStyle(color: Color(0xFF7F1D1D)),
+                      const Text(
+                        "We're having trouble retrieving the performance report right now.",
+                        style: TextStyle(color: Color(0xFF7F1D1D)),
                       ),
                       const SizedBox(height: 12),
                       Align(
@@ -821,6 +824,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
   }
 
   Widget _placeErrorCard(String message, FieldManagerHomeController c) {
+    if (message.isNotEmpty) {
+      debugPrint('Place data error: $message');
+    }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -847,7 +853,10 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(message, style: const TextStyle(color: Color(0xFF7F1D1D))),
+          const Text(
+            "We're having trouble loading your place data right now.",
+            style: TextStyle(color: Color(0xFF7F1D1D)),
+          ),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
@@ -863,26 +872,35 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
   }
 
   Widget _placeBadge({required IconData icon, required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: const Color(0xFF4B5563)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF374151),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 240),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: const Color(0xFF4B5563)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                style: const TextStyle(
+                  color: Color(0xFF374151),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -986,58 +1004,119 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Expanded(
-                child: Text(
-                  'Field Management',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 420;
+
+              Widget buildAddFieldButton({bool expand = false}) {
+                final button = TextButton.icon(
+                  onPressed: hasPlace ? () => _navigateToAddField(c) : null,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF2563EB),
+                    backgroundColor: hasPlace
+                        ? const Color(0xFFDBEAFE)
+                        : const Color(0xFFF3F4F6),
+                    disabledForegroundColor: const Color(0xFF9CA3AF),
+                    minimumSize: expand
+                        ? const Size.fromHeight(44)
+                        : const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Field'),
+                );
+
+                final wrappedButton = Tooltip(
+                  message: hasPlace
+                      ? 'Create a new field'
+                      : 'Register your place before adding fields.',
+                  child: button,
+                );
+
+                if (expand) {
+                  return SizedBox(width: double.infinity, child: wrappedButton);
+                }
+
+                return SizedBox(height: 40, child: wrappedButton);
+              }
+
+              Widget buildRefreshButton({
+                Alignment alignment = Alignment.center,
+                bool compact = false,
+              }) {
+                final iconButton = IconButton(
+                  onPressed: c.refreshFields,
+                  icon: const Icon(Icons.refresh, color: Color(0xFF2563EB)),
+                  tooltip: 'Refresh data',
+                  splashRadius: 22,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints.tightFor(
+                    width: compact ? 44 : 40,
+                    height: compact ? 44 : 40,
+                  ),
+                );
+
+                final sizedButton = SizedBox(
+                  width: compact ? 44 : 40,
+                  height: compact ? 44 : 40,
+                  child: iconButton,
+                );
+
+                if (alignment != Alignment.center) {
+                  return Align(alignment: alignment, child: sizedButton);
+                }
+
+                return sizedButton;
+              }
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Tooltip(
-                      message: hasPlace
-                          ? 'Create a new field'
-                          : 'Register your place before adding fields.',
-                      child: SizedBox(
-                        height: 40,
-                        child: TextButton.icon(
-                          onPressed: hasPlace
-                              ? () => _navigateToAddField(c)
-                              : null,
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF2563EB),
-                            disabledForegroundColor: const Color(0xFF9CA3AF),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Field Management',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Field'),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        buildRefreshButton(compact: true),
+                      ],
                     ),
-                    SizedBox(
-                      height: 40,
-                      width: 40,
-                      child: IconButton(
-                        onPressed: c.refreshFields,
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Color(0xFF2563EB),
-                        ),
-                        tooltip: 'Refresh data',
-                      ),
-                    ),
+                    const SizedBox(height: 12),
+                    buildAddFieldButton(expand: true),
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Field Management',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      buildRefreshButton(),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(children: [const Spacer(), buildAddFieldButton()]),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           if (allFields.isNotEmpty)
@@ -1225,6 +1304,8 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                             children: [
                               Text(
                                 name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -1233,6 +1314,8 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                               const SizedBox(height: 4),
                               Text(
                                 type,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Color(0xFF6B7280),
                                   fontSize: 13,
@@ -1253,11 +1336,14 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                           color: Color(0xFF6B7280),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          '${field['openHour'] ?? '-'} - ${field['closeHour'] ?? '-'}',
-                          style: const TextStyle(
-                            color: Color(0xFF111827),
-                            fontSize: 13,
+                        Expanded(
+                          child: Text(
+                            '${field['openHour'] ?? '-'} - ${field['closeHour'] ?? '-'}',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
@@ -1271,27 +1357,34 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                           color: Color(0xFF6B7280),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'Max ${field['maxPerson'] ?? '-'} people',
-                          style: const TextStyle(
-                            color: Color(0xFF111827),
-                            fontSize: 13,
+                        Expanded(
+                          child: Text(
+                            'Max ${field['maxPerson'] ?? '-'} people',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '${_formatCurrency(price)}/hour',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2563EB),
+                        Expanded(
+                          child: Text(
+                            '${_formatCurrency(price)}/hour',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2563EB),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         PopupMenuButton<String>(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1561,6 +1654,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
   }
 
   Widget _fieldsErrorState(String message, FieldManagerHomeController c) {
+    if (message.isNotEmpty) {
+      debugPrint('Field data error: $message');
+    }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -1587,7 +1683,10 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(message, style: const TextStyle(color: Color(0xFF7F1D1D))),
+          const Text(
+            "We couldn't load your field data right now. Please try again shortly.",
+            style: TextStyle(color: Color(0xFF7F1D1D)),
+          ),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
