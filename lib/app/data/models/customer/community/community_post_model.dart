@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class CommunityPost {
   final String id;
   final String bookingId;
@@ -48,7 +50,16 @@ class CommunityPost {
       if (value == null) {
         return DateTime.now();
       }
-      return DateTime.parse(value.toString());
+
+      try {
+        // Parse as UTC first
+        final utcDateTime = DateTime.parse(value.toString()).toUtc();
+        // Convert to local time
+        return utcDateTime.toLocal();
+      } catch (e) {
+        print('❌ Error parsing date: $value, error: $e');
+        return DateTime.now();
+      }
     }
 
     final bookingStart = parseDateTime(json['booking_datetime_start']);
@@ -95,6 +106,7 @@ class CommunityPost {
   }
 
   static String _formatTime(DateTime dateTime) {
+    // dateTime sudah dalam local time, jadi langsung format saja
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
@@ -111,6 +123,23 @@ class CommunityPost {
     } else {
       return 'Just now';
     }
+  }
+
+  // Method untuk mendapatkan formatted date yang user-friendly
+  String get formattedGameDate {
+    return '${gameDate.day}/${gameDate.month}/${gameDate.year}';
+  }
+
+  // Method untuk mendapatkan full datetime yang formatted
+  String get formattedGameDateTime {
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    return dateFormat.format(gameDate);
+  }
+
+  // Method untuk mendapatkan post time yang formatted
+  String get formattedPostTime {
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    return dateFormat.format(postTime);
   }
 
   CommunityPost copyWith({
