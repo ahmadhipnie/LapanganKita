@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
@@ -5,6 +6,7 @@ import 'package:dio/dio.dart' as dio;
 import '../../data/helper/error_helper.dart';
 import '../../data/models/customer/community/community_post_model.dart';
 import '../../data/network/api_client.dart';
+import '../../data/repositories/rating_repository.dart';
 
 class CustomerHistoryController extends GetxController {
   final RxList<BookingHistory> bookings = <BookingHistory>[].obs;
@@ -17,10 +19,12 @@ class CustomerHistoryController extends GetxController {
   final ApiClient _apiClient = ApiClient();
   final LocalStorageService _localStorage = LocalStorageService.instance;
   final errorHandler = ErrorHandler();
+  late final RatingRepository _ratingRepository;
 
   @override
   void onInit() {
     super.onInit();
+    _ratingRepository = RatingRepository(apiClient: _apiClient);
     loadData();
   }
 
@@ -490,6 +494,77 @@ class CustomerHistoryController extends GetxController {
         error: e,
         showSnackbar: true,
       );
+    }
+  }
+
+  // Rating Methods
+  Future<void> submitRating({
+    required String bookingId,
+    required int ratingValue,
+    required String review,
+  }) async {
+    try {
+      isLoading.value = true;
+
+      print(
+        '🚀 Starting rating submission for booking: $bookingId, rating: $ratingValue, review: "$review"',
+      );
+
+      final response = await _ratingRepository.submitRating(
+        idBooking: bookingId,
+        ratingValue: ratingValue,
+        review: review,
+      );
+
+      print(
+        '📦 Rating response received: success=${response.success}, message="${response.message}"',
+      );
+
+      if (response.success) {
+        // Show success message
+        Get.snackbar(
+          'Success',
+          response.message.isNotEmpty
+              ? response.message
+              : 'Rating submitted successfully!',
+          backgroundColor: const Color(0xFF4CAF50),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.TOP,
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+        );
+
+        // Refresh data to show any updates
+        await refreshData();
+      } else {
+        // Show error message from API
+        Get.snackbar(
+          'Failed',
+          response.message.isNotEmpty
+              ? response.message
+              : 'Failed to submit rating',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          snackPosition: SnackPosition.TOP,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+      }
+    } catch (e) {
+      print('💥 Rating submission exception: $e');
+
+      // Show detailed error message
+      Get.snackbar(
+        'Error',
+        'Failed to submit rating. Please check your connection and try again.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+        snackPosition: SnackPosition.TOP,
+        icon: const Icon(Icons.warning, color: Colors.white),
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 

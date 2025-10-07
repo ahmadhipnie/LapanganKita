@@ -326,6 +326,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           const SizedBox(height: 16),
           _buildPostHeader(post),
           const SizedBox(height: 16),
+          if (post.postPhoto.isNotEmpty) ...[
+            _buildPostImage(post.postPhoto),
+            const SizedBox(height: 16),
+          ],
           Text(
             post.title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -344,6 +348,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           ),
           const SizedBox(height: 16),
           _buildLocationTile(post),
+          if (post.placeAddress.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildAddressTile(post),
+          ],
           const SizedBox(height: 16),
           _buildMetaDetails(post),
           const SizedBox(height: 16),
@@ -405,6 +413,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
   }
 
   Widget _buildLocationTile(CommunityPost post) {
+    final locationName = post.placeName.isNotEmpty
+        ? post.placeName
+        : post.courtName;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -420,13 +432,29 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              post.courtName,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: AppColors.primary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  locationName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+                if (post.courtName != locationName &&
+                    post.courtName.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    post.courtName,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -752,6 +780,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         children: [
           _buildCardHeader(post),
           const SizedBox(height: 12),
+          if (post.postPhoto.isNotEmpty) ...[
+            _buildCompactPostImage(post),
+            const SizedBox(height: 12),
+          ],
           Text(
             post.title,
             maxLines: 2,
@@ -769,6 +801,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             style: const TextStyle(color: Colors.black54, height: 1.4),
           ),
           const SizedBox(height: 12),
+          if (post.placeName.isNotEmpty || post.placeAddress.isNotEmpty) ...[
+            _buildCompactLocationInfo(post),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               _buildMetaChip(
@@ -979,6 +1015,154 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
+      ),
+    );
+  }
+
+  Widget _buildPostImage(String imagePath) {
+    // Handle relative path from API response
+    final imageUrl = imagePath.startsWith('http')
+        ? imagePath
+        : '${ApiClient.baseUrl}$imagePath';
+
+    print('🖼️ Post image URL: $imageUrl (from path: $imagePath)');
+
+    return Container(
+      width: double.infinity,
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.grey[100],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: Colors.grey[200],
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.grey[200],
+            child: Icon(
+              Icons.image_not_supported,
+              color: Colors.grey[500],
+              size: 48,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactPostImage(CommunityPost post) {
+    if (post.postPhoto.isEmpty) return const SizedBox.shrink();
+
+    // Handle relative path from API response
+    final imageUrl = post.postPhoto.startsWith('http')
+        ? post.postPhoto
+        : '${ApiClient.baseUrl}/${post.postPhoto}';
+
+    print('🖼️ Compact image URL: $imageUrl (from path: ${post.postPhoto})');
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: CachedNetworkImage(
+        imageUrl: imageUrl,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.image, color: Colors.grey, size: 24),
+        ),
+        errorWidget: (context, url, error) => Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.broken_image, color: Colors.grey, size: 24),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddressTile(CommunityPost post) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.shade100),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.place_outlined, color: Colors.blue.shade600, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              post.placeAddress,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.blue.shade700,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactLocationInfo(CommunityPost post) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0066CC).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: const Color(0xFF0066CC).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.location_on, size: 14, color: const Color(0xFF0066CC)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (post.placeName.isNotEmpty)
+                  Text(
+                    post.placeName,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0066CC),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (post.placeAddress.isNotEmpty)
+                  Text(
+                    post.placeAddress,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

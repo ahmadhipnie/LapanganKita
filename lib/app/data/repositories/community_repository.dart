@@ -135,4 +135,15 @@ class CommunityRepository {
       throw Exception('Failed to load join requests by user: $e');
     }
   }
+
+  // Get post details (including post_photo) from posts API
+  Future<Map<String, dynamic>?> getPostDetails(String postId) async {
+    try {
+      final response = await _apiClient.get('posts/$postId');
+      return response.data;
+    } catch (e) {
+      print('Failed to load post details for post $postId: $e');
+      return null;
+    }
+  }
 }

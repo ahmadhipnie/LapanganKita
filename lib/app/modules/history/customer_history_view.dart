@@ -322,6 +322,12 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                       _buildCreatePostButton(booking, isSmallScreen),
                     ],
 
+                    // Rating Button - Hanya untuk status completed
+                    if (booking.status == 'completed') ...[
+                      SizedBox(height: isSmallScreen ? 8 : 12),
+                      _buildRatingButton(booking, isSmallScreen),
+                    ],
+
                     // Price Breakdown - Expansion tile responsif
                     SizedBox(height: isSmallScreen ? 8 : 12),
                     _buildPriceBreakdownSection(booking, isSmallScreen),
@@ -393,6 +399,47 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
         if (booking.note.isNotEmpty)
           _buildDetailRow('Note', booking.note, isSmallScreen, maxLines: 2),
       ],
+    );
+  }
+
+  Widget _buildRatingButton(BookingHistory booking, bool isSmallScreen) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () => _showRatingDialog(booking),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange[50],
+          foregroundColor: Colors.orange[700],
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
+            side: BorderSide(color: Colors.orange[200]!, width: 1),
+          ),
+          padding: EdgeInsets.symmetric(
+            vertical: isSmallScreen ? 10 : 12,
+            horizontal: isSmallScreen ? 12 : 16,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.star_rate, size: isSmallScreen ? 16 : 18),
+            SizedBox(width: isSmallScreen ? 6 : 8),
+            Flexible(
+              child: Text(
+                'Rate Experience',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: isSmallScreen ? 13 : 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1297,6 +1344,172 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
       backgroundColor: Colors.transparent,
       enableDrag: true,
     );
+  }
+
+  void _showRatingDialog(BookingHistory booking) {
+    final TextEditingController reviewController = TextEditingController();
+    final RxInt selectedRating = 0.obs;
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Column(
+          children: [
+            Icon(Icons.star_rate, color: Colors.orange[600], size: 32),
+            const SizedBox(height: 8),
+            const Text(
+              'Rate Your Experience',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Booking info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        booking.courtName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        booking.location,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                      Text(
+                        _formatDate(booking.date),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Rating stars
+                const Text(
+                  'Rate your experience (1-5 stars):',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Obx(
+                  () => Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return GestureDetector(
+                        onTap: () => selectedRating.value = index + 1,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(
+                            index < selectedRating.value
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: Colors.orange[600],
+                            size: 32,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Review text field
+                const Text(
+                  'Write a review (optional):',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reviewController,
+                  maxLines: null,
+                  minLines: 2,
+                  maxLength: 200,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: 'Share your experience...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+          ),
+          Obx(
+            () => ElevatedButton(
+              onPressed: selectedRating.value > 0
+                  ? () => _submitRating(
+                      booking,
+                      selectedRating.value,
+                      reviewController.text,
+                    )
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: controller.isLoading.value
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Submit Rating'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitRating(BookingHistory booking, int rating, String review) async {
+    try {
+      await controller.submitRating(
+        bookingId: booking.id.toString(),
+        ratingValue: rating,
+        review: review.trim(),
+      );
+
+      // Close dialog after successful submission
+      Get.back();
+    } catch (e) {
+      // Error handling is already done in controller
+      print('Rating submission error: $e');
+    }
   }
 
   // Tambahkan method untuk memilih gambar

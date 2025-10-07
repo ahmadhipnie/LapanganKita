@@ -155,6 +155,9 @@ class CommunityPostDetail {
       joinedPlayers: joinedCount,
       posterUserId: posterUserId,
       bookingStatus: 'approved', // Default untuk post detail
+      placeAddress: '', // Default untuk post detail
+      placeName: fieldName, // Use field name as place name
+      postPhoto: postPhoto, // Use existing postPhoto field
     );
   }
 

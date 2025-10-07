@@ -137,6 +137,18 @@ class CustomerCommunityController extends GetxController {
         // Coba ambil data booking berdasarkan booking_id
         final bookingData = await _repository.getBookingDetails(post.bookingId);
 
+        // Coba ambil data post photo dari posts API
+        String postPhoto = '';
+        try {
+          final postsData = await _repository.getPostDetails(post.id);
+          if (postsData != null && postsData['success'] == true) {
+            final postInfo = postsData['data'];
+            postPhoto = postInfo?['post_photo']?.toString() ?? '';
+          }
+        } catch (e) {
+          print('⚠️ Could not fetch post photo for post ${post.id}: $e');
+        }
+
         if (bookingData != null && bookingData['success'] == true) {
           final bookingInfo = bookingData['data'];
           if (bookingInfo != null) {
@@ -146,18 +158,24 @@ class CustomerCommunityController extends GetxController {
               totalCost: (bookingInfo['total_price'] ?? post.totalCost)
                   .toDouble(),
               bookingStatus: bookingInfo['status']?.toString() ?? 'approved',
+              placeAddress: bookingInfo['place_address']?.toString() ?? '',
+              placeName:
+                  bookingInfo['place_name']?.toString() ?? post.courtName,
+              postPhoto: postPhoto,
             );
 
             print(
-              '✅ Enriched post ${post.id}: ${enrichedPost.userName} - ${enrichedPost.totalCost} - Status: ${enrichedPost.bookingStatus}',
+              '✅ Enriched post ${post.id}: ${enrichedPost.userName} - ${enrichedPost.totalCost} - Status: ${enrichedPost.bookingStatus} - Photo: ${postPhoto.isNotEmpty ? 'Yes' : 'No'}',
             );
             enrichedPosts.add(enrichedPost);
           } else {
-            enrichedPosts.add(post);
+            final enrichedPost = post.copyWith(postPhoto: postPhoto);
+            enrichedPosts.add(enrichedPost);
           }
         } else {
           print('⚠️ No booking data found for booking ID: ${post.bookingId}');
-          enrichedPosts.add(post);
+          final enrichedPost = post.copyWith(postPhoto: postPhoto);
+          enrichedPosts.add(enrichedPost);
         }
       } catch (e) {
         print('❌ Error enriching post ${post.id}: $e');
