@@ -16,20 +16,22 @@ class CourtRepository {
 
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final apiResponse = ApiResponse.fromJson(body);
-        
+
         if (apiResponse.success) {
           // Convert data to Court objects
           final courts = apiResponse.data.map<Court>((courtData) {
             return Court.fromJson(courtData as Map<String, dynamic>);
           }).toList();
-          
+
           return courts;
         } else {
           throw CourtException(apiResponse.message);
         }
       }
 
-      final message = _extractMessage(body) ?? 'Failed to fetch courts with status $statusCode';
+      final message =
+          _extractMessage(body) ??
+          'Failed to fetch courts with status $statusCode';
       throw CourtException(message);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
@@ -40,7 +42,10 @@ class CourtRepository {
         );
       }
 
-      final message = _extractMessage(e.response?.data) ?? e.message ?? 'Failed to fetch courts.';
+      final message =
+          _extractMessage(e.response?.data) ??
+          e.message ??
+          'Failed to fetch courts.';
       throw CourtException(message);
     } on FormatException catch (e) {
       throw CourtException('Data format error: ${e.message}');
@@ -51,14 +56,16 @@ class CourtRepository {
 
   Future<List<Court>> getCourtsByPlace({required int placeId}) async {
     try {
-      final response = await _apiClient.get<Map<String, dynamic>>('fields/place/$placeId');
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        'fields/place/$placeId',
+      );
 
       final statusCode = response.statusCode ?? 0;
       final body = response.data;
 
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final apiResponse = ApiResponse.fromJson(body);
-        
+
         if (apiResponse.success) {
           final courts = apiResponse.data.map<Court>((courtData) {
             return Court.fromJson(courtData as Map<String, dynamic>);
@@ -69,7 +76,9 @@ class CourtRepository {
         }
       }
 
-      final message = _extractMessage(body) ?? 'Failed to fetch courts with status $statusCode';
+      final message =
+          _extractMessage(body) ??
+          'Failed to fetch courts with status $statusCode';
       throw CourtException(message);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
@@ -79,7 +88,10 @@ class CourtRepository {
           'Unable to reach the server. Check your connection.',
         );
       }
-      final message = _extractMessage(e.response?.data) ?? e.message ?? 'Failed to fetch courts.';
+      final message =
+          _extractMessage(e.response?.data) ??
+          e.message ??
+          'Failed to fetch courts.';
       throw CourtException(message);
     } on FormatException catch (e) {
       throw CourtException('Data format error: ${e.message}');
@@ -90,14 +102,16 @@ class CourtRepository {
 
   Future<Court> getCourtDetail(int courtId) async {
     try {
-      final response = await _apiClient.get<Map<String, dynamic>>('fields/$courtId');
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        'fields/$courtId',
+      );
 
       final statusCode = response.statusCode ?? 0;
       final body = response.data;
 
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final apiResponse = ApiResponse.fromJson(body);
-        
+
         if (apiResponse.success) {
           return Court.fromJson(apiResponse.data as Map<String, dynamic>);
         } else {
@@ -105,7 +119,9 @@ class CourtRepository {
         }
       }
 
-      final message = _extractMessage(body) ?? 'Failed to fetch court detail with status $statusCode';
+      final message =
+          _extractMessage(body) ??
+          'Failed to fetch court detail with status $statusCode';
       throw CourtException(message);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
@@ -115,7 +131,10 @@ class CourtRepository {
           'Unable to reach the server. Check your connection.',
         );
       }
-      final message = _extractMessage(e.response?.data) ?? e.message ?? 'Failed to fetch court detail.';
+      final message =
+          _extractMessage(e.response?.data) ??
+          e.message ??
+          'Failed to fetch court detail.';
       throw CourtException(message);
     } on FormatException catch (e) {
       throw CourtException('Data format error: ${e.message}');

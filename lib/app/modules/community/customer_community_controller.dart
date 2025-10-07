@@ -2,34 +2,49 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangan_kita/app/modules/community/custommer_community_model.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
-import '../../data/network/api_client.dart';
+import '../../data/models/customer/community/community_post_model.dart';
+import '../../data/models/customer/community/join_request_model.dart';
+import '../../data/repositories/community_repository.dart';
 
 class CustomerCommunityController extends GetxController {
   final RxList<CommunityPost> posts = <CommunityPost>[].obs;
-  final Rx<CommunityPost?> selectedPost = Rx<CommunityPost?>(null);
+  final RxList<CommunityPost> featuredPosts = <CommunityPost>[].obs;
   final RxBool isScrolled = false.obs;
   final RxBool isLoading = false.obs;
-  final RxBool isLoadingSinglePost = false.obs;
+  final RxBool isLoadingFeaturedPost = false.obs;
   final RxBool hasError = false.obs;
   final RxString errorMessage = ''.obs;
   final ScrollController scrollController = ScrollController();
   final RxMap<String, bool> _joiningStates = <String, bool>{}.obs;
-  final RxList<JoinRequest> joinRequests = <JoinRequest>[].obs;
+  final RxList<JoinRequest> joinRequests =
+      <JoinRequest>[].obs; // Join requests TO user's posts
+  final RxList<JoinRequest> userJoinRequests =
+      <JoinRequest>[].obs; // Join requests FROM user
   final RxBool isLoadingJoinRequests = false.obs;
   final RxString joinRequestsError = ''.obs;
   final RxMap<String, bool> _decisionLoading = <String, bool>{}.obs;
 
-  final ApiClient _apiClient = Get.find<ApiClient>();
+  final CommunityRepository _repository;
   final LocalStorageService _localStorageService = LocalStorageService.instance;
+
+  CustomerCommunityController({required CommunityRepository repository})
+    : _repository = repository;
+
+  // Get current user ID
+  int get _currentUserId => _localStorageService.userId;
+  int get currentUserId => _currentUserId;
 
   @override
   void onInit() {
     super.onInit();
-    _loadPostsFromApi();
+    print('🟡 Controller initialized, user ID: $_currentUserId');
     scrollController.addListener(_handleScroll);
+    _loadFeaturedPosts();
+    _loadPostsFromApi();
+    loadAllJoinRequests();
+    loadUserJoinRequests(); // Load user's own join requests
   }
 
   @override
@@ -42,38 +57,133 @@ class CustomerCommunityController extends GetxController {
     isScrolled.value = scrollController.offset > 50;
   }
 
-  // Method untuk load single post by ID
-  Future<void> loadPostById(String postId) async {
+  // Method untuk load featured post (post milik user sendiri)
+  Future<void> _loadFeaturedPosts() async {
     try {
-      isLoadingSinglePost.value = true;
-      hasError.value = false;
-      errorMessage.value = '';
+      isLoadingFeaturedPost.value = true;
+      featuredPosts.clear();
 
-      final response = await _apiClient.get('posts/$postId');
+      if (_currentUserId <= 0) {
+        print('❌ User not logged in, cannot load featured posts');
+        isLoadingFeaturedPost.value = false;
+        return;
+      }
 
-      if (response.statusCode == 200) {
-        final postResponse = CommunityPostsResponse.fromJson(response.data);
+      print('🔍 Loading featured posts for user ID: $_currentUserId');
 
-        if (postResponse.success && postResponse.data.isNotEmpty) {
-          final post = postResponse.data.first;
-          selectedPost.value = post;
-          await fetchJoinRequests(post.id);
+      final response = await _repository.getPostsByUserId(_currentUserId);
+
+      print('📥 Loaded ${response.data.length} featured posts from API');
+
+      if (response.success) {
+        if (response.data.isNotEmpty) {
+          // Enrich posts dengan data booking
+          final enrichedPosts = await _enrichPostsWithBookingData(
+            response.data,
+          );
+
+          // Filter out completed bookings - don't show in featured posts
+          final activePosts = enrichedPosts
+              .where((post) => post.bookingStatus.toLowerCase() != 'completed')
+              .toList();
+
+          // Debug: Print filtering results
+          print('🔍 Total enriched posts: ${enrichedPosts.length}');
+          print('🔍 Active posts (excluding completed): ${activePosts.length}');
+          if (activePosts.isNotEmpty) {
+            print('🔍 First active post: ${activePosts.first.userName}');
+            print('🔍 First post status: ${activePosts.first.bookingStatus}');
+          }
+
+          featuredPosts.assignAll(activePosts);
+          print(
+            '✅ Found ${activePosts.length} active featured posts for current user',
+          );
+
+          // Load join requests untuk featured post pertama jika ada
+          if (activePosts.isNotEmpty) {
+            await fetchJoinRequestsByBooking(activePosts.first.bookingId);
+          }
         } else {
-          errorMessage.value = 'Post not found: ${postResponse.message}';
-          hasError.value = true;
+          print('⚠️ No posts found for current user ID: $_currentUserId');
+          featuredPosts.clear();
         }
       } else {
-        errorMessage.value = 'Server error: ${response.statusCode}';
-        hasError.value = true;
+        print('❌ API returned error: ${response.message}');
+        featuredPosts.clear();
       }
     } catch (e) {
-      errorMessage.value =
-          'Connection error: Please check your internet connection';
-      hasError.value = true;
-      print('Error loading post: $e');
+      print('❌ Exception loading featured posts: $e');
+      featuredPosts.clear();
+      Get.snackbar(
+        'Error',
+        'Failed to load your posts',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
-      isLoadingSinglePost.value = false;
+      isLoadingFeaturedPost.value = false;
     }
+  }
+
+  // Enrich community posts dengan data booking
+  Future<List<CommunityPost>> _enrichPostsWithBookingData(
+    List<CommunityPost> posts,
+  ) async {
+    final enrichedPosts = <CommunityPost>[];
+
+    for (final post in posts) {
+      try {
+        // Coba ambil data booking berdasarkan booking_id
+        final bookingData = await _repository.getBookingDetails(post.bookingId);
+
+        // Coba ambil data post photo dari posts API
+        String postPhoto = '';
+        try {
+          final postsData = await _repository.getPostDetails(post.id);
+          if (postsData != null && postsData['success'] == true) {
+            final postInfo = postsData['data'];
+            postPhoto = postInfo?['post_photo']?.toString() ?? '';
+          }
+        } catch (e) {
+          print('⚠️ Could not fetch post photo for post ${post.id}: $e');
+        }
+
+        if (bookingData != null && bookingData['success'] == true) {
+          final bookingInfo = bookingData['data'];
+          if (bookingInfo != null) {
+            // Buat post baru dengan data booking yang diperbarui menggunakan copyWith
+            final enrichedPost = post.copyWith(
+              userName: bookingInfo['user_name']?.toString() ?? post.userName,
+              totalCost: (bookingInfo['total_price'] ?? post.totalCost)
+                  .toDouble(),
+              bookingStatus: bookingInfo['status']?.toString() ?? 'approved',
+              placeAddress: bookingInfo['place_address']?.toString() ?? '',
+              placeName:
+                  bookingInfo['place_name']?.toString() ?? post.courtName,
+              postPhoto: postPhoto,
+            );
+
+            print(
+              '✅ Enriched post ${post.id}: ${enrichedPost.userName} - ${enrichedPost.totalCost} - Status: ${enrichedPost.bookingStatus} - Photo: ${postPhoto.isNotEmpty ? 'Yes' : 'No'}',
+            );
+            enrichedPosts.add(enrichedPost);
+          } else {
+            final enrichedPost = post.copyWith(postPhoto: postPhoto);
+            enrichedPosts.add(enrichedPost);
+          }
+        } else {
+          print('⚠️ No booking data found for booking ID: ${post.bookingId}');
+          final enrichedPost = post.copyWith(postPhoto: postPhoto);
+          enrichedPosts.add(enrichedPost);
+        }
+      } catch (e) {
+        print('❌ Error enriching post ${post.id}: $e');
+        enrichedPosts.add(post);
+      }
+    }
+
+    return enrichedPosts;
   }
 
   Future<void> _loadPostsFromApi() async {
@@ -81,25 +191,51 @@ class CustomerCommunityController extends GetxController {
       isLoading.value = true;
       hasError.value = false;
       errorMessage.value = '';
+      
+      // Clear existing posts to ensure fresh data
+      posts.clear();
 
-      final response = await _apiClient.get('posts');
+      final response = await _repository.getCommunityPosts();
 
-      if (response.statusCode == 200) {
-        final postsResponse = CommunityPostsResponse.fromJson(response.data);
+      if (response.success) {
+        // PERBAIKAN: Filter out posts yang sudah ada di featured posts
+        // Dengan membandingkan post ID
+        final Set<String> featuredPostIds = featuredPosts
+            .map((p) => p.id)
+            .toSet();
 
-        if (postsResponse.success) {
-          posts.assignAll(postsResponse.data);
-          if (postsResponse.data.isEmpty) {
-            errorMessage.value =
-                'No posts available yet. Be the first to create a post!';
-            hasError.value = true;
-          }
-        } else {
-          errorMessage.value = 'Failed to load posts: ${postsResponse.message}';
+        final otherUsersPosts = response.data.where((post) {
+          // Filter berdasarkan user ID DAN post ID untuk menghindari duplikasi
+          final isNotCurrentUser = post.posterUserId != _currentUserId;
+          final isNotInFeatured = !featuredPostIds.contains(post.id);
+          return isNotCurrentUser && isNotInFeatured;
+        }).toList();
+
+        print(
+          '👥 Community posts: ${otherUsersPosts.length} posts from other users (filtered from ${response.data.length} total)',
+        );
+        print('🎯 Featured posts count: ${featuredPosts.length}');
+        print('🔍 Current user ID: $_currentUserId');
+
+        // Enrich community posts dengan data booking
+        final enrichedCommunityPosts = await _enrichPostsWithBookingData(
+          otherUsersPosts,
+        );
+        posts.assignAll(enrichedCommunityPosts);
+
+        if (response.data.isEmpty) {
+          errorMessage.value = 'No community posts available yet.';
+          hasError.value = true;
+        } else if (otherUsersPosts.isEmpty && featuredPosts.isNotEmpty) {
+          errorMessage.value =
+              'All available posts are yours! Share with friends to see their posts here.';
+          hasError.value = true;
+        } else if (otherUsersPosts.isEmpty && featuredPosts.isEmpty) {
+          errorMessage.value = 'Be the first to create a community post!';
           hasError.value = true;
         }
       } else {
-        errorMessage.value = 'Server error: ${response.statusCode}';
+        errorMessage.value = 'Failed to load posts: ${response.message}';
         hasError.value = true;
       }
     } catch (e) {
@@ -112,11 +248,33 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
+  // Update refreshPosts method
   Future<void> refreshPosts() async {
-    await _loadPostsFromApi();
-    final postId = selectedPost.value?.id;
-    if (postId != null) {
-      await fetchJoinRequests(postId);
+    try {
+      print('🔄 Starting refresh posts...');
+      
+      // Clear error states when starting refresh
+      hasError.value = false;
+      errorMessage.value = '';
+      
+      // Clear join requests cache to ensure fresh data
+      joinRequests.clear();
+      
+      // Load featured posts dulu, baru community posts
+      // Agar filter di community posts bisa bekerja dengan benar
+      await _loadFeaturedPosts();
+      await _loadPostsFromApi();
+      
+      // Refresh join requests for the first featured post if available
+      if (featuredPosts.isNotEmpty) {
+        await fetchJoinRequestsByBooking(featuredPosts.first.bookingId);
+      }
+      
+      print('✅ Posts refresh completed successfully');
+    } catch (e) {
+      print('❌ Error during refresh: $e');
+      hasError.value = true;
+      errorMessage.value = 'Failed to refresh posts. Please try again.';
     }
   }
 
@@ -133,8 +291,22 @@ class CustomerCommunityController extends GetxController {
   Future<void> joinGame(String postId) async {
     if (isJoining(postId)) return;
 
-    final postIndex = posts.indexWhere((post) => post.id == postId);
-    if (postIndex == -1) {
+    // Cari post di community posts atau featured posts
+    CommunityPost? post;
+    int postIndex = posts.indexWhere((post) => post.id == postId);
+
+    if (postIndex != -1) {
+      post = posts[postIndex];
+    } else {
+      final featuredIndex = featuredPosts.indexWhere(
+        (post) => post.id == postId,
+      );
+      if (featuredIndex != -1) {
+        post = featuredPosts[featuredIndex];
+      }
+    }
+
+    if (post == null) {
       Get.snackbar(
         'Error',
         'Post not found',
@@ -144,7 +316,16 @@ class CustomerCommunityController extends GetxController {
       return;
     }
 
-    final post = posts[postIndex];
+    // Cek apakah user mencoba join post milik sendiri
+    if (post.posterUserId == _currentUserId) {
+      Get.snackbar(
+        'Error',
+        'You cannot join your own post',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
     if (post.joinedPlayers >= post.playersNeeded) {
       Get.snackbar(
@@ -180,10 +361,7 @@ class CustomerCommunityController extends GetxController {
     _setJoining(postId, true);
 
     try {
-      final response = await _apiClient.post(
-        'joined',
-        data: {'id_users': userId, 'id_booking': post.bookingId},
-      );
+      final response = await _repository.joinGame(userId, post.bookingId);
 
       final statusCode = response.statusCode ?? 0;
       final responseBody = response.data;
@@ -204,10 +382,17 @@ class CustomerCommunityController extends GetxController {
           final updatedPost = post.copyWith(
             joinedPlayers: post.joinedPlayers + 1,
           );
-          posts[postIndex] = updatedPost;
 
-          if (selectedPost.value?.id == updatedPost.id) {
-            selectedPost.value = updatedPost;
+          // Update post di list yang sesuai
+          if (postIndex != -1) {
+            posts[postIndex] = updatedPost;
+          } else {
+            final featuredIndex = featuredPosts.indexWhere(
+              (p) => p.id == postId,
+            );
+            if (featuredIndex != -1) {
+              featuredPosts[featuredIndex] = updatedPost;
+            }
           }
 
           Get.snackbar(
@@ -216,6 +401,9 @@ class CustomerCommunityController extends GetxController {
             backgroundColor: Colors.green,
             colorText: Colors.white,
           );
+
+          // Reload user join requests to update UI
+          loadUserJoinRequests();
         } else {
           Get.snackbar(
             'Failed',
@@ -257,37 +445,39 @@ class CustomerCommunityController extends GetxController {
   bool isProcessingDecision(String requestId) =>
       _decisionLoading[requestId] ?? false;
 
-  Future<void> fetchJoinRequests(String postId) async {
+  Future<void> fetchJoinRequestsByBooking(String bookingId) async {
     try {
       isLoadingJoinRequests.value = true;
       joinRequestsError.value = '';
 
-      final response = await _apiClient.get(
-        'posts/joined',
-        queryParameters: {'post_id': postId},
-      );
+      print('🔍 Fetching join requests for booking ID: $bookingId');
 
-      if (response.statusCode == 200) {
-        final parsed = JoinRequestsResponse.fromJson(response.data);
-        if (parsed.success) {
-          joinRequests.assignAll(parsed.data);
-          if (parsed.data.isEmpty) {
-            joinRequestsError.value = 'Belum ada permintaan bergabung.';
-          }
+      final response = await _repository.getJoinRequestsByBooking(bookingId);
+
+      print('✅ Parsed ${response.data.length} join requests');
+
+      if (response.success) {
+        joinRequests.assignAll(response.data);
+
+        if (response.data.isEmpty) {
+          joinRequestsError.value = 'Belum ada permintaan bergabung.';
         } else {
-          joinRequests.clear();
-          joinRequestsError.value = parsed.message.isEmpty
-              ? 'Gagal memuat data permintaan.'
-              : parsed.message;
+          print(
+            '🎯 Loaded ${response.data.length} join requests for booking $bookingId',
+          );
         }
       } else {
         joinRequests.clear();
-        joinRequestsError.value = 'Server error: ${response.statusCode}';
+        joinRequestsError.value = response.message.isEmpty
+            ? 'Gagal memuat data permintaan.'
+            : response.message;
+        print('❌ API Error: ${response.message}');
       }
     } catch (e) {
       joinRequests.clear();
       joinRequestsError.value =
           'Tidak dapat memuat permintaan. Periksa koneksi internet Anda.';
+      print('❌ Exception: $e');
     } finally {
       isLoadingJoinRequests.value = false;
     }
@@ -310,9 +500,9 @@ class CustomerCommunityController extends GetxController {
     _decisionLoading[request.id] = true;
 
     try {
-      final response = await _apiClient.put(
-        'joined/${request.id}',
-        data: {'status': status},
+      final response = await _repository.updateJoinRequestStatus(
+        request.id,
+        status,
       );
 
       final responseBody = response.data;
@@ -371,6 +561,146 @@ class CustomerCommunityController extends GetxController {
       decimalDigits: 0,
     );
     return format.format(amount);
+  }
+
+  // Load all join requests for the current user's posts (as poster)
+  Future<void> loadAllJoinRequests() async {
+    try {
+      isLoadingJoinRequests.value = true;
+      joinRequestsError.value = '';
+
+      final response = await _repository.getAllJoinRequests();
+
+      if (response.success) {
+        // Filter join requests where current user is the poster
+        final myPostJoinRequests = response.data
+            .where((request) => request.posterUserId == _currentUserId)
+            .toList();
+
+        joinRequests.assignAll(myPostJoinRequests);
+        print(
+          '✅ Loaded ${myPostJoinRequests.length} join requests for user posts',
+        );
+      } else {
+        joinRequestsError.value = response.message;
+        print('❌ Failed to load join requests: ${response.message}');
+      }
+    } catch (e) {
+      joinRequestsError.value = 'Failed to load join requests';
+      print('❌ Exception loading join requests: $e');
+    } finally {
+      isLoadingJoinRequests.value = false;
+    }
+  }
+
+  // Get pending join requests for a specific booking
+  List<JoinRequest> getPendingJoinRequestsForBooking(String bookingId) {
+    return joinRequests
+        .where(
+          (request) =>
+              request.bookingId == bookingId && request.status == 'pending',
+        )
+        .toList();
+  }
+
+  // Handle approve/reject action
+  Future<void> handleJoinRequestAction(String joinId, String action) async {
+    if (_decisionLoading[joinId] == true) return;
+
+    try {
+      _decisionLoading[joinId] = true;
+
+      print('🔄 Handling join request action: $joinId -> $action');
+
+      final response = await _repository.updateJoinRequestStatusById(
+        joinId,
+        action,
+      );
+
+      print('📥 Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Update local join request status
+        final requestIndex = joinRequests.indexWhere((req) => req.id == joinId);
+        if (requestIndex != -1) {
+          final updatedRequest = joinRequests[requestIndex].copyWith(
+            status: action,
+          );
+          joinRequests[requestIndex] = updatedRequest;
+        }
+
+        // Reload featured posts to update join counts
+        await _loadFeaturedPosts();
+
+        // Reload user join requests to update status in other users' views
+        loadUserJoinRequests();
+
+        final message = action == 'approved'
+            ? 'Join request approved successfully!'
+            : 'Join request rejected successfully!';
+
+        Get.snackbar(
+          'Success',
+          message,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+
+        print('✅ Join request $joinId $action successfully');
+      } else {
+        throw Exception('Failed to update join request status');
+      }
+    } catch (e) {
+      final message =
+          'Failed to ${action == 'approved' ? 'approve' : 'reject'} join request';
+      Get.snackbar(
+        'Error',
+        message,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      print('❌ Error ${action}ing join request: $e');
+    } finally {
+      _decisionLoading.remove(joinId);
+    }
+  }
+
+  // Load current user's own join requests (where user is the joiner)
+  Future<void> loadUserJoinRequests() async {
+    try {
+      print('🔄 Loading user join requests for user ID: $_currentUserId');
+
+      final response = await _repository.getJoinRequestsByUserId(
+        _currentUserId,
+      );
+
+      if (response.success) {
+        userJoinRequests.assignAll(response.data);
+        print('✅ Loaded ${response.data.length} user join requests');
+      } else {
+        print('❌ Failed to load user join requests: ${response.message}');
+      }
+    } catch (e) {
+      print('❌ Exception loading user join requests: $e');
+    }
+  }
+
+  // Get user's own join request status for a specific booking
+  Future<String?> getUserJoinStatus(String bookingId) async {
+    try {
+      final response = await _repository.getJoinRequestsByUserId(
+        _currentUserId,
+      );
+      if (response.success) {
+        final userRequest = response.data.firstWhereOrNull(
+          (request) => request.bookingId == bookingId,
+        );
+        return userRequest?.status;
+      }
+    } catch (e) {
+      print('❌ Error getting user join status: $e');
+    }
+    return null;
   }
 
   String? _extractMessage(dynamic data) {

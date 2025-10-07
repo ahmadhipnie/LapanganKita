@@ -34,9 +34,14 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
       ),
       body: SafeArea(
         child: Obx(() {
-          if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+          if (controller.isLoading.value && controller.sliderImages.isEmpty) {
+            return _buildLoadingState();
           }
+
+          if (controller.hasError.value && controller.sliderImages.isEmpty) {
+            return _buildErrorState(controller.errorMessage.value);
+          }
+
           return RefreshIndicator(
             onRefresh: () async {
               await controller.refreshData();
@@ -45,44 +50,124 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
             backgroundColor: Colors.white,
             displacement: 40,
             strokeWidth: 2,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildCarouselSection(),
-                  const SizedBox(height: 16),
-                  _buildSmoothIndicator(),
-
-                  // Popular Categories Section
-                  _buildPopularCategories(),
-
-                  // Your Recent Activity Section
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Your Recent Activity',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Recent Activity Widget
-                  _recentActivity(controller: controller),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+            child: _buildContent(),
           );
         }),
       ),
     );
   }
 
-  // Carousel Widget
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text(
+            'Loading data...',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey[500]),
+            const SizedBox(height: 16),
+            Text(
+              controller.getFriendlyMessage(message),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => controller.refreshData(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Try Again'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () {
+                    controller.clearError();
+                    Get.offAllNamed('/customer/navigation');
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Go Back'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      physics:
+          const AlwaysScrollableScrollPhysics(), // Important for RefreshIndicator
+      child: Column(
+        children: [
+          _buildCarouselSection(),
+          const SizedBox(height: 16),
+          _buildSmoothIndicator(),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Popular Categories',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          _buildPopularCategories(),
+
+          // Your Recent Activity Section
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Your Recent Activity',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+
+          // Recent Activity Widget dengan error handling
+          _recentActivity(controller: controller),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  // Carousel Widget with better error handling
   Widget _buildCarouselSection() {
     return Obx(() {
       final images = controller.imgList;
@@ -99,13 +184,40 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
           ),
           child: Center(
             child: isRemoteLoading
-                ? const CircularProgressIndicator()
-                : Text(
-                    sliderError.isNotEmpty
-                        ? sliderError
-                        : 'There are no promotions available yet',
-                    style: const TextStyle(color: Colors.black54),
-                    textAlign: TextAlign.center,
+                ? const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 8),
+                      Text(
+                        'Loading promotions...',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_search,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          sliderError.isNotEmpty
+                              ? controller.getFriendlyMessage(sliderError)
+                              : 'No promotions available yet',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                   ),
           ),
         );
@@ -138,7 +250,7 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Image
+                  // Image with error handling
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.network(
@@ -146,22 +258,38 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                : null,
+                        return Container(
+                          color: Colors.grey[200],
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
                           ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: Colors.grey[300],
-                          child: const Icon(
-                            Icons.error,
-                            color: Colors.red,
-                            size: 40,
+                          color: Colors.grey[200],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Failed to load image',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -199,6 +327,8 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+
+                  // Loading indicator for remote loading
                   if (isRemoteLoading)
                     Positioned(
                       top: 12,
@@ -251,66 +381,94 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
 
   Widget _buildPopularCategories() {
     return Obx(() {
-      final bookingController = Get.find<CustomerBookingController>();
+      try {
+        final bookingController = Get.find<CustomerBookingController>();
 
-      // Tampilkan loading jika data courts masih loading
-      if (bookingController.isLoading.value &&
-          bookingController.allCourts.isEmpty) {
-        return const SizedBox(
-          height: 140,
-          child: Center(child: CircularProgressIndicator()),
+        // Show loading if courts data is still loading
+        if (bookingController.isLoading.value &&
+            bookingController.allCourts.isEmpty) {
+          return const SizedBox(
+            height: 140,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 8),
+                  Text(
+                    'Loading categories...',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Show empty state if no data
+        if (bookingController.allCourts.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Icon(Icons.sports, size: 48, color: Colors.grey),
+                SizedBox(height: 8),
+                Text(
+                  'No courts available yet',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final categories = controller.popularCategoriesWithIcon;
+
+        if (categories.isEmpty) {
+          return const SizedBox();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 116,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: categories.map((category) {
+                  return _buildCategoryIconCard(
+                    category['name'],
+                    category['count'],
+                    category['icon'],
+                    category['color'],
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
         );
-      }
-
-      // Tampilkan empty state jika tidak ada data
-      if (bookingController.allCourts.isEmpty) {
+      } catch (e) {
+        // Error handling for popular categories
         return const Padding(
           padding: EdgeInsets.all(16),
-          child: Text(
-            'No courts available',
-            style: TextStyle(color: Colors.grey),
+          child: Column(
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.grey),
+              SizedBox(height: 8),
+              Text(
+                'Failed to load categories',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
           ),
         );
       }
-
-      final categories = controller.popularCategoriesWithIcon;
-
-      if (categories.isEmpty) {
-        return const SizedBox();
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Text(
-              'Popular Categories',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          SizedBox(
-            height: 116,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: categories.map((category) {
-                return _buildCategoryIconCard(
-                  category['name'],
-                  category['count'],
-                  category['icon'],
-                  category['color'],
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
     });
   }
 
-  // Widget untuk Card dengan Icon
+  // Widget for Card with Icon
   Widget _buildCategoryIconCard(
     String category,
     int count,
@@ -334,13 +492,13 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          // Gunakan method navigateToBookingWithCategory dari home controller
+          // Use navigateToBookingWithCategory method from home controller
           controller.navigateToBookingWithCategory(category);
         },
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon dengan background circle
+            // Icon with background circle
             Container(
               width: 50,
               height: 50,
@@ -382,7 +540,20 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
       final recentBookings = controller.getRecentBookings();
 
       if (recentBookings.isEmpty) {
-        return const SizedBox(); // Tidak tampilkan apa-apa jika tidak ada booking
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              SizedBox(height: 60),
+              Icon(Icons.history, size: 48, color: Colors.grey[400]),
+              const SizedBox(height: 8),
+              const Text(
+                'No recent bookings yet',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        );
       }
 
       return Container(

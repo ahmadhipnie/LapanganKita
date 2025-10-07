@@ -110,10 +110,7 @@ class LoginView extends GetView<LoginController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(children: [
-                                    
-                                  ],
-                                ),
+                                Row(children: []),
                                 TextButton(
                                   onPressed: () {},
                                   child: const Text(

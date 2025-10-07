@@ -40,6 +40,7 @@ class BookingHistory {
   final List<BookingDetail> details;
   final double courtPrice;
   final double equipmentTotal;
+  final bool hasPosted;
 
   BookingHistory({
     required this.id,
@@ -56,6 +57,7 @@ class BookingHistory {
     required this.details,
     required this.courtPrice,
     required this.equipmentTotal,
+    this.hasPosted = false,
   });
 
   // Factory method to create from API response
@@ -106,6 +108,7 @@ class BookingHistory {
       details: details,
       courtPrice: courtPrice,
       equipmentTotal: equipmentTotal,
+      hasPosted: data['has_posted'] ?? false,
     );
   }
 
@@ -220,6 +223,7 @@ class BookingHistory {
     List<BookingDetail>? details,
     double? courtPrice,
     double? equipmentTotal,
+    bool? hasPosted,
   }) {
     return BookingHistory(
       id: id ?? this.id,
@@ -236,6 +240,7 @@ class BookingHistory {
       details: details ?? this.details,
       courtPrice: courtPrice ?? this.courtPrice,
       equipmentTotal: equipmentTotal ?? this.equipmentTotal,
+      hasPosted: hasPosted ?? this.hasPosted,
     );
   }
 }

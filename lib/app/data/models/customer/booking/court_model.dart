@@ -2,7 +2,7 @@ class Court {
   final int id;
   final String name;
   final String location;
-  final String imageUrl; 
+  final String imageUrl;
   final double price;
   final List<String> types;
   final String description;
@@ -23,7 +23,7 @@ class Court {
     required this.id,
     required this.name,
     required this.location,
-    required this.imageUrl, 
+    required this.imageUrl,
     required this.price,
     required this.types,
     required this.description,
@@ -51,7 +51,8 @@ class Court {
       types: _parseFieldTypes(json['field_type'] ?? ''),
       description: json['description'] ?? '',
       openingHours: {
-        'monday-sunday': '${json['opening_time'] ?? ''} - ${json['closing_time'] ?? ''}'
+        'monday-sunday':
+            '${json['opening_time'] ?? ''} - ${json['closing_time'] ?? ''}',
       },
       equipment: [],
       mapsUrl: '',
@@ -69,7 +70,7 @@ class Court {
 
   static List<String> _parseFieldTypes(String fieldType) {
     if (fieldType.isEmpty) return ['Unknown'];
-    
+
     switch (fieldType.toLowerCase()) {
       case 'futsal':
         return ['Futsal'];
@@ -93,7 +94,7 @@ class Court {
       'id': id,
       'field_name': name,
       'place_address': location,
-      'field_photo': imageUrl, 
+      'field_photo': imageUrl,
       'price_per_hour': price,
       'field_type': fieldType,
       'description': description,
@@ -128,11 +129,7 @@ class Equipment {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'description': description,
-      'price': price,
-    };
+    return {'name': name, 'description': description, 'price': price};
   }
 }
 

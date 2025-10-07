@@ -47,27 +47,26 @@ class _MidtransWebViewState extends State<MidtransWebView> {
 
   void _checkPaymentStatus(String url) {
     // Check if URL contains finish redirect
-    if (url.contains('status_code=200') || url.contains('transaction_status=settlement')) {
+    if (url.contains('status_code=200') ||
+        url.contains('transaction_status=settlement')) {
       // Success
-      Navigator.of(context).pop({
-        'status': 'success',
-        'order_id': widget.orderId,
-      });
-    } else if (url.contains('status_code=201') || url.contains('transaction_status=pending')) {
+      Navigator.of(
+        context,
+      ).pop({'status': 'success', 'order_id': widget.orderId});
+    } else if (url.contains('status_code=201') ||
+        url.contains('transaction_status=pending')) {
       // Pending
-      Navigator.of(context).pop({
-        'status': 'pending',
-        'order_id': widget.orderId,
-      });
-    } else if (url.contains('status_code=202') || 
-               url.contains('transaction_status=deny') ||
-               url.contains('transaction_status=cancel') ||
-               url.contains('transaction_status=expire')) {
+      Navigator.of(
+        context,
+      ).pop({'status': 'pending', 'order_id': widget.orderId});
+    } else if (url.contains('status_code=202') ||
+        url.contains('transaction_status=deny') ||
+        url.contains('transaction_status=cancel') ||
+        url.contains('transaction_status=expire')) {
       // Failed
-      Navigator.of(context).pop({
-        'status': 'failed',
-        'order_id': widget.orderId,
-      });
+      Navigator.of(
+        context,
+      ).pop({'status': 'failed', 'order_id': widget.orderId});
     }
   }
 
@@ -76,18 +75,14 @@ class _MidtransWebViewState extends State<MidtransWebView> {
     return WillPopScope(
       onWillPop: () async {
         // Handle back button - consider it as cancelled
-        Navigator.of(context).pop({
-          'status': 'cancelled',
-          'order_id': widget.orderId,
-        });
+        Navigator.of(
+          context,
+        ).pop({'status': 'cancelled', 'order_id': widget.orderId});
         return false;
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Payment',
-            style: TextStyle(color: Colors.white),
-          ),
+          title: const Text('Payment', style: TextStyle(color: Colors.white)),
           backgroundColor: const Color(0xFF1976D2),
           iconTheme: const IconThemeData(color: Colors.white),
           leading: IconButton(

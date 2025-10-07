@@ -49,7 +49,7 @@ class FieldManagerTabsBinding extends Bindings {
     Get.lazyPut<FieldManagerHomeController>(
       () => FieldManagerHomeController(
         placeRepository: Get.find<PlaceRepository>(),
-//         sessionService: Get.find<SessionService>(),
+        //         sessionService: Get.find<SessionService>(),
         reportRepository: Get.find<ReportRepository>(),
       ),
       fenix: true,

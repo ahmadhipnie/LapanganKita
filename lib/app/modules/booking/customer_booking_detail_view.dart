@@ -1,11 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_controller.dart';
 import 'package:lapangan_kita/app/modules/booking/webview_maps.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 import '../../data/models/add_on_model.dart';
+import '../../data/models/customer/rating/rating_model.dart';
 // import '../../data/models/customer/booking/court_model.dart';
 import '../../data/network/api_client.dart';
 
@@ -59,6 +61,10 @@ class CustomerBookingDetailView
                     _buildAddOnsSection(),
                     const SizedBox(height: 16),
                     _buildLocationMap(),
+                    const SizedBox(height: 16),
+                    _buildRatingsSummary(),
+                    const SizedBox(height: 16),
+                    _buildReviewsSection(),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -880,7 +886,7 @@ class CustomerBookingDetailView
       // Buka Google Maps WebView dengan data court
       Get.to(
         () => GoogleSearchWebView(
-          courtName: controller.court.name,
+          courtName: controller.court.placeName,
           courtLocation: controller.court.location,
         ),
         transition: Transition.cupertino,
@@ -897,5 +903,452 @@ class CustomerBookingDetailView
         colorText: Colors.white,
       );
     }
+  }
+
+  Widget _buildRatingsSummary() {
+    return Obx(() {
+      if (controller.isLoadingRatings.value) {
+        return _buildRatingSkeleton();
+      }
+
+      if (!controller.hasRatings) {
+        return _buildNoRatingCard();
+      }
+
+      final summary = controller.placeRatingSummary.value!;
+      return _buildRatingSummaryCard(summary);
+    });
+  }
+
+  Widget _buildRatingSkeleton() {
+    return Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 80,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoRatingCard() {
+    return Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: const Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.star_border, size: 40, color: Colors.grey),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No Reviews Yet',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Be the first to review this place!',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatingSummaryCard(PlaceRatingSummary summary) {
+    return Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Rating score circle
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppColors.secondary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    summary.formattedAverageRating,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < summary.averageRating.round()
+                            ? Icons.star
+                            : Icons.star_border,
+                        size: 8,
+                        color: Colors.white,
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Rating info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Customer Reviews',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      ...List.generate(5, (index) {
+                        return Icon(
+                          index < summary.averageRating.round()
+                              ? Icons.star
+                              : Icons.star_border,
+                          size: 16,
+                          color: AppColors.secondary,
+                        );
+                      }),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${summary.totalReviews} review${summary.totalReviews > 1 ? 's' : ''}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // View all reviews button
+            if (summary.totalReviews > 0)
+              TextButton(
+                onPressed: () {
+                  // Scroll to reviews section (implement if needed)
+                },
+                child: const Text(
+                  'View All',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewsSection() {
+    return Obx(() {
+      if (controller.isLoadingRatings.value) {
+        return _buildReviewsSkeleton();
+      }
+
+      if (!controller.hasRatings) {
+        return const SizedBox.shrink();
+      }
+
+      final reviews = controller.placeReviews;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Reviews',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ...reviews.take(5).map((review) => _buildReviewCard(review)).toList(),
+          if (reviews.length > 5)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Center(
+                child: TextButton(
+                  onPressed: () {
+                    // Show all reviews modal
+                    _showAllReviewsModal(reviews);
+                  },
+                  child: Text(
+                    'View All ${reviews.length} Reviews',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildReviewsSkeleton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 100,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...List.generate(3, (index) => _buildReviewSkeleton()),
+      ],
+    );
+  }
+
+  Widget _buildReviewSkeleton() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        color: Colors.white,
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 60,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(RatingDetailData review) {
+    final dateFormatter = DateFormat('dd MMM yyyy');
+    final reviewDate = review.createdAt != null
+        ? dateFormatter.format(review.createdAt!)
+        : 'Unknown date';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        color: Colors.white,
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          review.userName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < review.ratingValue
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              size: 14,
+                              color: AppColors.secondary,
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    reviewDate,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+              if (review.review.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  review.review,
+                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (review.fieldName.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Text(
+                    '${review.fieldName} • ${review.fieldType}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAllReviewsModal(List<RatingDetailData> reviews) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 600, maxWidth: 500),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'All Reviews',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: reviews.length,
+                  itemBuilder: (context, index) {
+                    return _buildReviewCard(reviews[index]);
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

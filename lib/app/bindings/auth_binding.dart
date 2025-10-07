@@ -6,7 +6,7 @@ class AuthRepositoryBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<ApiClient>(() => ApiClient(), fenix: true);
-    
+
     Get.lazyPut<AuthRepository>(
       () => AuthRepository(Get.find<ApiClient>()),
       fenix: true,
