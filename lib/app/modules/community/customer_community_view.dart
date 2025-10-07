@@ -133,9 +133,65 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         return _buildFeaturedPostSkeleton();
       }
 
-      final featuredPost = controller.featuredPost.value;
-      if (featuredPost != null) {
-        return _buildFeaturedPost(context, featuredPost);
+      final featuredPosts = controller.featuredPosts;
+      if (featuredPosts.isNotEmpty) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header section
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'My Posts',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[50],
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.amber),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.star, color: Colors.amber[700], size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${featuredPosts.length} POST${featuredPosts.length > 1 ? 'S' : ''}',
+                          style: TextStyle(
+                            color: Colors.amber[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Featured posts list
+            ...featuredPosts.map((post) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildFeaturedPost(context, post),
+              );
+            }),
+          ],
+        );
       } else {
         return _buildNoFeaturedPost();
       }
@@ -211,15 +267,16 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           Icon(Icons.featured_play_list, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 12),
           const Text(
-            'Featured Post',
+            'My Posts',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text(
-            'No featured post available',
+            'You haven\'t created any posts yet',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.grey),
           ),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -242,7 +299,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Featured badge
+          // Featured badge untuk setiap post
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -256,7 +313,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                 Icon(Icons.star, color: Colors.amber[700], size: 16),
                 const SizedBox(width: 4),
                 Text(
-                  'FEATURED POST',
+                  'MY POST',
                   style: TextStyle(
                     color: Colors.amber[700],
                     fontWeight: FontWeight.w600,

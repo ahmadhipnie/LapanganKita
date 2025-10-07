@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:lapangan_kita/app/data/network/api_client.dart';
-import '../models/customer/community/community_post_detail_model.dart';
 import '../models/customer/community/community_post_model.dart';
 import '../models/customer/community/join_request_model.dart';
 
@@ -20,12 +19,12 @@ class CommunityRepository {
   }
 
   // Get post by ID
-  Future<CommunityPostDetailResponse> getPostById(String postId) async {
+   Future<CommunityPostsResponse> getPostsByUserId(int userId) async {
     try {
-      final response = await _apiClient.get('posts/$postId');
-      return CommunityPostDetailResponse.fromJson(response.data);
+      final response = await _apiClient.get('posts/user?user_id=$userId');
+      return CommunityPostsResponse.fromJson(response.data);
     } catch (e) {
-      throw Exception('Failed to load post detail: $e');
+      throw Exception('Failed to load user posts: $e');
     }
   }
 
@@ -42,7 +41,9 @@ class CommunityRepository {
   }
 
   // Get join requests by booking ID
-  Future<JoinRequestsResponse> getJoinRequestsByBooking(String bookingId) async {
+  Future<JoinRequestsResponse> getJoinRequestsByBooking(
+    String bookingId,
+  ) async {
     try {
       final response = await _apiClient.get('joined/booking/$bookingId');
       return JoinRequestsResponse.fromJson(response.data);
@@ -52,7 +53,10 @@ class CommunityRepository {
   }
 
   // Update join request status
-  Future<Response> updateJoinRequestStatus(String requestId, String status) async {
+  Future<Response> updateJoinRequestStatus(
+    String requestId,
+    String status,
+  ) async {
     try {
       return await _apiClient.put(
         'joined/$requestId',
