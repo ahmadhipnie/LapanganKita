@@ -55,7 +55,12 @@ class CommunityPost {
             json['id'],
       ),
       userProfileImage: json['post_photo'] ?? '',
-      userName: json['poster_name'] ?? 'Unknown User',
+      userName:
+          json['poster_name'] ??
+          json['user_name'] ??
+          json['username'] ??
+          json['name'] ??
+          'Unknown User',
       postTime: parseDateTime(json['created_at']),
       category: json['field_type'] ?? 'General',
       title: json['post_title'] ?? '',
@@ -64,9 +69,16 @@ class CommunityPost {
       gameDate: bookingStart,
       gameTime: _formatTime(bookingStart),
       playersNeeded: json['max_person'] ?? 0,
-      totalCost: (json['total_price'] ?? 0).toDouble(),
+      totalCost:
+          (json['total_price'] ??
+                  json['total_cost'] ??
+                  json['price'] ??
+                  json['cost'] ??
+                  0)
+              .toDouble(),
       joinedPlayers: json['joined_count'] ?? 0,
-      posterUserId: int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
+      posterUserId:
+          int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
     );
   }
 
@@ -141,9 +153,12 @@ class CommunityPostsResponse {
     return CommunityPostsResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
-      data: (json['data'] as List<dynamic>?)
-          ?.map((item) => CommunityPost.fromJson(item as Map<String, dynamic>))
-          .toList() ??
+      data:
+          (json['data'] as List<dynamic>?)
+              ?.map(
+                (item) => CommunityPost.fromJson(item as Map<String, dynamic>),
+              )
+              .toList() ??
           [],
     );
   }

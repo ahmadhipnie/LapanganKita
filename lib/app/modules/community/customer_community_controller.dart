@@ -71,18 +71,23 @@ class CustomerCommunityController extends GetxController {
 
       if (response.success) {
         if (response.data.isNotEmpty) {
-          // Debug: Print raw data untuk cek field yang tersedia
-          print('🔍 First post data: ${response.data.first.userName}');
-          print('🔍 Poster User ID: ${response.data.first.posterUserId}');
+          // Enrich posts dengan data booking
+          final enrichedPosts = await _enrichPostsWithBookingData(
+            response.data,
+          );
 
-          featuredPosts.assignAll(response.data);
+          // Debug: Print raw data untuk cek field yang tersedia
+          print('🔍 First post data: ${enrichedPosts.first.userName}');
+          print('🔍 Poster User ID: ${enrichedPosts.first.posterUserId}');
+
+          featuredPosts.assignAll(enrichedPosts);
           print(
-            '✅ Found ${response.data.length} featured posts for current user',
+            '✅ Found ${enrichedPosts.length} featured posts for current user',
           );
 
           // Load join requests untuk featured post pertama jika ada
-          if (response.data.isNotEmpty) {
-            await fetchJoinRequestsByBooking(response.data.first.bookingId);
+          if (enrichedPosts.isNotEmpty) {
+            await fetchJoinRequestsByBooking(enrichedPosts.first.bookingId);
           }
         } else {
           print('⚠️ No posts found for current user ID: $_currentUserId');
@@ -104,6 +109,47 @@ class CustomerCommunityController extends GetxController {
     } finally {
       isLoadingFeaturedPost.value = false;
     }
+  }
+
+  // Enrich community posts dengan data booking
+  Future<List<CommunityPost>> _enrichPostsWithBookingData(
+    List<CommunityPost> posts,
+  ) async {
+    final enrichedPosts = <CommunityPost>[];
+
+    for (final post in posts) {
+      try {
+        // Coba ambil data booking berdasarkan booking_id
+        final bookingData = await _repository.getBookingDetails(post.bookingId);
+
+        if (bookingData != null && bookingData['success'] == true) {
+          final bookingInfo = bookingData['data'];
+          if (bookingInfo != null) {
+            // Buat post baru dengan data booking yang diperbarui menggunakan copyWith
+            final enrichedPost = post.copyWith(
+              userName: bookingInfo['user_name']?.toString() ?? post.userName,
+              totalCost: (bookingInfo['total_price'] ?? post.totalCost)
+                  .toDouble(),
+            );
+
+            print(
+              '✅ Enriched post ${post.id}: ${enrichedPost.userName} - ${enrichedPost.totalCost}',
+            );
+            enrichedPosts.add(enrichedPost);
+          } else {
+            enrichedPosts.add(post);
+          }
+        } else {
+          print('⚠️ No booking data found for booking ID: ${post.bookingId}');
+          enrichedPosts.add(post);
+        }
+      } catch (e) {
+        print('❌ Error enriching post ${post.id}: $e');
+        enrichedPosts.add(post);
+      }
+    }
+
+    return enrichedPosts;
   }
 
   Future<void> _loadPostsFromApi() async {
@@ -134,7 +180,11 @@ class CustomerCommunityController extends GetxController {
         print('🎯 Featured posts count: ${featuredPosts.length}');
         print('🔍 Current user ID: $_currentUserId');
 
-        posts.assignAll(otherUsersPosts);
+        // Enrich community posts dengan data booking
+        final enrichedCommunityPosts = await _enrichPostsWithBookingData(
+          otherUsersPosts,
+        );
+        posts.assignAll(enrichedCommunityPosts);
 
         if (response.data.isEmpty) {
           errorMessage.value = 'No community posts available yet.';

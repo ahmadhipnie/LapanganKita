@@ -19,7 +19,7 @@ class CommunityRepository {
   }
 
   // Get post by ID
-   Future<CommunityPostsResponse> getPostsByUserId(int userId) async {
+  Future<CommunityPostsResponse> getPostsByUserId(int userId) async {
     try {
       final response = await _apiClient.get('posts/user?user_id=$userId');
       return CommunityPostsResponse.fromJson(response.data);
@@ -64,6 +64,17 @@ class CommunityRepository {
       );
     } catch (e) {
       throw Exception('Failed to update join request: $e');
+    }
+  }
+
+  // Get booking details by booking ID
+  Future<Map<String, dynamic>?> getBookingDetails(String bookingId) async {
+    try {
+      final response = await _apiClient.get('bookings/$bookingId');
+      return response.data;
+    } catch (e) {
+      print('⚠️ Failed to get booking details for ID $bookingId: $e');
+      return null;
     }
   }
 }
