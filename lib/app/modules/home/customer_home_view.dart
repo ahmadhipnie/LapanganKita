@@ -11,6 +11,10 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 class CustomerHomeView extends GetView<CustomerHomeController> {
   const CustomerHomeView({super.key});
 
+  double _screenWidth(BuildContext context) =>
+      MediaQuery.of(context).size.width;
+  bool _isSmallScreen(BuildContext context) => _screenWidth(context) < 600;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -127,8 +131,7 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
 
   Widget _buildContent() {
     return SingleChildScrollView(
-      physics:
-          const AlwaysScrollableScrollPhysics(), // Important for RefreshIndicator
+      physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
           _buildCarouselSection(),
@@ -147,7 +150,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
           ),
           _buildPopularCategories(),
 
-          // Your Recent Activity Section
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Align(
@@ -159,7 +161,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
             ),
           ),
 
-          // Recent Activity Widget dengan error handling
           _recentActivity(controller: controller),
           const SizedBox(height: 20),
         ],
@@ -167,7 +168,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
     );
   }
 
-  // Carousel Widget with better error handling
   Widget _buildCarouselSection() {
     return Obx(() {
       final images = controller.imgList;
@@ -250,7 +250,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Image with error handling
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.network(
@@ -296,7 +295,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                     ),
                   ),
 
-                  // Gradient Overlay
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -311,7 +309,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                     ),
                   ),
 
-                  // Title
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -328,7 +325,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                     ),
                   ),
 
-                  // Loading indicator for remote loading
                   if (isRemoteLoading)
                     Positioned(
                       top: 12,
@@ -360,7 +356,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
     });
   }
 
-  // Indicators Widget
   Widget _buildSmoothIndicator() {
     return Obx(
       () => AnimatedSmoothIndicator(
@@ -379,25 +374,28 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
     );
   }
 
+  // ✅ PERBAIKAN: Popular Categories - Responsif & Adaptif
   Widget _buildPopularCategories() {
     return Obx(() {
       try {
         final bookingController = Get.find<CustomerBookingController>();
 
-        // Show loading if courts data is still loading
         if (bookingController.isLoading.value &&
             bookingController.allCourts.isEmpty) {
-          return const SizedBox(
+          return SizedBox(
             height: 140,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 8),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 8),
                   Text(
                     'Loading categories...',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: _isSmallScreen(Get.context!) ? 14 : 16,
+                    ),
                   ),
                 ],
               ),
@@ -405,17 +403,23 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
           );
         }
 
-        // Show empty state if no data
         if (bookingController.allCourts.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
+          return Padding(
+            padding: EdgeInsets.all(_isSmallScreen(Get.context!) ? 16 : 24),
             child: Column(
               children: [
-                Icon(Icons.sports, size: 48, color: Colors.grey),
-                SizedBox(height: 8),
+                Icon(
+                  Icons.sports,
+                  size: _isSmallScreen(Get.context!) ? 48 : 64,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 8),
                 Text(
                   'No courts available yet',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: _isSmallScreen(Get.context!) ? 14 : 16,
+                  ),
                 ),
               ],
             ),
@@ -428,38 +432,89 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
           return const SizedBox();
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 116,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: categories.map((category) {
-                  return _buildCategoryIconCard(
-                    category['name'],
-                    category['count'],
-                    category['icon'],
-                    category['color'],
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final isSmall = screenWidth < 600;
+            final isMedium = screenWidth >= 600 && screenWidth < 1024;
+
+            double cardWidth;
+            double cardHeight;
+            double iconSize;
+            double fontSize;
+            double countFontSize;
+
+            if (isSmall) {
+              cardWidth = 100;
+              cardHeight = 116;
+              iconSize = 28;
+              fontSize = 13;
+              countFontSize = 11;
+            } else if (isMedium) {
+              cardWidth = 120;
+              cardHeight = 140;
+              iconSize = 34;
+              fontSize = 15;
+              countFontSize = 12;
+            } else {
+              cardWidth = 140;
+              cardHeight = 160;
+              iconSize = 40;
+              fontSize = 16;
+              countFontSize = 13;
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: cardHeight,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmall ? 16 : (isMedium ? 20 : 24),
+                    ),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return _buildCategoryIconCard(
+                        category['name'],
+                        category['count'],
+                        category['icon'],
+                        category['color'],
+                        width: cardWidth,
+                        height: cardHeight,
+                        iconSize: iconSize,
+                        fontSize: fontSize,
+                        countFontSize: countFontSize,
+                        isSmall: isSmall,
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(height: isSmall ? 16 : (isMedium ? 20 : 24)),
+              ],
+            );
+          },
         );
       } catch (e) {
-        // Error handling for popular categories
-        return const Padding(
-          padding: EdgeInsets.all(16),
+        return Padding(
+          padding: EdgeInsets.all(_isSmallScreen(Get.context!) ? 16 : 24),
           child: Column(
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.grey),
-              SizedBox(height: 8),
+              Icon(
+                Icons.error_outline,
+                size: _isSmallScreen(Get.context!) ? 48 : 64,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 8),
               Text(
                 'Failed to load categories',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: _isSmallScreen(Get.context!) ? 14 : 16,
+                ),
               ),
             ],
           ),
@@ -468,64 +523,95 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
     });
   }
 
-  // Widget for Card with Icon
   Widget _buildCategoryIconCard(
     String category,
     int count,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    required double width,
+    required double height,
+    required double iconSize,
+    required double fontSize,
+    required double countFontSize,
+    required bool isSmall,
+  }) {
     return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
+      width: width,
+      height: height,
+      margin: EdgeInsets.only(right: isSmall ? 10 : 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isSmall ? 12 : 16),
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.grey.withOpacity(0.15),
+            blurRadius: isSmall ? 4 : 8,
+            offset: Offset(0, isSmall ? 2 : 3),
+            spreadRadius: 0,
           ),
         ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // Use navigateToBookingWithCategory method from home controller
-          controller.navigateToBookingWithCategory(category);
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon with background circle
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 30, color: color),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(isSmall ? 12 : 16),
+          onTap: () {
+            controller.navigateToBookingWithCategory(category);
+          },
+          // ✅ PERBAIKAN: Ganti Column dengan FittedBox wrapper untuk prevent overflow
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmall ? 6 : 10,
+              vertical: isSmall ? 8 : 12,
             ),
-            const SizedBox(height: 8),
-
-            // Category Name
-            Text(
-              category,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // ✅ PENTING: Gunakan min size
+              children: [
+                // Icon with background circle
+                Container(
+                  width: iconSize + (isSmall ? 14 : 18),
+                  height: iconSize + (isSmall ? 14 : 18),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: iconSize, color: color),
+                ),
+                SizedBox(height: isSmall ? 6 : 8), // ✅ Kurangi spacing
+                // Category Name - dengan Flexible untuk prevent overflow
+                Flexible(
+                  child: Text(
+                    category,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: fontSize,
+                      color: Colors.black87,
+                      height: 1.2, // ✅ Kurangi line height
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                SizedBox(height: isSmall ? 2 : 3), // ✅ Kurangi spacing
+                // Court Count - dengan Flexible untuk prevent overflow
+                Flexible(
+                  child: Text(
+                    '$count ${count > 1 ? 'courts' : 'court'}',
+                    style: TextStyle(
+                      fontSize: countFontSize,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w400,
+                      height: 1.2, // ✅ Kurangi line height
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-
-            // Court Count
-            Text(
-              '$count ${count > 1 ? 'courts' : 'court'}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -544,7 +630,7 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              SizedBox(height: 60),
+              const SizedBox(height: 60),
               Icon(Icons.history, size: 48, color: Colors.grey[400]),
               const SizedBox(height: 8),
               const Text(
@@ -579,7 +665,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
             Center(
               child: TextButton(
                 onPressed: () {
-                  // Navigate to full history page
                   Get.offAllNamed(
                     '/customer/navigation',
                     arguments: {'initialTab': 3},
@@ -678,7 +763,7 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
         break;
-      default: // pending
+      default:
         backgroundColor = Colors.orange[100]!;
         textColor = Colors.orange[800]!;
     }

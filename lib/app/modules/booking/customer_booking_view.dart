@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_controller.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'package:lapangan_kita/app/widgets/card.dart';
-
 import '../../data/network/api_client.dart';
 
 class CustomerBookingView extends GetView<CustomerBookingController> {
@@ -130,7 +129,7 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
   }
 
   Widget _buildCachedImage(String imagePath) {
-    final ApiClient apiClient = Get.find<ApiClient>();
+    final ApiClient apiClient = Get.find();
     final imageUrl = apiClient.getImageUrl(imagePath);
 
     return CachedNetworkImage(
@@ -194,7 +193,7 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
     return SearchBar(
       backgroundColor: WidgetStateProperty.all(Colors.white),
       elevation: WidgetStateProperty.all(3),
-      padding: WidgetStateProperty.all<EdgeInsets>(
+      padding: WidgetStateProperty.all(
         const EdgeInsets.symmetric(horizontal: 16),
       ),
       hintText: 'Search courts, categories, or locations...',
@@ -260,7 +259,6 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
 
   Widget _buildFilterRow() {
     return Obx(() {
-      // ✅ WRAP DENGAN Obx
       return Row(
         children: [
           Expanded(
@@ -292,7 +290,18 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
           ),
           IconButton(
             hoverColor: AppColors.primary,
-            icon: const Icon(Icons.filter_list),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.tune_rounded,
+                color: AppColors.primary,
+                size: 24,
+              ),
+            ),
             onPressed: () => _showFilterDialog(Get.context!),
           ),
         ],
@@ -317,142 +326,567 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
     );
   }
 
-  Widget _buildPriceFilter(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Price Range',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: controller.minPriceController,
-                decoration: const InputDecoration(
-                  labelText: 'Min Price',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: controller.maxPriceController,
-                decoration: const InputDecoration(
-                  labelText: 'Max Price',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   void _showFilterDialog(BuildContext context) {
+    // Reset controller text dengan nilai saat ini
+    controller.locationController.text = controller.selectedLocation.value;
+
     showDialog(
       context: context,
       builder: (context) {
-        return Obx(() {
-          return AlertDialog(
-            title: const Text('Filters'),
-            content: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Filter Lokasi
-                _buildLocationFilter(),
-                const SizedBox(height: 16),
-
-                // Filter Harga
-                _buildPriceFilter(context),
-                const SizedBox(height: 16),
-
-                // Filter Kategori
-                _buildCategoryFilter(),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => controller.clearFilters(),
-                child: const Text('Reset'),
-              ),
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  controller.applyFilters();
-                  Get.back();
-                },
-                child: const Text('Apply'),
-              ),
-            ],
-          );
-        });
+        return _FilterDialogContent(controller: controller);
       },
     );
   }
+}
 
-  Widget _buildLocationFilter() {
+// ✅ STATEFUL WIDGET UNTUK DIALOG FILTER - MATERIAL 3 MINIMALIS
+class _FilterDialogContent extends StatefulWidget {
+  final CustomerBookingController controller;
+
+  const _FilterDialogContent({required this.controller});
+
+  @override
+  State<_FilterDialogContent> createState() => _FilterDialogContentState();
+}
+
+class _FilterDialogContentState extends State<_FilterDialogContent> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ✅ HEADER MINIMALIS
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 24, 16, 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.tune_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Filter Courts',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Get.back(),
+                    style: IconButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ✅ DIVIDER SUBTLE
+            Divider(height: 1, thickness: 1, color: Colors.grey[200]),
+
+            // ✅ CONTENT (SCROLLABLE)
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLocationFilterTextField(),
+                    const SizedBox(height: 24),
+                    _buildCategoryFilter(),
+                    const SizedBox(height: 24),
+                    _buildPriceFilter(),
+                  ],
+                ),
+              ),
+            ),
+
+            // ✅ FOOTER MINIMALIS
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey[200]!, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        widget.controller.clearFilters();
+                        Get.back();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      child: const Text(
+                        'Reset',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton(
+                      onPressed: () {
+                        widget.controller.applyFilters();
+                        Get.back();
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Apply Filters',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ LOCATION FILTER - MATERIAL 3 STYLE
+  Widget _buildLocationFilterTextField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Location', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: controller.selectedLocation.value.isEmpty
-              ? null
-              : controller.selectedLocation.value,
-          items: [
-            const DropdownMenuItem(value: '', child: Text('All Locations')),
-            ...controller.availableLocations.map((location) {
-              return DropdownMenuItem(value: location, child: Text(location));
-            }),
-          ],
-          onChanged: (value) => controller.setLocationFilter(value ?? ''),
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        // Label Section
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.location_on_rounded,
+                size: 20,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Location',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
           ),
         ),
+
+        // Text Field
+        TextField(
+          controller: widget.controller.locationController,
+          style: const TextStyle(fontSize: 15),
+          decoration: InputDecoration(
+            hintText: 'Search by city or location',
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: Colors.grey[400],
+              size: 22,
+            ),
+            suffixIcon: widget.controller.locationController.text.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: Colors.grey[400],
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        widget.controller.locationController.clear();
+                        widget.controller.selectedLocation.value = '';
+                      });
+                    },
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 16,
+            ),
+          ),
+          onChanged: (value) {
+            setState(() {
+              widget.controller.selectedLocation.value = value.trim();
+            });
+          },
+        ),
+
+        // Location Suggestions
+        Obx(() {
+          if (widget.controller.availableLocations.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.controller.availableLocations.map((location) {
+                final isSelected =
+                    widget.controller.selectedLocation.value == location;
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        widget.controller.locationController.text = location;
+                        widget.controller.selectedLocation.value = location;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary.withOpacity(0.1)
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary.withOpacity(0.3)
+                              : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.location_city_rounded,
+                            size: 16,
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.grey[600],
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            location,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        }),
       ],
     );
   }
 
+  // ✅ CATEGORY FILTER - MATERIAL 3 STYLE
   Widget _buildCategoryFilter() {
-    return Obx(() {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Category', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Wrap(
-            alignment: WrapAlignment.start,
-            crossAxisAlignment: WrapCrossAlignment.start,
-            runAlignment: WrapAlignment.start,
-            spacing: 8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label Section
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(
+            children: [
+              Icon(Icons.category_rounded, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'Category',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
 
-            children: controller.availableCategories.map((category) {
-              return ChoiceChip(
-                label: Text(category),
-                selected: controller.selectedCategory.value == category,
-                onSelected: (_) => controller.setCategoryFilter(
-                  controller.selectedCategory.value == category ? '' : category,
+        // Categories
+        Obx(() {
+          if (widget.controller.availableCategories.isEmpty) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: Colors.grey[400],
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'No categories available',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: widget.controller.availableCategories.map((category) {
+              final isSelected =
+                  widget.controller.selectedCategory.value == category;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    widget.controller.setCategoryFilter(
+                      isSelected ? '' : category,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.secondary
+                          : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.secondary
+                            : Colors.transparent,
+                        width: 1.5,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.secondary.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      category,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        color: isSelected ? Colors.white : Colors.grey[700],
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ),
                 ),
               );
             }).toList(),
+          );
+        }),
+      ],
+    );
+  }
+
+  // ✅ PRICE FILTER - MATERIAL 3 STYLE
+  Widget _buildPriceFilter() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label Section
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(
+            children: [
+              Icon(Icons.payments_rounded, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'Price Range',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
           ),
-        ],
-      );
-    });
+        ),
+
+        // Price Inputs
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: widget.controller.minPriceController,
+                style: const TextStyle(fontSize: 15),
+                decoration: InputDecoration(
+                  labelText: 'Min',
+                  labelStyle: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  hintText: '0',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  prefixText: 'Rp ',
+                  prefixStyle: TextStyle(
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Container(
+                width: 24,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+            ),
+            Expanded(
+              child: TextField(
+                controller: widget.controller.maxPriceController,
+                style: const TextStyle(fontSize: 15),
+                decoration: InputDecoration(
+                  labelText: 'Max',
+                  labelStyle: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  hintText: '∞',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  prefixText: 'Rp ',
+                  prefixStyle: TextStyle(
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

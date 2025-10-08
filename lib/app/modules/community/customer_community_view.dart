@@ -1048,24 +1048,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           ),
           errorWidget: (context, url, error) {
             print('❌ Error loading image: $error, URL: $url');
-            return Container(
-              color: Colors.grey[200],
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey[500],
-                    size: 48,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Gagal memuat gambar',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                ],
-              ),
-            );
+            return SizedBox();
           },
         ),
       ),
@@ -1098,15 +1081,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         ),
         errorWidget: (context, url, error) {
           print('❌ Error loading compact image: $error, URL: $url');
-          return Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.broken_image, color: Colors.grey, size: 24),
-          );
+          return SizedBox();
         },
       ),
     );

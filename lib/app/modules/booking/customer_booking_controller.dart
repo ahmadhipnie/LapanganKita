@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/helper/error_helper.dart';
-import '../../data/models/customer/booking/court_model.dart';
 import '../../data/repositories/court_repositoy.dart';
 
 class CustomerBookingController extends GetxController {
-  final CourtRepository _courtRepository = Get.find<CourtRepository>();
+  final CourtRepository _courtRepository = Get.find();
   final errorHandler = ErrorHandler();
 
   final RxBool isLoading = false.obs;
@@ -15,19 +14,23 @@ class CustomerBookingController extends GetxController {
   final TextEditingController searchController = TextEditingController();
   final TextEditingController minPriceController = TextEditingController();
   final TextEditingController maxPriceController = TextEditingController();
+  final TextEditingController locationController =
+      TextEditingController(); // ✅ TAMBAH CONTROLLER LOCATION
+
   final RxString searchQuery = ''.obs;
   final RxString selectedCategory = ''.obs;
   final RxString selectedLocation = ''.obs;
-  final RxList<String> availableCategories = <String>[].obs;
-  final RxList<String> availableLocations = <String>[].obs;
-  final RxList<Court> filteredCourts = <Court>[].obs;
-  final RxList<Court> allCourts = <Court>[].obs;
+
+  // ✅ TANPA TYPE PARAMETER (seperti kode asli)
+  final RxList availableCategories = [].obs;
+  final RxList availableLocations = [].obs;
+  final RxList filteredCourts = [].obs;
+  final RxList allCourts = [].obs;
 
   // Timestamp untuk force reload images
   final RxString _timestamp = DateTime.now().millisecondsSinceEpoch
       .toString()
       .obs;
-
   String getTimestamp() => _timestamp.value;
 
   @override
@@ -57,7 +60,6 @@ class CustomerBookingController extends GetxController {
       filterCourts();
       refreshFilterChips();
     });
-
     print('🎯 Current selected category: ${selectedCategory.value}');
   }
 
@@ -67,7 +69,7 @@ class CustomerBookingController extends GetxController {
     errorHandler.clearError(hasError: hasError, errorMessage: errorMessage);
 
     try {
-      final courts = await errorHandler.handleFutureError<List<Court>>(
+      final courts = await errorHandler.handleFutureError(
         future: _courtRepository.getCourts(),
         context: 'Failed to load courts',
         hasError: hasError,
@@ -82,13 +84,8 @@ class CustomerBookingController extends GetxController {
       final availableCourts = courts
           .where((court) => court.status == 'available')
           .toList();
-
       filteredCourts.assignAll(availableCourts);
 
-      // DEBUG
-      for (final court in courts) {
-        print(' - ${court.name}: ${court.status}');
-      }
       print('Filtered courts: ${filteredCourts.length}');
 
       // Extract available categories and locations
@@ -146,12 +143,13 @@ class CustomerBookingController extends GetxController {
     }
   }
 
-  // ✅ METHOD FILTER COURTS dengan error handling
+  // ✅ METHOD FILTER COURTS YANG DIPERBAIKI
   void filterCourts() {
     try {
       print('🔄 Starting filterCourts...');
       print('📊 All courts count: ${allCourts.length}');
       print('🎯 Selected category: ${selectedCategory.value}');
+      print('🎯 Selected location: ${selectedLocation.value}');
 
       // ✅ FILTER HANYA YANG AVAILABLE
       var results = allCourts
@@ -166,16 +164,35 @@ class CustomerBookingController extends GetxController {
             (type) =>
                 type.toLowerCase() == selectedCategory.value.toLowerCase(),
           );
-
-          print(
-            '🔍 Court "${court.name}" has category ${selectedCategory.value}: $hasCategory',
-          );
           return hasCategory;
         }).toList();
         print('✅ After category filter: ${results.length} courts');
       }
 
-      // Step 3: Apply search filter jika ada
+      // Step 3: Apply location filter jika ada
+      if (selectedLocation.value.isNotEmpty) {
+        results = results.where((court) {
+          final courtCity = _extractCity(court.location).toLowerCase();
+          final filterCity = selectedLocation.value.toLowerCase();
+          return courtCity.contains(filterCity);
+        }).toList();
+        print('✅ After location filter: ${results.length} courts');
+      }
+
+      // Step 4: Apply price filter jika ada
+      if (minPriceController.text.isNotEmpty ||
+          maxPriceController.text.isNotEmpty) {
+        final minPrice = double.tryParse(minPriceController.text) ?? 0;
+        final maxPrice =
+            double.tryParse(maxPriceController.text) ?? double.infinity;
+
+        results = results.where((court) {
+          return court.price >= minPrice && court.price <= maxPrice;
+        }).toList();
+        print('✅ After price filter: ${results.length} courts');
+      }
+
+      // Step 5: Apply search filter jika ada
       if (searchQuery.value.isNotEmpty) {
         final query = searchQuery.value.toLowerCase();
         results = results.where((court) {
@@ -186,8 +203,6 @@ class CustomerBookingController extends GetxController {
         }).toList();
         print('✅ After search filter: ${results.length} courts');
       }
-
-      // ... steps lainnya tetap sama
 
       filteredCourts.assignAll(results);
       print('🎯 Final filtered courts: ${filteredCourts.length}');
@@ -200,7 +215,7 @@ class CustomerBookingController extends GetxController {
     }
   }
 
-  // Method untuk set category filter dengan error handling
+  // Method untuk set category filter
   void setCategoryFilter(String category) {
     try {
       selectedCategory.value = category;
@@ -214,10 +229,11 @@ class CustomerBookingController extends GetxController {
     }
   }
 
-  // Method untuk set location filter dengan error handling
+  // Method untuk set location filter
   void setLocationFilter(String location) {
     try {
       selectedLocation.value = location;
+      locationController.text = location; // ✅ UPDATE CONTROLLER TEXT
       filterCourts();
     } catch (e) {
       errorHandler.handleGeneralError(
@@ -231,7 +247,10 @@ class CustomerBookingController extends GetxController {
   // Method untuk apply filters dari dialog
   void applyFilters() {
     try {
+      // ✅ UPDATE LOCATION DARI TEXT FIELD
+      selectedLocation.value = locationController.text.trim();
       filterCourts();
+      Get.back(); // ✅ TUTUP DIALOG SETELAH APPLY
       errorHandler.showSuccessMessage('Filters applied successfully');
     } catch (e) {
       errorHandler.handleGeneralError(
@@ -242,7 +261,7 @@ class CustomerBookingController extends GetxController {
     }
   }
 
-  // Method untuk clear semua filter dengan error handling
+  // Method untuk clear semua filter
   void clearFilters() {
     try {
       print('🔄 Clearing all filters');
@@ -250,6 +269,7 @@ class CustomerBookingController extends GetxController {
       searchController.clear();
       selectedCategory.value = '';
       selectedLocation.value = '';
+      locationController.clear(); // ✅ CLEAR LOCATION CONTROLLER
       minPriceController.clear();
       maxPriceController.clear();
 
@@ -257,19 +277,13 @@ class CustomerBookingController extends GetxController {
       final availableCourts = allCourts
           .where((court) => court.status == 'available')
           .toList();
-
       filteredCourts.assignAll(availableCourts);
 
       refreshFilterChips();
       update(['courts_list']);
-
       errorHandler.showSuccessMessage('All filters cleared');
-
       print(
         '✅ Filters cleared, showing ${filteredCourts.length} available courts',
-      );
-      print(
-        '✅ Available courts: ${availableCourts.map((c) => '${c.name} (${c.status})').toList()}',
       );
     } catch (e) {
       errorHandler.handleGeneralError(
@@ -280,35 +294,27 @@ class CustomerBookingController extends GetxController {
     }
   }
 
-  // ✅ METHOD REFRESH DATA dengan ErrorHandler
+  // ✅ METHOD REFRESH DATA
   Future<void> refreshData() async {
     isLoading.value = true;
     errorHandler.clearError(hasError: hasError, errorMessage: errorMessage);
-
-    // Update timestamp untuk force reload images
     _timestamp.value = DateTime.now().millisecondsSinceEpoch.toString();
 
     try {
       await _loadCourts();
-
-      // Success message sudah ditangani di _loadCourts()
     } catch (e) {
-      // Error sudah dihandle oleh _loadCourts()
       print('Error refreshing data: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Method untuk clear search dengan error handling
+  // Method untuk clear search
   void clearSearch() {
     try {
       searchQuery.value = '';
       searchController.clear();
-      filteredCourts.assignAll(
-        allCourts.where((court) => court.status == 'available').toList(),
-      );
-
+      filterCourts();
       errorHandler.showSuccessMessage('Search cleared');
     } catch (e) {
       errorHandler.handleGeneralError(
@@ -319,65 +325,14 @@ class CustomerBookingController extends GetxController {
     }
   }
 
-  // Method untuk search courts dengan error handling
-  List<Court> searchCourts(String query) {
-    try {
-      // ✅ HANYA YANG AVAILABLE
-      final availableCourts = allCourts
-          .where((court) => court.status == 'available')
-          .toList();
-
-      if (query.isEmpty) {
-        return availableCourts;
-      }
-
-      return availableCourts
-          .where(
-            (court) =>
-                court.name.toLowerCase().contains(query.toLowerCase()) ||
-                court.location.toLowerCase().contains(query.toLowerCase()) ||
-                court.types.any(
-                  (type) => type.toLowerCase().contains(query.toLowerCase()),
-                ) ||
-                court.placeName.toLowerCase().contains(query.toLowerCase()),
-          )
-          .toList();
-    } catch (e) {
-      errorHandler.handleGeneralError(
-        context: 'Failed to search courts',
-        error: e,
-        showSnackbar: false,
-      );
-      return allCourts.where((court) => court.status == 'available').toList();
-    }
-  }
-
-  // Method untuk force reload data (misal setelah login/logout)
-  Future<void> forceReload() async {
-    try {
-      isLoading.value = true;
-      errorHandler.clearError(hasError: hasError, errorMessage: errorMessage);
-
-      // Clear semua data existing
-      allCourts.clear();
-      filteredCourts.clear();
-      availableCategories.clear();
-      availableLocations.clear();
-
-      // Load ulang data
-      await _loadCourts();
-
-      errorHandler.showSuccessMessage('Data reloaded successfully');
-    } catch (e) {
-      errorHandler.handleGeneralError(
-        context: 'Failed to reload data',
-        error: e,
-        showSnackbar: true,
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
+  // @override
+  // void onClose() {
+  //   searchController.dispose();
+  //   minPriceController.dispose();
+  //   maxPriceController.dispose();
+  //   locationController.dispose(); // ✅ DISPOSE LOCATION CONTROLLER
+  //   super.onClose();
+  // }
 
   // Method untuk check jika ada data
   bool get hasData => allCourts.isNotEmpty;

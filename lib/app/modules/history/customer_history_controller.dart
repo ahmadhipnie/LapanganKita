@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:lapangan_kita/app/data/models/customer/history/customer_history_model.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 import 'package:dio/dio.dart' as dio;
@@ -20,6 +21,9 @@ class CustomerHistoryController extends GetxController {
   final LocalStorageService _localStorage = LocalStorageService.instance;
   final errorHandler = ErrorHandler();
   late final RatingRepository _ratingRepository;
+
+  final RxString searchQuery = ''.obs;
+  final TextEditingController searchController = TextEditingController();
 
   @override
   void onInit() {
@@ -146,16 +150,31 @@ class CustomerHistoryController extends GetxController {
       isLoading.value = true;
       errorHandler.clearError(hasError: hasError, errorMessage: errorMessage);
 
+      // ✅ FIX: Build form data dengan kondisi yang benar
       final formData = dio.FormData.fromMap({
         'id_booking': bookingId,
         'post_title': title,
         'post_description': description,
-        if (imagePath != null && imagePath.isNotEmpty)
-          'post_photo': await dio.MultipartFile.fromFile(
-            imagePath,
-            filename: 'post_${DateTime.now().millisecondsSinceEpoch}.png',
-          ),
+        // ✅ Hanya tambahkan post_photo jika imagePath tidak null dan tidak kosong
       });
+
+      // ✅ FIX: Tambahkan file hanya jika ada imagePath
+      if (imagePath != null && imagePath.isNotEmpty) {
+        formData.files.add(
+          MapEntry(
+            'post_photo',
+            await dio.MultipartFile.fromFile(
+              imagePath,
+              filename: 'post_${DateTime.now().millisecondsSinceEpoch}.png',
+            ),
+          ),
+        );
+      }
+
+      print('📤 Creating post with bookingId: $bookingId');
+      print('📤 Title: $title');
+      print('📤 Description: $description');
+      print('📤 Has image: ${imagePath != null && imagePath.isNotEmpty}');
 
       final response = await errorHandler.handleFutureError(
         future: _apiClient.raw.post(
@@ -178,11 +197,17 @@ class CustomerHistoryController extends GetxController {
 
         // ✅ Update status posting di local data
         _updateBookingPostStatus(bookingId, true);
+
+        print('✅ Community post created successfully');
         return;
       } else {
-        throw Exception(response.data?['message'] ?? 'Failed to create post');
+        final errorMessage =
+            response.data?['message'] ?? 'Failed to create post';
+        print('❌ API Error: $errorMessage');
+        throw Exception(errorMessage);
       }
     } catch (e) {
+      print('💥 Create post exception: $e');
       errorHandler.handleGeneralError(
         context: 'Failed to create community post',
         error: e,
@@ -569,6 +594,40 @@ class CustomerHistoryController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void updateSearchQuery(String query) {
+    searchQuery.value = query.toLowerCase();
+  }
+  
+  // ✅ TAMBAHKAN METHOD INI - Method untuk clear search
+  void clearSearch() {
+    searchController.clear();
+    searchQuery.value = '';
+  }
+  
+  // ✅ TAMBAHKAN METHOD INI - Method untuk filter berdasarkan search
+  List<BookingHistory> getSearchFilteredBookings(List<BookingHistory> bookings) {
+    if (searchQuery.value.isEmpty) {
+      return bookings;
+    }
+    
+    return bookings.where((booking) {
+      final courtName = booking.courtName.toLowerCase();
+      final location = booking.location.toLowerCase();
+      final orderId = booking.orderId.toLowerCase();
+      final date = _formatDate(booking.date).toLowerCase();
+      final query = searchQuery.value;
+      
+      return courtName.contains(query) ||
+             location.contains(query) ||
+             orderId.contains(query) ||
+             date.contains(query);
+    }).toList();
+  }
+  
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMMM yyyy').format(date);
   }
 
   @override
