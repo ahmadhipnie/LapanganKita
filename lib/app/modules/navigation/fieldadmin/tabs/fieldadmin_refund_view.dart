@@ -647,19 +647,6 @@ Future<void> _showProcessRefundSheet(
                           ],
                         ),
                       ),
-                      Obx(() {
-                        final isLoading = controller.isProcessingRefund.value;
-                        return IconButton(
-                          onPressed: isLoading
-                              ? null
-                              : () {
-                                  if (Get.isBottomSheetOpen ?? false) {
-                                    Get.back();
-                                  }
-                                },
-                          icon: const Icon(Icons.close_rounded),
-                        );
-                      }),
                     ],
                   ),
                   const SizedBox(height: 20),

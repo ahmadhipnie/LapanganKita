@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -35,13 +34,18 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
           if (controller.isLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
+
           return RefreshIndicator(
             onRefresh: () => controller.refreshData(),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
+                // ✅ TAMBAHKAN INI - Search Bar
+                SliverToBoxAdapter(child: _buildSearchBar()),
+
                 // Filter Row
                 SliverToBoxAdapter(child: _buildFilterRow()),
+
                 // Content
                 Obx(() {
                   if (controller.bookings.isEmpty) {
@@ -80,7 +84,6 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                   }
 
                   final filteredBookings = _getFilteredBookings();
-
                   if (filteredBookings.isEmpty) {
                     return SliverFillRemaining(
                       child: Center(
@@ -88,28 +91,42 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.filter_alt_off,
+                              Icons.search_off,
                               size: 64,
                               color: Colors.grey[400],
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No ${controller.selectedFilter.value} bookings',
+                              controller.searchQuery.value.isNotEmpty
+                                  ? 'No results found for "${controller.searchQuery.value}"'
+                                  : 'No ${controller.selectedFilter.value} bookings',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 color: Colors.grey[600],
                               ),
+                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
-                              onPressed: () => controller.setFilter('all'),
-                              child: const Text('Show All Bookings'),
+                              onPressed: () {
+                                if (controller.searchQuery.value.isNotEmpty) {
+                                  controller.clearSearch();
+                                } else {
+                                  controller.setFilter('all');
+                                }
+                              },
+                              child: Text(
+                                controller.searchQuery.value.isNotEmpty
+                                    ? 'Clear Search'
+                                    : 'Show All Bookings',
+                              ),
                             ),
                           ],
                         ),
                       ),
                     );
                   }
+
                   return SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final booking = filteredBookings[index];
@@ -124,6 +141,47 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
             ),
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Obx(
+        () => TextField(
+          controller: controller.searchController,
+          onChanged: (value) => controller.updateSearchQuery(value),
+          decoration: InputDecoration(
+            hintText: 'Search by court name, location, or order ID...',
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+            suffixIcon: controller.searchQuery.value.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear, color: Colors.grey[600]),
+                    onPressed: () => controller.clearSearch(),
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.secondary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -203,146 +261,481 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
       return b.date.compareTo(a.date);
     });
 
+    // Filter berdasarkan status
+    List<BookingHistory> filtered;
     if (controller.selectedFilter.value == 'all') {
-      return allBookings;
+      filtered = allBookings;
+    } else {
+      filtered = allBookings
+          .where((booking) => booking.status == controller.selectedFilter.value)
+          .toList();
     }
 
-    return allBookings
-        .where((booking) => booking.status == controller.selectedFilter.value)
-        .toList();
+    // ✅ TAMBAHKAN INI - Filter berdasarkan search query
+    return controller.getSearchFilteredBookings(filtered);
   }
 
   Widget _buildBookingCard(BookingHistory booking) {
-    return Card(
-      color: Colors.white,
-      margin: EdgeInsets.zero,
-      elevation: 2,
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: booking.getCategoryColor().withValues(
-                          alpha: 0.2,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: booking.getCategoryColor().withValues(
-                            alpha: 0.3,
-                          ),
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        booking.getCategoryIcon(),
-                        size: 40,
-                        color: booking.getCategoryColor(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            booking.courtName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            booking.location,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Id: ${booking.orderId}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                          Wrap(
-                            spacing: 8,
-                            children: booking.types.map((type) {
-                              return Text(
-                                'Types: $type',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.secondary,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildDetailRow('Date', _formatDate(booking.date)),
-                _buildDetailRow('Time', _formatTimeRange(booking)),
-                _buildDetailRow('Duration', '${booking.duration} hour(s)'),
-                _buildDetailRow('Note', booking.note),
-                if (booking.status == 'approved') ...[
-                  const SizedBox(height: 12),
-                  _buildCreatePostButton(booking),
-                ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 380;
 
-                const SizedBox(height: 8),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  shape: const RoundedRectangleBorder(
-                    side: BorderSide.none,
-                    borderRadius: BorderRadius.all(Radius.circular(0)),
-                  ),
-                  collapsedShape: const RoundedRectangleBorder(
-                    side: BorderSide.none,
-                    borderRadius: BorderRadius.all(Radius.circular(0)),
-                  ),
-                  title: const Text(
-                    'Price Breakdown',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+        return Card(
+          color: Colors.white,
+          margin: EdgeInsets.zero,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
+                    // Header Row - Responsif
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 8),
-                        _buildPriceBreakdown(booking),
+                        // Icon Container - Ukuran responsif
+                        Container(
+                          width: isSmallScreen ? 60 : 80,
+                          height: isSmallScreen ? 60 : 80,
+                          decoration: BoxDecoration(
+                            color: booking.getCategoryColor().withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(
+                              isSmallScreen ? 8 : 12,
+                            ),
+                            border: Border.all(
+                              color: booking.getCategoryColor().withOpacity(
+                                0.3,
+                              ),
+                              width: isSmallScreen ? 1.5 : 2,
+                            ),
+                          ),
+                          child: Icon(
+                            booking.getCategoryIcon(),
+                            size: isSmallScreen ? 28 : 40,
+                            color: booking.getCategoryColor(),
+                          ),
+                        ),
+
+                        SizedBox(width: isSmallScreen ? 8 : 12),
+
+                        // Content - Flexible dan responsif
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Court Name - Font size responsif
+                              Text(
+                                booking.courtName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                  height: 1.2,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+
+                              SizedBox(height: isSmallScreen ? 2 : 4),
+
+                              // Location - Font size responsif
+                              Text(
+                                booking.location,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: isSmallScreen ? 12 : 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+
+                              SizedBox(height: isSmallScreen ? 2 : 4),
+
+                              // Order ID - Font size responsif
+                              Text(
+                                'Order Id: ${booking.orderId}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: isSmallScreen ? 11 : 13,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+
+                              SizedBox(height: isSmallScreen ? 4 : 6),
+
+                              // Types - Layout responsif
+                              _buildTypesSection(booking, isSmallScreen),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
+
+                    SizedBox(height: isSmallScreen ? 8 : 12),
+
+                    // Details Section - Layout responsif
+                    _buildDetailsSection(booking, isSmallScreen),
+
+                    // Create Post Button - Hanya untuk status approved
+                    if (booking.status == 'approved') ...[
+                      SizedBox(height: isSmallScreen ? 8 : 12),
+                      _buildCreatePostButton(booking, isSmallScreen),
+                    ],
+
+                    // Rating Button - Hanya untuk status completed
+                    if (booking.status == 'completed') ...[
+                      SizedBox(height: isSmallScreen ? 8 : 12),
+                      _buildRatingButton(booking, isSmallScreen),
+                    ],
+
+                    // Price Breakdown - Expansion tile responsif
+                    SizedBox(height: isSmallScreen ? 8 : 12),
+                    _buildPriceBreakdownSection(booking, isSmallScreen),
+
+                    // Total Amount - Responsif
+                    SizedBox(height: isSmallScreen ? 8 : 12),
+                    _buildTotalAmountSection(booking, isSmallScreen),
                   ],
                 ),
-                const Divider(height: 24),
-                _buildPriceRow(
-                  'Total Amount',
-                  booking.totalAmount,
-                  isTotal: true,
-                ),
-              ],
+              ),
+
+              // Status Chip - Posisi dan ukuran responsif
+              Positioned(
+                top: isSmallScreen ? 8 : 12,
+                right: isSmallScreen ? 8 : 12,
+                child: _buildStatusChip(booking.status, isSmallScreen),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTypesSection(BookingHistory booking, bool isSmallScreen) {
+    if (booking.types.isEmpty) return const SizedBox();
+
+    return Wrap(
+      spacing: isSmallScreen ? 6 : 8,
+      runSpacing: isSmallScreen ? 4 : 6,
+      children: booking.types.map((type) {
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmallScreen ? 8 : 10,
+            vertical: isSmallScreen ? 3 : 4,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(isSmallScreen ? 6 : 8),
+            border: Border.all(
+              color: AppColors.secondary.withOpacity(0.3),
+              width: 1,
             ),
           ),
-          Positioned(top: 8, right: 8, child: _buildStatusChip(booking.status)),
+          child: Text(
+            type,
+            style: TextStyle(
+              fontSize: isSmallScreen ? 10 : 12,
+              color: AppColors.secondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Details Section yang responsif
+  Widget _buildDetailsSection(BookingHistory booking, bool isSmallScreen) {
+    return Column(
+      children: [
+        _buildDetailRow('Date', _formatDate(booking.date), isSmallScreen),
+        _buildDetailRow('Time', _formatTimeRange(booking), isSmallScreen),
+        _buildDetailRow(
+          'Duration',
+          '${booking.duration} hour${booking.duration > 1 ? 's' : ''}',
+          isSmallScreen,
+        ),
+        if (booking.note.isNotEmpty)
+          _buildDetailRow('Note', booking.note, isSmallScreen, maxLines: 2),
+      ],
+    );
+  }
+
+  Widget _buildRatingButton(BookingHistory booking, bool isSmallScreen) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () => _showRatingDialog(booking),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange[50],
+          foregroundColor: Colors.orange[700],
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
+            side: BorderSide(color: Colors.orange[200]!, width: 1),
+          ),
+          padding: EdgeInsets.symmetric(
+            vertical: isSmallScreen ? 10 : 12,
+            horizontal: isSmallScreen ? 12 : 16,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.star_rate, size: isSmallScreen ? 16 : 18),
+            SizedBox(width: isSmallScreen ? 6 : 8),
+            Flexible(
+              child: Text(
+                'Rate Experience',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: isSmallScreen ? 13 : 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Detail Row yang responsif
+  Widget _buildDetailRow(
+    String label,
+    String value,
+    bool isSmallScreen, {
+    int maxLines = 1,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 2 : 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: isSmallScreen ? 12 : 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          SizedBox(width: isSmallScreen ? 8 : 12),
+          Flexible(
+            flex: 2,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: isSmallScreen ? 12 : 14,
+              ),
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusChip(String status) {
+  Widget _buildCreatePostButton(BookingHistory booking, bool isSmallScreen) {
+    final hasPosted = booking.hasPosted;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: hasPosted ? null : () => _showCreatePostModal(booking),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: hasPosted ? Colors.grey[300] : Colors.blue[50],
+          foregroundColor: hasPosted ? Colors.grey[600] : Colors.blue[700],
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
+            side: BorderSide(
+              color: hasPosted ? Colors.grey[400]! : Colors.blue[200]!,
+              width: 1,
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            vertical: isSmallScreen ? 10 : 12,
+            horizontal: isSmallScreen ? 12 : 16,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasPosted ? Icons.check_circle : Icons.add,
+              size: isSmallScreen ? 16 : 18,
+            ),
+            SizedBox(width: isSmallScreen ? 6 : 8),
+            Flexible(
+              child: Text(
+                hasPosted ? 'Posted' : 'Create Post',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: isSmallScreen ? 13 : 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPriceBreakdownSection(
+    BookingHistory booking,
+    bool isSmallScreen,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[200]!),
+        borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
+      ),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.symmetric(
+          horizontal: isSmallScreen ? 12 : 16,
+          vertical: isSmallScreen ? 4 : 8,
+        ),
+        childrenPadding: EdgeInsets.only(
+          left: isSmallScreen ? 12 : 16,
+          right: isSmallScreen ? 12 : 16,
+          bottom: isSmallScreen ? 8 : 12,
+        ),
+        shape: const RoundedRectangleBorder(side: BorderSide.none),
+        collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
+        title: Text(
+          'Price Breakdown',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: isSmallScreen ? 14 : 16,
+          ),
+        ),
+        children: [_buildPriceBreakdown(booking, isSmallScreen)],
+      ),
+    );
+  }
+
+  Widget _buildPriceBreakdown(BookingHistory booking, bool isSmallScreen) {
+    return Column(
+      children: [
+        _buildPriceRow(
+          'Court (${booking.duration} hour${booking.duration > 1 ? 's' : ''})',
+          booking.courtTotal,
+          isSmallScreen,
+        ),
+        if (booking.details.isNotEmpty) ...[
+          SizedBox(height: isSmallScreen ? 6 : 8),
+          Padding(
+            padding: EdgeInsets.only(bottom: isSmallScreen ? 4 : 6),
+            child: Text(
+              'Additional Services:',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: isSmallScreen ? 13 : 14,
+              ),
+            ),
+          ),
+          ...booking.details.map((detail) {
+            return _buildPriceRow(
+              '${detail.addOnName} (x${detail.quantity})',
+              detail.totalPrice,
+              isSmallScreen,
+            );
+          }),
+          _buildPriceRow(
+            'Total Additional Services',
+            booking.equipmentTotal,
+            isSmallScreen,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPriceRow(
+    String label,
+    double amount,
+    bool isSmallScreen, {
+    bool isTotal = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 2 : 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+                fontSize: isSmallScreen ? 12 : 14,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(width: isSmallScreen ? 8 : 12),
+          Text(
+            _formatCurrency(amount),
+            style: TextStyle(
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              fontSize: isSmallScreen ? 12 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalAmountSection(BookingHistory booking, bool isSmallScreen) {
+    return Container(
+      padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 10),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Total Amount',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: isSmallScreen ? 14 : 16,
+              color: Colors.grey[800],
+            ),
+          ),
+          Text(
+            _formatCurrency(booking.totalAmount),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: isSmallScreen ? 14 : 16,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status, bool isSmallScreen) {
     Color backgroundColor;
     Color textColor;
     String displayText;
@@ -370,89 +763,99 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
         displayText = 'PENDING';
         break;
     }
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 8 : 10,
+        vertical: isSmallScreen ? 4 : 5,
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Text(
         displayText,
         style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.bold,
-          fontSize: 12,
+          fontSize: isSmallScreen ? 9 : 11,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDetailRow(String label, String value) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 4),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Text(label, style: TextStyle(color: Colors.grey[600])),
+  //         Text(
+  //           value,
+  //           style: const TextStyle(fontWeight: FontWeight.w500),
+  //           maxLines: 1,
+  //           overflow: TextOverflow.ellipsis,
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildPriceBreakdown(BookingHistory booking) {
-    return Column(
-      children: [
-        _buildPriceRow(
-          'Court (${booking.duration} hour(s))',
-          booking.courtTotal,
-        ),
-        if (booking.details.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          const Text(
-            'Additional Services:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          ...booking.details.map((detail) {
-            return _buildPriceRow(
-              '${detail.addOnName} (x${detail.quantity})',
-              detail.totalPrice,
-            );
-          }),
-          _buildPriceRow('Total Additional Services', booking.equipmentTotal),
-        ],
-      ],
-    );
-  }
+  // Widget _buildPriceBreakdown(BookingHistory booking) {
+  //   return Column(
+  //     children: [
+  //       _buildPriceRow(
+  //         'Court (${booking.duration} hour(s))',
+  //         booking.courtTotal,
+  //       ),
+  //       if (booking.details.isNotEmpty) ...[
+  //         const SizedBox(height: 8),
+  //         const Text(
+  //           'Additional Services:',
+  //           style: TextStyle(fontWeight: FontWeight.bold),
+  //         ),
+  //         ...booking.details.map((detail) {
+  //           return _buildPriceRow(
+  //             '${detail.addOnName} (x${detail.quantity})',
+  //             detail.totalPrice,
+  //           );
+  //         }),
+  //         _buildPriceRow('Total Additional Services', booking.equipmentTotal),
+  //       ],
+  //     ],
+  //   );
+  // }
 
-  Widget _buildPriceRow(String label, double amount, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          Text(
-            _formatCurrency(amount),
-            style: TextStyle(
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildPriceRow(String label, double amount, {bool isTotal = false}) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 4),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Text(
+  //           label,
+  //           style: TextStyle(
+  //             fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+  //           ),
+  //         ),
+  //         Text(
+  //           _formatCurrency(amount),
+  //           style: TextStyle(
+  //             fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   String _formatDate(DateTime date) {
     return DateFormat('dd MMMM yyyy').format(date);
@@ -471,37 +874,60 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
     return format.format(amount);
   }
 
-  Widget _buildCreatePostButton(BookingHistory booking) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          _showCreatePostModal(booking);
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[50],
-          foregroundColor: Colors.blue[700],
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.blue[200]!, width: 1),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add, size: 18),
-            SizedBox(width: 8),
-            Text(
-              'Create Community Post',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildCreatePostButton(BookingHistory booking) {
+  //   // ✅ Cek apakah sudah posting
+  //   final hasPosted = booking.hasPosted;
+
+  //   return SizedBox(
+  //     width: double.infinity,
+  //     child: ElevatedButton(
+  //       onPressed: hasPosted
+  //           ? null // ✅ Disable button jika sudah posting
+  //           : () {
+  //               _showCreatePostModal(booking);
+  //             },
+  //       style: ElevatedButton.styleFrom(
+  //         backgroundColor: hasPosted
+  //             ? Colors.grey[300] // ✅ Warna abu-abu jika disabled
+  //             : Colors.blue[50],
+  //         foregroundColor: hasPosted
+  //             ? Colors.grey[600] // ✅ Warna text abu-abu jika disabled
+  //             : Colors.blue[700],
+  //         elevation: 0,
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(12),
+  //           side: BorderSide(
+  //             color: hasPosted
+  //                 ? Colors.grey[400]! // ✅ Border abu-abu jika disabled
+  //                 : Colors.blue[200]!,
+  //             width: 1,
+  //           ),
+  //         ),
+  //         padding: const EdgeInsets.symmetric(vertical: 12),
+  //       ),
+  //       child: Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Icon(
+  //             hasPosted ? Icons.check_circle : Icons.add, // ✅ Icon berbeda
+  //             size: 18,
+  //           ),
+  //           const SizedBox(width: 8),
+  //           Text(
+  //             hasPosted
+  //                 ? 'You have posted' // ✅ Text berbeda jika sudah posting
+  //                 : 'Create Community Post',
+  //             style: TextStyle(
+  //               fontWeight: FontWeight.w600,
+  //               fontSize: 14,
+  //               color: hasPosted ? Colors.grey[600] : Colors.blue[700],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // customer_history_view.dart - Ganti method _showCreatePostModal dengan yang baru
   void _showCreatePostModal(BookingHistory booking) {
@@ -733,7 +1159,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
 
                         // Image Upload Section
                         const Text(
-                          'Add Photo (Optional)',
+                          'Add Photo ',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
@@ -927,7 +1353,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                                   print(e);
                                   Get.snackbar(
                                     'Error',
-                                    'Failed to create post: $e',
+                                    'Failed to create post: need image',
 
                                     backgroundColor: Colors.red[50],
                                     colorText: Colors.red[700],
@@ -982,6 +1408,174 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
       backgroundColor: Colors.transparent,
       enableDrag: true,
     );
+  }
+
+  void _showRatingDialog(BookingHistory booking) {
+    final TextEditingController reviewController = TextEditingController();
+    final RxInt selectedRating = 0.obs;
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Column(
+          children: [
+            Icon(Icons.star_rate, color: Colors.orange[600], size: 32),
+            const SizedBox(height: 8),
+            const Text(
+              'Rate Your Experience',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Booking info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        booking.courtName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        booking.location,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                      Text(
+                        _formatDate(booking.date),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Rating stars
+                const Text(
+                  'Rate your experience (1-5 stars):',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Obx(
+                  () => Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return GestureDetector(
+                        onTap: () => selectedRating.value = index + 1,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(
+                            index < selectedRating.value
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: Colors.orange[600],
+                            size: 32,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Review text field
+                const Text(
+                  'Write a review (optional):',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reviewController,
+                  maxLines: null,
+                  minLines: 2,
+                  maxLength: 200,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: 'Share your experience...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+          ),
+          Obx(
+            () => ElevatedButton(
+              onPressed: selectedRating.value > 0
+                  ? () => _submitRating(
+                      booking,
+                      selectedRating.value,
+                      reviewController.text,
+                    )
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: controller.isLoading.value
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Submit Rating'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitRating(BookingHistory booking, int rating, String review) async {
+    try {
+      final success = await controller.submitRating(
+        bookingId: booking.id.toString(),
+        ratingValue: rating,
+        review: review.trim(),
+      );
+
+      // Close dialog only if submission was successful
+      if (success) {
+        Get.back();
+      }
+    } catch (e) {
+      // Error handling is already done in controller
+      print('Rating submission error: $e');
+    }
   }
 
   // Tambahkan method untuk memilih gambar

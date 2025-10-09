@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class CommunityPost {
   final String id;
   final String bookingId;
@@ -13,6 +15,11 @@ class CommunityPost {
   final int playersNeeded;
   final double totalCost;
   final int joinedPlayers;
+  final int posterUserId;
+  final String bookingStatus;
+  final String placeAddress;
+  final String placeName;
+  final String postPhoto;
 
   CommunityPost({
     required this.id,
@@ -29,9 +36,14 @@ class CommunityPost {
     required this.playersNeeded,
     required this.totalCost,
     required this.joinedPlayers,
+    required this.posterUserId,
+    required this.bookingStatus,
+    required this.placeAddress,
+    required this.placeName,
+    required this.postPhoto,
   });
 
-  factory CommunityPost.fromApiJson(Map<String, dynamic> json) {
+  factory CommunityPost.fromJson(Map<String, dynamic> json) {
     String parseId(dynamic value) => value?.toString() ?? '';
 
     DateTime parseDateTime(dynamic value) {
@@ -39,7 +51,15 @@ class CommunityPost {
         return DateTime.now();
       }
 
-      return DateTime.parse(value.toString());
+      try {
+        // Parse as UTC first
+        final utcDateTime = DateTime.parse(value.toString()).toUtc();
+        // Convert to local time
+        return utcDateTime.toLocal();
+      } catch (e) {
+        print('❌ Error parsing date: $value, error: $e');
+        return DateTime.now();
+      }
     }
 
     final bookingStart = parseDateTime(json['booking_datetime_start']);
@@ -54,7 +74,12 @@ class CommunityPost {
             json['id'],
       ),
       userProfileImage: json['post_photo'] ?? '',
-      userName: json['poster_name'] ?? 'Unknown User',
+      userName:
+          json['poster_name'] ??
+          json['user_name'] ??
+          json['username'] ??
+          json['name'] ??
+          'Unknown User',
       postTime: parseDateTime(json['created_at']),
       category: json['field_type'] ?? 'General',
       title: json['post_title'] ?? '',
@@ -63,12 +88,25 @@ class CommunityPost {
       gameDate: bookingStart,
       gameTime: _formatTime(bookingStart),
       playersNeeded: json['max_person'] ?? 0,
-      totalCost: (json['total_price'] ?? 0).toDouble(),
+      totalCost:
+          (json['total_price'] ??
+                  json['total_cost'] ??
+                  json['price'] ??
+                  json['cost'] ??
+                  0)
+              .toDouble(),
       joinedPlayers: json['joined_count'] ?? 0,
+      posterUserId:
+          int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
+      bookingStatus: json['booking_status']?.toString() ?? 'approved',
+      placeAddress: json['place_address']?.toString() ?? '',
+      placeName: json['place_name']?.toString() ?? '',
+      postPhoto: json['post_photo']?.toString() ?? '',
     );
   }
 
   static String _formatTime(DateTime dateTime) {
+    // dateTime sudah dalam local time, jadi langsung format saja
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
@@ -87,6 +125,23 @@ class CommunityPost {
     }
   }
 
+  // Method untuk mendapatkan formatted date yang user-friendly
+  String get formattedGameDate {
+    return '${gameDate.day}/${gameDate.month}/${gameDate.year}';
+  }
+
+  // Method untuk mendapatkan full datetime yang formatted
+  String get formattedGameDateTime {
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    return dateFormat.format(gameDate);
+  }
+
+  // Method untuk mendapatkan post time yang formatted
+  String get formattedPostTime {
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    return dateFormat.format(postTime);
+  }
+
   CommunityPost copyWith({
     String? id,
     String? bookingId,
@@ -102,6 +157,11 @@ class CommunityPost {
     int? playersNeeded,
     double? totalCost,
     int? joinedPlayers,
+    int? posterUserId,
+    String? bookingStatus,
+    String? placeAddress,
+    String? placeName,
+    String? postPhoto,
   }) {
     return CommunityPost(
       id: id ?? this.id,
@@ -118,6 +178,11 @@ class CommunityPost {
       playersNeeded: playersNeeded ?? this.playersNeeded,
       totalCost: totalCost ?? this.totalCost,
       joinedPlayers: joinedPlayers ?? this.joinedPlayers,
+      posterUserId: posterUserId ?? this.posterUserId,
+      bookingStatus: bookingStatus ?? this.bookingStatus,
+      placeAddress: placeAddress ?? this.placeAddress,
+      placeName: placeName ?? this.placeName,
+      postPhoto: postPhoto ?? this.postPhoto,
     );
   }
 }
@@ -139,107 +204,8 @@ class CommunityPostsResponse {
       message: json['message'] ?? '',
       data:
           (json['data'] as List<dynamic>?)
-              ?.map((item) => CommunityPost.fromApiJson(item))
-              .toList() ??
-          [],
-    );
-  }
-}
-
-class JoinRequest {
-  final String id;
-  final int userId;
-  final String userName;
-  final String status;
-  final String? note;
-  final String? avatarUrl;
-  final DateTime requestedAt;
-
-  const JoinRequest({
-    required this.id,
-    required this.userId,
-    required this.userName,
-    required this.status,
-    required this.requestedAt,
-    this.note,
-    this.avatarUrl,
-  });
-
-  factory JoinRequest.fromJson(Map<String, dynamic> json) {
-    String parseId(dynamic value) => value?.toString() ?? '';
-
-    DateTime parseDateTime(dynamic value) {
-      if (value == null) {
-        return DateTime.now();
-      }
-      return DateTime.parse(value.toString());
-    }
-
-    return JoinRequest(
-      id: parseId(json['id'] ?? json['id_joined']),
-      userId:
-          int.tryParse(
-            json['user_id']?.toString() ?? json['id_users']?.toString() ?? '0',
-          ) ??
-          0,
-      userName:
-          json['user_name']?.toString() ??
-          json['name']?.toString() ??
-          'Unknown User',
-      status: (json['status'] ?? json['joined_status'] ?? 'pending')
-          .toString()
-          .toLowerCase(),
-      note: json['note']?.toString() ?? json['message']?.toString(),
-      avatarUrl:
-          json['avatar_url']?.toString() ?? json['user_avatar']?.toString(),
-      requestedAt: parseDateTime(json['created_at'] ?? json['requested_at']),
-    );
-  }
-
-  JoinRequest copyWith({
-    String? id,
-    int? userId,
-    String? userName,
-    String? status,
-    String? note,
-    String? avatarUrl,
-    DateTime? requestedAt,
-  }) {
-    return JoinRequest(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      userName: userName ?? this.userName,
-      status: status ?? this.status,
-      note: note ?? this.note,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      requestedAt: requestedAt ?? this.requestedAt,
-    );
-  }
-
-  bool get isPending => status == 'pending';
-  bool get isApproved => status == 'approved';
-  bool get isRejected => status == 'rejected';
-}
-
-class JoinRequestsResponse {
-  final bool success;
-  final String message;
-  final List<JoinRequest> data;
-
-  const JoinRequestsResponse({
-    required this.success,
-    required this.message,
-    required this.data,
-  });
-
-  factory JoinRequestsResponse.fromJson(Map<String, dynamic> json) {
-    return JoinRequestsResponse(
-      success: json['success'] ?? false,
-      message: json['message']?.toString() ?? '',
-      data:
-          (json['data'] as List<dynamic>?)
               ?.map(
-                (item) => JoinRequest.fromJson(item as Map<String, dynamic>),
+                (item) => CommunityPost.fromJson(item as Map<String, dynamic>),
               )
               .toList() ??
           [],

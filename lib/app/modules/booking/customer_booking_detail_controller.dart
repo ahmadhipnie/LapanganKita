@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:lapangan_kita/app/data/models/owner_booking_model.dart';
+import 'package:lapangan_kita/app/data/repositories/booking_repository.dart';
 import 'package:lapangan_kita/app/data/repositories/customer_booking_repository.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
@@ -8,10 +10,12 @@ import '../../data/models/customer/booking/booking_request.dart';
 import '../../data/models/customer/booking/booking_response.dart';
 import '../../data/models/customer/booking/court_model.dart';
 import '../../data/models/add_on_model.dart';
-import '../../data/models/customer/history/customer_history_model.dart';
+// import '../../data/models/customer/history/customer_history_model.dart';
+import '../../data/models/customer/rating/rating_model.dart';
 import '../../data/repositories/add_on_repository.dart';
+import '../../data/repositories/rating_repository.dart';
 import '../../data/services/midtrans_service.dart';
-import '../history/customer_history_controller.dart';
+// import '../history/customer_history_controller.dart';
 import '../midtrans/midtrans_webview.dart';
 
 class CustomerBookingDetailController extends GetxController {
@@ -19,7 +23,10 @@ class CustomerBookingDetailController extends GetxController {
   final AddOnRepository _addOnRepository = Get.find<AddOnRepository>();
   final CustomerBookingRepository _bookingRepository =
       Get.find<CustomerBookingRepository>();
+  final RatingRepository _ratingRepository = Get.find<RatingRepository>();
   final LocalStorageService _localStorage = Get.find<LocalStorageService>();
+  final BookingRepository _ownerBookingRepository =
+      Get.find<BookingRepository>();
 
   final Rx<DateTime> selectedDate = DateTime.now().obs;
   final RxString selectedDuration = '1'.obs;
@@ -28,12 +35,20 @@ class CustomerBookingDetailController extends GetxController {
   final RxMap<String, int> selectedEquipment = <String, int>{}.obs;
   final RxMap<String, int> selectedAddOns = <String, int>{}.obs;
   final RxList<AddOnModel> availableAddOns = <AddOnModel>[].obs;
+  final RxList<OwnerBooking> approvedBookings = <OwnerBooking>[].obs;
   final RxBool isLoadingAddOns = false.obs;
   final RxBool isRefreshingAddOns = false.obs;
   final RxBool isBooking = false.obs;
 
+  // Rating related observables
+  final RxBool isLoadingRatings = false.obs;
+  final RxList<RatingDetailData> allRatings = <RatingDetailData>[].obs;
+  final Rx<PlaceRatingSummary?> placeRatingSummary = Rx<PlaceRatingSummary?>(
+    null,
+  );
+
   // Data booking history yang sudah di-load (dari controller history)
-  final List<BookingHistory> allBookings = [];
+  // final List<BookingHistory> allBookings = [];
 
   final RxList<String> availableTimes = <String>[].obs;
   final RxList<String> busyTimes = <String>[].obs;
@@ -48,7 +63,8 @@ class CustomerBookingDetailController extends GetxController {
     _calculateTotalPrice();
     _loadAddOns();
     _generateAvailableTimes();
-    _loadApprovedBookingsFromHistory();
+    _loadApprovedBookings();
+    _loadRatings();
 
     ever(selectedDuration, (_) {
       selectedStartTime.value = '';
@@ -61,11 +77,11 @@ class CustomerBookingDetailController extends GetxController {
     });
   }
 
-  void setApprovedBookings(List<BookingHistory> bookings) {
-    allBookings.clear();
-    allBookings.addAll(bookings);
-    _updateBusyTimes();
-  }
+  // void setApprovedBookings(List<BookingHistory> bookings) {
+  //   allBookings.clear();
+  //   allBookings.addAll(bookings);
+  //   _updateBusyTimes();
+  // }
 
   // Generate available times berdasarkan opening dan closing time court
   void _generateAvailableTimes() {
@@ -182,24 +198,27 @@ class CustomerBookingDetailController extends GetxController {
   }
 
   // Load approved bookings dari history controller
-  void _loadApprovedBookingsFromHistory() {
+  Future<void> _loadApprovedBookings() async {
     try {
-      // Ambil dari CustomerHistoryController yang sudah ada
-      final historyController = Get.find<CustomerHistoryController>();
-      final allHistoryBookings = historyController.bookings;
+      print('🔄 Loading approved bookings from API for court: ${court.name}');
 
-      // Filter hanya yang approved untuk court ini
-      final approvedBookings = allHistoryBookings.where((booking) {
-        return booking.status == 'approved' &&
-            booking.courtName ==
-                court.name; // Sesuaikan dengan field yang sesuai
+      final allBookings = await _ownerBookingRepository.getBookingsAll();
+
+      // Filter hanya booking yang approved untuk court ini
+      final filteredBookings = allBookings.where((booking) {
+        return booking.status.toLowerCase() == 'approved' &&
+            booking.fieldName == court.name;
       }).toList();
 
-      allBookings.clear();
-      allBookings.addAll(approvedBookings);
+      approvedBookings.assignAll(filteredBookings);
+
+      print('✅ Loaded ${filteredBookings.length} approved bookings from API');
       _updateBusyTimes();
     } catch (e) {
-      print('Error loading approved bookings from history: $e');
+      print('❌ Error loading approved bookings from API: $e');
+      // Tetap update busy times dengan list kosong jika error
+      approvedBookings.clear();
+      _updateBusyTimes();
     }
   }
 
@@ -211,18 +230,30 @@ class CustomerBookingDetailController extends GetxController {
       ).format(selectedDate.value);
       final List<String> newBusyTimes = [];
 
-      print('=== UPDATING BUSY TIMES (GENERAL) ===');
+      print('=== UPDATING BUSY TIMES (FROM API) ===');
       print('Date: $formattedSelectedDate');
+      print('Court: ${court.name}');
+      print('Total approved bookings: ${approvedBookings.length}');
 
-      for (final booking in allBookings) {
-        // Cek apakah booking pada tanggal yang sama
-        final bookingDate = DateFormat('yyyy-MM-dd').format(booking.date);
-        if (bookingDate == formattedSelectedDate) {
-          print(
-            'Processing booking: ${booking.orderId} (${booking.startTime} for ${booking.duration} hours)',
+      for (final booking in approvedBookings) {
+        final bookingDate = booking.bookingStart;
+        final startTime = DateFormat('HH:mm').format(booking.bookingStart);
+        final duration = _calculateDuration(
+          booking.bookingStart,
+          booking.bookingEnd,
+        );
+
+        final bookingFormattedDate = DateFormat(
+          'yyyy-MM-dd',
+        ).format(bookingDate);
+
+        if (bookingFormattedDate == formattedSelectedDate) {
+          print('Processing booking: $startTime for $duration hours');
+
+          final bookingTimeSlots = _getTimeSlotsFromBooking(
+            startTime,
+            duration,
           );
-
-          final bookingTimeSlots = _getTimeSlotsFromBooking(booking);
           newBusyTimes.addAll(bookingTimeSlots);
 
           print('Added busy slots: ${bookingTimeSlots.join(', ')}');
@@ -236,9 +267,39 @@ class CustomerBookingDetailController extends GetxController {
 
       _updateTimeAvailability();
     } catch (e) {
-      print('Error updating busy times: $e');
+      print('❌ Error updating busy times: $e');
       busyTimes.clear();
     }
+  }
+
+  int _calculateDuration(DateTime start, DateTime end) {
+    final difference = end.difference(start);
+    return difference.inHours;
+  }
+
+  List<String> _getTimeSlotsFromBooking(String startTime, int duration) {
+    final List<String> timeSlots = [];
+
+    try {
+      final startParts = startTime.split(':');
+      if (startParts.length >= 2) {
+        final startHour = int.tryParse(startParts[0]) ?? 0;
+
+        for (int i = 0; i < duration; i++) {
+          final slotHour = startHour + i;
+          if (slotHour < 24) {
+            final timeSlot = '${slotHour.toString().padLeft(2, '0')}:00';
+            timeSlots.add(timeSlot);
+          }
+        }
+
+        print('$duration-hour booking: Added slots ${timeSlots.join(', ')}');
+      }
+    } catch (e) {
+      print('❌ Error getting time slots from booking: $e');
+    }
+
+    return timeSlots;
   }
 
   // Update time availability berdasarkan durasi yang dipilih
@@ -247,37 +308,37 @@ class CustomerBookingDetailController extends GetxController {
     update();
   }
 
-  List<String> _getTimeSlotsFromBooking(BookingHistory booking) {
-    final List<String> timeSlots = [];
+  // List<String> _getTimeSlotsFromBooking(BookingHistory booking) {
+  //   final List<String> timeSlots = [];
 
-    try {
-      final startTime = booking.startTime; // opening time
-      final bookingDuration = booking.duration;
+  //   try {
+  //     final startTime = booking.startTime; // opening time
+  //     final bookingDuration = booking.duration;
 
-      // Parse start time (format: "HH:MM")
-      final startParts = startTime.split(':');
-      if (startParts.length >= 2) {
-        final startHour = int.tryParse(startParts[0]) ?? 0;
+  //     // Parse start time (format: "HH:MM")
+  //     final startParts = startTime.split(':');
+  //     if (startParts.length >= 2) {
+  //       final startHour = int.tryParse(startParts[0]) ?? 0;
 
-        // SELALU ambil semua timeslot dari opening time berdasarkan duration booking
-        for (int i = 0; i < bookingDuration; i++) {
-          final slotHour = startHour + i;
-          if (slotHour < 24) {
-            final timeSlot = '${slotHour.toString().padLeft(2, '0')}:00';
-            timeSlots.add(timeSlot);
-          }
-        }
+  //       // SELALU ambil semua timeslot dari opening time berdasarkan duration booking
+  //       for (int i = 0; i < bookingDuration; i++) {
+  //         final slotHour = startHour + i;
+  //         if (slotHour < 24) {
+  //           final timeSlot = '${slotHour.toString().padLeft(2, '0')}:00';
+  //           timeSlots.add(timeSlot);
+  //         }
+  //       }
 
-        print(
-          '${bookingDuration}-hour booking: Added slots ${timeSlots.join(', ')}',
-        );
-      }
-    } catch (e) {
-      print('Error getting time slots from booking: $e');
-    }
+  //       print(
+  //         '${bookingDuration}-hour booking: Added slots ${timeSlots.join(', ')}',
+  //       );
+  //     }
+  //   } catch (e) {
+  //     print('Error getting time slots from booking: $e');
+  //   }
 
-    return timeSlots;
-  }
+  //   return timeSlots;
+  // }
 
   Future<void> _loadAddOns() async {
     if (court.placeId == 0) return;
@@ -296,8 +357,12 @@ class CustomerBookingDetailController extends GetxController {
   }
 
   // Method untuk refresh data dari history controller
+  // Future<void> refreshAvailability() async {
+  //   _loadApprovedBookingsFromHistory();
+  // }
+
   Future<void> refreshAvailability() async {
-    _loadApprovedBookingsFromHistory();
+    await _loadApprovedBookings();
   }
 
   // Update method isTimeAvailable untuk menggunakan busyTimes
@@ -817,5 +882,57 @@ class CustomerBookingDetailController extends GetxController {
     final startDateTime = _calculateStartDateTime();
     final duration = int.parse(selectedDuration.value);
     return startDateTime.add(Duration(hours: duration));
+  }
+
+  // Rating related methods
+  Future<void> _loadRatings() async {
+    try {
+      isLoadingRatings.value = true;
+      print('🔄 Loading ratings for place: ${court.placeName}');
+
+      final ratingsResponse = await _ratingRepository.getAllRatings();
+
+      if (ratingsResponse.success) {
+        allRatings.assignAll(ratingsResponse.data);
+        _calculatePlaceRatingSummary();
+
+        print('✅ Loaded ${allRatings.length} total ratings');
+        print(
+          '📊 Place summary: ${placeRatingSummary.value?.totalReviews} reviews, avg: ${placeRatingSummary.value?.formattedAverageRating}',
+        );
+      }
+    } catch (e) {
+      print('❌ Error loading ratings: $e');
+      // Don't show error to user, just log it
+    } finally {
+      isLoadingRatings.value = false;
+    }
+  }
+
+  void _calculatePlaceRatingSummary() {
+    if (allRatings.isNotEmpty) {
+      final summary = _ratingRepository.getPlaceRatingSummary(
+        court.placeName,
+        allRatings,
+      );
+      placeRatingSummary.value = summary;
+    }
+  }
+
+  Future<void> refreshRatings() async {
+    await _loadRatings();
+  }
+
+  // Get reviews for this specific place
+  List<RatingDetailData> get placeReviews {
+    return allRatings
+        .where((rating) => rating.placeName == court.placeName)
+        .toList();
+  }
+
+  // Check if place has any ratings
+  bool get hasRatings {
+    return placeRatingSummary.value != null &&
+        placeRatingSummary.value!.totalReviews > 0;
   }
 }

@@ -9,21 +9,11 @@ class CustomerBookingRepository {
 
   Future<BookingResponse> createBooking(BookingRequest request) async {
     try {
-      print('===== SENDING TO BACKEND =====');
-      print('Endpoint: bookings');
-      print('Data: ${request.toJson()}');
-      print('==============================');
 
       final response = await _apiClient.post(
         'bookings',
         data: request.toJson(),
       );
-
-      print('===== BACKEND RESPONSE =====');
-      print('Status Code: ${response.statusCode}');
-      print('Response Data: ${response.data}');
-      print('Response Type: ${response.data.runtimeType}');
-      print('============================');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Backend bisa return data langsung atau wrapped dalam 'data' key
@@ -36,11 +26,6 @@ class CustomerBookingRepository {
         throw Exception('Failed to create booking: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print('===== DIO ERROR DETAILS =====');
-      print('Status Code: ${e.response?.statusCode}');
-      print('Error Response: ${e.response?.data}');
-      print('Error Message: ${e.message}');
-      print('============================');
 
       // Extract backend error message if available
       String errorMessage = 'Booking failed';
@@ -57,9 +42,6 @@ class CustomerBookingRepository {
 
       throw Exception(errorMessage);
     } catch (e) {
-      print('===== GENERAL ERROR =====');
-      print('Error: $e');
-      print('========================');
       throw Exception('Booking failed: $e');
     }
   }

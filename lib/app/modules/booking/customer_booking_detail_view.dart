@@ -1,17 +1,26 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_controller.dart';
 import 'package:lapangan_kita/app/modules/booking/webview_maps.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 import '../../data/models/add_on_model.dart';
-// import '../../data/models/customer/booking/court_model.dart';
+import '../../data/models/customer/rating/rating_model.dart';
 import '../../data/network/api_client.dart';
 
 class CustomerBookingDetailView
     extends GetView<CustomerBookingDetailController> {
   const CustomerBookingDetailView({super.key});
+
+  // PERBAIKAN: Tambahkan responsive helper methods
+  double get _screenWidth => MediaQuery.of(Get.context!).size.width;
+  double get _screenHeight => MediaQuery.of(Get.context!).size.height;
+  bool get _isSmallScreen => _screenWidth < 600;
+  // bool get _isLargeScreen => _screenWidth > 1200;
+  double get _responsivePadding => _isSmallScreen ? 16.0 : 24.0;
+  double get _responsiveImageHeight => _isSmallScreen ? 350 : 400;
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +29,16 @@ class CustomerBookingDetailView
       appBar: AppBar(
         title: Text(
           controller.court.placeName,
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+            fontSize: _isSmallScreen
+                ? 18
+                : 20, // PERBAIKAN: Font size responsif
+          ),
         ),
         titleSpacing: 0,
-        backgroundColor: AppColors.neutralColor, // atau warna lain dari theme
+        backgroundColor: AppColors.neutralColor,
         elevation: 2,
       ),
       body: RefreshIndicator(
@@ -36,30 +51,34 @@ class CustomerBookingDetailView
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image section
+              // Image section - PERBAIKAN: Height responsif
               SizedBox(
-                height: 350, // atur tinggi sesuai kebutuhan
+                height: _responsiveImageHeight,
                 width: double.infinity,
                 child: _buildCachedImage(controller.court.imageUrl),
               ),
-              // Content section
+              // Content section - PERBAIKAN: Padding responsif
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(_responsivePadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: _responsivePadding),
                     _buildDescription(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: _responsivePadding),
                     _buildOpeningHours(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: _responsivePadding),
                     _buildDateTimeSelection(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: _responsivePadding),
                     _buildAddOnsSection(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: _responsivePadding),
                     _buildLocationMap(),
-                    const SizedBox(height: 80),
+                    SizedBox(height: _responsivePadding),
+                    _buildRatingsSummary(),
+                    SizedBox(height: _responsivePadding),
+                    _buildReviewsSection(),
+                    SizedBox(height: 60),
                   ],
                 ),
               ),
@@ -91,20 +110,31 @@ class CustomerBookingDetailView
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.sports_soccer, size: 60, color: Colors.grey[400]),
-            const SizedBox(height: 12),
+            Icon(
+              Icons.sports_soccer,
+              size: _isSmallScreen ? 60 : 80, // PERBAIKAN: Icon size responsif
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: _isSmallScreen ? 12 : 16),
             Text(
               'Court Image',
               style: TextStyle(
                 color: Colors.grey[600],
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: _isSmallScreen
+                    ? 16
+                    : 18, // PERBAIKAN: Font size responsif
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: _isSmallScreen ? 8 : 12),
             Text(
               'Image not available',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: _isSmallScreen
+                    ? 14
+                    : 16, // PERBAIKAN: Font size responsif
+              ),
             ),
           ],
         ),
@@ -121,26 +151,51 @@ class CustomerBookingDetailView
       children: [
         Text(
           controller.court.name,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: _isSmallScreen
+                ? 24
+                : 28, // PERBAIKAN: Font size responsif
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
         Row(
           children: [
-            const Icon(Icons.location_on, size: 16, color: Colors.grey),
-            const SizedBox(width: 4),
-            Text(
-              controller.court.location,
-              style: const TextStyle(color: Colors.grey),
+            Icon(
+              Icons.location_on,
+              size: _isSmallScreen ? 16 : 18, // PERBAIKAN: Icon size responsif
+              color: Colors.grey,
+            ),
+            SizedBox(width: _isSmallScreen ? 4 : 6),
+            Expanded(
+              child: Text(
+                controller.court.location,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: _isSmallScreen
+                      ? 14
+                      : 16, // PERBAIKAN: Font size responsif
+                ),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
         Wrap(
-          spacing: 8,
+          spacing: _isSmallScreen ? 8 : 12, // PERBAIKAN: Spacing responsif
+          runSpacing: _isSmallScreen ? 8 : 12,
           children: controller.court.types
               .map(
                 (type) => Chip(
-                  label: Text(type, style: TextStyle(color: Colors.white)),
+                  label: Text(
+                    type,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: _isSmallScreen
+                          ? 12
+                          : 14, // PERBAIKAN: Font size responsif
+                    ),
+                  ),
                   backgroundColor: AppColors.secondary,
                 ),
               )
@@ -154,15 +209,25 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Description',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: _isSmallScreen
+                ? 18
+                : 20, // PERBAIKAN: Font size responsif
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
         Text(
           controller.court.description,
           textAlign: TextAlign.justify,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
+          style: TextStyle(
+            fontSize: _isSmallScreen
+                ? 14
+                : 16, // PERBAIKAN: Font size responsif
+            color: Colors.grey,
+          ),
         ),
       ],
     );
@@ -172,21 +237,36 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Opening Hours',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: _isSmallScreen
+                ? 18
+                : 20, // PERBAIKAN: Font size responsif
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Monday - Sunday',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(
+                fontSize: _isSmallScreen
+                    ? 14
+                    : 16, // PERBAIKAN: Font size responsif
+                color: Colors.grey,
+              ),
             ),
             Text(
               controller.court.openingHours['monday-sunday'] ?? "24 Hours",
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(
+                fontSize: _isSmallScreen
+                    ? 14
+                    : 16, // PERBAIKAN: Font size responsif
+                color: Colors.grey,
+              ),
             ),
           ],
         ),
@@ -198,19 +278,24 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Select Time & Duration',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: _isSmallScreen
+                ? 18
+                : 20, // PERBAIKAN: Font size responsif
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: _isSmallScreen ? 16 : 20),
 
         // Date Picker
         _buildDatePicker(),
-        const SizedBox(height: 16),
+        SizedBox(height: _isSmallScreen ? 16 : 20),
 
         // Duration Dropdown
         _buildDurationDropdown(),
-        const SizedBox(height: 16),
+        SizedBox(height: _isSmallScreen ? 16 : 20),
 
         // Time Selection Grid
         _buildTimeGrid(),
@@ -222,16 +307,23 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Select Date',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: _isSmallScreen
+                ? 14
+                : 16, // PERBAIKAN: Font size responsif
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
         Obx(
           () => InkWell(
             onTap: () => _showDatePicker(),
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(
+                _isSmallScreen ? 12 : 16,
+              ), // PERBAIKAN: Padding responsif
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
@@ -241,9 +333,18 @@ class CustomerBookingDetailView
                 children: [
                   Text(
                     '${controller.selectedDate.value.day}/${controller.selectedDate.value.month}/${controller.selectedDate.value.year}',
-                    style: const TextStyle(fontSize: 16),
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 16
+                          : 18, // PERBAIKAN: Font size responsif
+                    ),
                   ),
-                  const Icon(Icons.calendar_today),
+                  Icon(
+                    Icons.calendar_today,
+                    size: _isSmallScreen
+                        ? 20
+                        : 24, // PERBAIKAN: Icon size responsif
+                  ),
                 ],
               ),
             ),
@@ -257,11 +358,16 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Duration (hours)',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: _isSmallScreen
+                ? 14
+                : 16, // PERBAIKAN: Font size responsif
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
         Obx(
           () => DropdownButtonFormField<String>(
             dropdownColor: AppColors.neutralColor,
@@ -269,32 +375,38 @@ class CustomerBookingDetailView
             items: controller.durationOptions.map((duration) {
               return DropdownMenuItem(
                 value: duration,
-                child: Text('$duration hour${duration != "1" ? "s" : ""}'),
+                child: Text(
+                  '$duration hour${duration != "1" ? "s" : ""}',
+                  style: TextStyle(
+                    fontSize: _isSmallScreen
+                        ? 14
+                        : 16, // PERBAIKAN: Font size responsif
+                  ),
+                ),
               );
             }).toList(),
             onChanged: (value) => controller.selectDuration(value!),
             decoration: InputDecoration(
-              // Border saat normal
               enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.blue), // Warna biru
+                borderSide: const BorderSide(color: Colors.blue),
                 borderRadius: BorderRadius.circular(4),
               ),
-              // Border saat focused
               focusedBorder: OutlineInputBorder(
                 borderSide: const BorderSide(
                   color: AppColors.secondary,
                   width: 2,
-                ), // Biru lebih tebal saat focus
+                ),
                 borderRadius: BorderRadius.circular(4),
               ),
-              // Border default (fallback)
               border: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.blue), // Warna biru
+                borderSide: const BorderSide(color: Colors.blue),
                 borderRadius: BorderRadius.circular(4),
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: _isSmallScreen
+                    ? 12
+                    : 16, // PERBAIKAN: Padding responsif
+                vertical: _isSmallScreen ? 8 : 12,
               ),
             ),
           ),
@@ -309,15 +421,23 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Start Time', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        Text(
+          'Start Time',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: _isSmallScreen
+                ? 14
+                : 16, // PERBAIKAN: Font size responsif
+          ),
+        ),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
 
         Obx(() {
           final selectedDuration = int.parse(controller.selectedDuration.value);
 
           return Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: _isSmallScreen ? 8 : 12, // PERBAIKAN: Spacing responsif
+            runSpacing: _isSmallScreen ? 8 : 12,
             children: controller.availableTimes.asMap().entries.map((entry) {
               final time = entry.value;
 
@@ -341,7 +461,14 @@ class CustomerBookingDetailView
               }
 
               return FilterChip(
-                label: Text(time),
+                label: Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: _isSmallScreen
+                        ? 12
+                        : 14, // PERBAIKAN: Font size responsif
+                  ),
+                ),
                 selected: isSelected,
                 onSelected: isAvailable
                     ? (_) {
@@ -363,6 +490,9 @@ class CustomerBookingDetailView
                       : isAvailable
                       ? Colors.black
                       : Colors.grey,
+                  fontSize: _isSmallScreen
+                      ? 12
+                      : 14, // PERBAIKAN: Font size responsif
                 ),
                 disabledColor: AppColors.neutralColor,
                 tooltip: tooltipMessage,
@@ -370,45 +500,42 @@ class CustomerBookingDetailView
             }).toList(),
           );
         }),
-        const SizedBox(height: 8),
-        Row(
+        SizedBox(height: _isSmallScreen ? 8 : 12),
+        Wrap(
+          spacing: _isSmallScreen ? 8 : 12, // PERBAIKAN: Spacing responsif
+          runSpacing: _isSmallScreen ? 8 : 12,
           children: [
-            Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(4),
-              ),
+            _buildLegendItem(Colors.grey[200]!, 'Available', _isSmallScreen),
+            _buildLegendItem(
+              AppColors.neutralColor,
+              'Unavailable',
+              _isSmallScreen,
             ),
-            const SizedBox(width: 4),
-            const Text('Available'),
-            const SizedBox(width: 8),
-            Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                color: AppColors.neutralColor,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Text('Unavailable'),
-            const SizedBox(width: 8),
-            Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Text('Selected'),
+            _buildLegendItem(AppColors.secondary, 'Selected', _isSmallScreen),
           ],
         ),
+      ],
+    );
+  }
+
+  // PERBAIKAN: Helper method untuk legend item yang responsif
+  Widget _buildLegendItem(Color color, String text, bool isSmall) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: isSmall ? 16 : 20,
+          height: isSmall ? 16 : 20,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+            border: color == AppColors.neutralColor
+                ? Border.all(color: Colors.grey)
+                : null,
+          ),
+        ),
+        SizedBox(width: isSmall ? 4 : 6),
+        Text(text, style: TextStyle(fontSize: isSmall ? 12 : 14)),
       ],
     );
   }
@@ -429,14 +556,16 @@ class CustomerBookingDetailView
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(
+          _isSmallScreen ? 16 : 20,
+        ), // PERBAIKAN: Padding responsif
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section
+            // Image Section - PERBAIKAN: Size responsif
             Container(
-              width: 70,
-              height: 70,
+              width: _isSmallScreen ? 70 : 80,
+              height: _isSmallScreen ? 70 : 80,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 color: Colors.grey[100],
@@ -449,26 +578,37 @@ class CustomerBookingDetailView
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
                           color: Colors.grey[200],
-                          child: const Icon(
+                          child: Icon(
                             Icons.local_offer,
-                            size: 28,
+                            size: _isSmallScreen
+                                ? 28
+                                : 32, // PERBAIKAN: Icon size responsif
                             color: Colors.grey,
                           ),
                         ),
                         errorWidget: (context, url, error) => Container(
                           color: Colors.grey[200],
-                          child: const Icon(
+                          child: Icon(
                             Icons.local_offer,
-                            size: 28,
+                            size: _isSmallScreen
+                                ? 28
+                                : 32, // PERBAIKAN: Icon size responsif
                             color: Colors.grey,
                           ),
                         ),
                       ),
                     )
-                  : const Icon(Icons.local_offer, size: 28, color: Colors.grey),
+                  : Icon(
+                      Icons.local_offer,
+                      size: _isSmallScreen
+                          ? 28
+                          : 32, // PERBAIKAN: Icon size responsif
+                      color: Colors.grey,
+                    ),
             ),
-            const SizedBox(width: 12),
-
+            SizedBox(
+              width: _isSmallScreen ? 12 : 16,
+            ), // PERBAIKAN: Spacing responsif
             // Content Section
             Expanded(
               child: Column(
@@ -476,27 +616,36 @@ class CustomerBookingDetailView
                 children: [
                   Text(
                     addOn.name,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 16
+                          : 18, // PERBAIKAN: Font size responsif
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: _isSmallScreen ? 4 : 6),
                   Text(
                     addOn.description,
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 13
+                          : 15, // PERBAIKAN: Font size responsif
+                      color: Colors.grey,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: _isSmallScreen ? 6 : 8),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _isSmallScreen
+                              ? 8
+                              : 10, // PERBAIKAN: Padding responsif
+                          vertical: _isSmallScreen ? 2 : 4,
                         ),
                         decoration: BoxDecoration(
                           color: isOutOfStock
@@ -513,7 +662,9 @@ class CustomerBookingDetailView
                               ? 'Out of stock'
                               : 'Stock: $availableStock',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: _isSmallScreen
+                                ? 11
+                                : 13, // PERBAIKAN: Font size responsif
                             color: isOutOfStock ? Colors.red : Colors.green,
                             fontWeight: FontWeight.w600,
                           ),
@@ -524,21 +675,24 @@ class CustomerBookingDetailView
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-
+            SizedBox(
+              width: _isSmallScreen ? 12 : 16,
+            ), // PERBAIKAN: Spacing responsif
             // Price and Quantity Section
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   controller.formatRupiah(addOn.pricePerHour.toDouble()),
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: _isSmallScreen
+                        ? 15
+                        : 17, // PERBAIKAN: Font size responsif
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: _isSmallScreen ? 8 : 12),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[300]!),
@@ -548,11 +702,20 @@ class CustomerBookingDetailView
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.remove, size: 18),
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
+                        icon: Icon(
+                          Icons.remove,
+                          size: _isSmallScreen
+                              ? 18
+                              : 20, // PERBAIKAN: Icon size responsif
+                        ),
+                        padding: EdgeInsets.all(
+                          _isSmallScreen ? 6 : 8,
+                        ), // PERBAIKAN: Padding responsif
+                        constraints: BoxConstraints(
+                          minWidth: _isSmallScreen
+                              ? 32
+                              : 36, // PERBAIKAN: Size responsif
+                          minHeight: _isSmallScreen ? 32 : 36,
                         ),
                         onPressed: quantity <= 0
                             ? null
@@ -560,22 +723,35 @@ class CustomerBookingDetailView
                         color: quantity <= 0 ? Colors.grey : AppColors.primary,
                       ),
                       Container(
-                        width: 30,
+                        width: _isSmallScreen
+                            ? 30
+                            : 36, // PERBAIKAN: Width responsif
                         alignment: Alignment.center,
                         child: Text(
                           '$quantity',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: _isSmallScreen
+                                ? 14
+                                : 16, // PERBAIKAN: Font size responsif
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add, size: 18),
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
+                        icon: Icon(
+                          Icons.add,
+                          size: _isSmallScreen
+                              ? 18
+                              : 20, // PERBAIKAN: Icon size responsif
+                        ),
+                        padding: EdgeInsets.all(
+                          _isSmallScreen ? 6 : 8,
+                        ), // PERBAIKAN: Padding responsif
+                        constraints: BoxConstraints(
+                          minWidth: _isSmallScreen
+                              ? 32
+                              : 36, // PERBAIKAN: Size responsif
+                          minHeight: _isSmallScreen ? 32 : 36,
                         ),
                         onPressed: isOutOfStock || availableStock <= 0
                             ? null
@@ -599,10 +775,16 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Additional Services',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: _isSmallScreen
+                ? 18
+                : 20, // PERBAIKAN: Font size responsif
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        SizedBox(height: 16),
         Obx(() {
           if (controller.court.placeId == 0) {
             return _buildPlaceIdNotAvailable();
@@ -623,12 +805,12 @@ class CustomerBookingDetailView
   }
 
   Widget _buildPlaceIdNotAvailable() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8.0),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: _isSmallScreen ? 8.0 : 12.0),
       child: Text(
         'Additional services not available for this court',
         style: TextStyle(
-          fontSize: 14,
+          fontSize: _isSmallScreen ? 14 : 16, // PERBAIKAN: Font size responsif
           color: Colors.grey,
           fontStyle: FontStyle.italic,
         ),
@@ -638,18 +820,21 @@ class CustomerBookingDetailView
 
   Widget _buildLoadingAddOns() {
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(Get.context!).size.height * 0.3,
-      ),
-      child: const Center(
+      constraints: BoxConstraints(maxHeight: _screenHeight * 0.3),
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             CircularProgressIndicator(),
-            SizedBox(height: 8),
+            SizedBox(height: _isSmallScreen ? 8 : 12),
             Text(
               'Loading additional services...',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(
+                fontSize: _isSmallScreen
+                    ? 14
+                    : 16, // PERBAIKAN: Font size responsif
+                color: Colors.grey,
+              ),
             ),
           ],
         ),
@@ -659,16 +844,25 @@ class CustomerBookingDetailView
 
   Widget _buildNoAddOnsAvailable() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: const Center(
+      padding: EdgeInsets.symmetric(vertical: _isSmallScreen ? 16 : 20),
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.local_offer_outlined, size: 48, color: Colors.grey),
-            SizedBox(height: 8),
+            Icon(
+              Icons.local_offer_outlined,
+              size: _isSmallScreen ? 48 : 56, // PERBAIKAN: Icon size responsif
+              color: Colors.grey,
+            ),
+            SizedBox(height: _isSmallScreen ? 8 : 12),
             Text(
               'No additional services available',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(
+                fontSize: _isSmallScreen
+                    ? 14
+                    : 16, // PERBAIKAN: Font size responsif
+                color: Colors.grey,
+              ),
             ),
           ],
         ),
@@ -678,9 +872,7 @@ class CustomerBookingDetailView
 
   Widget _buildAddOnsList() {
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(Get.context!).size.height * 0.4,
-      ),
+      constraints: BoxConstraints(maxHeight: _screenHeight * 0.4),
       child: ListView.builder(
         physics: const ClampingScrollPhysics(),
         shrinkWrap: true,
@@ -693,7 +885,9 @@ class CustomerBookingDetailView
             final availableStock = addOn.stock - quantity;
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: EdgeInsets.only(
+                bottom: _isSmallScreen ? 8 : 12,
+              ), // PERBAIKAN: Margin responsif
               child: _buildAddOnItem(
                 addOn,
                 quantity,
@@ -711,17 +905,21 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Location',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: _isSmallScreen
+                ? 18
+                : 20, // PERBAIKAN: Font size responsif
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _isSmallScreen ? 8 : 12),
         Container(
-          height: 200,
+          height: _isSmallScreen ? 200 : 250, // PERBAIKAN: Height responsif
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey),
             borderRadius: BorderRadius.circular(8),
-            // Tambahkan boxShadow untuk efek depth
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -732,7 +930,6 @@ class CustomerBookingDetailView
           ),
           child: Stack(
             children: [
-              // Background Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
@@ -740,33 +937,39 @@ class CustomerBookingDetailView
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
-                  // Tambahkan error builder untuk handling jika image tidak ditemukan
                   errorBuilder: (context, error, stackTrace) =>
                       Container(color: Colors.grey[200]),
                 ),
               ),
-              // Overlay gelap untuk kontras teks yang lebih baik
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.black.withOpacity(0.3), // Overlay transparan
+                  color: Colors.black.withOpacity(0.3),
                 ),
               ),
-              // Content di atas background
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.map, size: 50, color: Colors.white),
-                    const SizedBox(height: 12),
-                    // Tampilkan alamat singkat
+                    Icon(
+                      Icons.map,
+                      size: _isSmallScreen
+                          ? 50
+                          : 60, // PERBAIKAN: Icon size responsif
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: _isSmallScreen ? 12 : 16),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _isSmallScreen ? 16 : 24,
+                      ),
                       child: Text(
                         controller.court.location,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: _isSmallScreen
+                              ? 14
+                              : 16, // PERBAIKAN: Font size responsif
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
@@ -774,23 +977,28 @@ class CustomerBookingDetailView
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: _isSmallScreen ? 12 : 16),
                     ElevatedButton(
                       onPressed: _openMaps,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        // Tambahkan shadow pada button untuk kontras
                         elevation: 4,
-                        // Tambahkan padding yang lebih nyaman
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _isSmallScreen
+                              ? 20
+                              : 24, // PERBAIKAN: Padding responsif
+                          vertical: _isSmallScreen ? 10 : 12,
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Open in Google Maps',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: _isSmallScreen
+                              ? 14
+                              : 16, // PERBAIKAN: Font size responsif
+                        ),
                       ),
                     ),
                   ],
@@ -805,7 +1013,9 @@ class CustomerBookingDetailView
 
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(
+        _isSmallScreen ? 16 : 20,
+      ), // PERBAIKAN: Padding responsif
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -826,15 +1036,22 @@ class CustomerBookingDetailView
                 Obx(
                   () => Text(
                     controller.formatRupiah(controller.totalPrice.value),
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 20
+                          : 24, // PERBAIKAN: Font size responsif
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 Text(
                   'Court: ${controller.formatRupiah(controller.court.price)} (1h x ${controller.formatRupiah(controller.court.price)})',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: _isSmallScreen
+                        ? 12
+                        : 14, // PERBAIKAN: Font size responsif
+                    color: Colors.grey,
+                  ),
                 ),
               ],
             ),
@@ -846,16 +1063,257 @@ class CustomerBookingDetailView
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
+              padding: EdgeInsets.symmetric(
+                horizontal: _isSmallScreen
+                    ? 20
+                    : 24, // PERBAIKAN: Padding responsif
+                vertical: _isSmallScreen ? 12 : 16,
+              ),
             ),
-            child: const Text(
+            child: Text(
               'Book Now!',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: _isSmallScreen
+                    ? 14
+                    : 16, // PERBAIKAN: Font size responsif
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ... (methods lainnya seperti _showDatePicker, _openMaps, dll tetap sama)
+  // Hanya tambahkan responsive properties di method yang memerlukan
+
+  Widget _buildRatingsSummary() {
+    return Obx(() {
+      if (controller.isLoadingRatings.value) {
+        return _buildRatingSkeleton();
+      }
+
+      if (!controller.hasRatings) {
+        return _buildNoRatingCard();
+      }
+
+      final summary = controller.placeRatingSummary.value!;
+      return _buildRatingSummaryCard(summary);
+    });
+  }
+
+  Widget _buildRatingSkeleton() {
+    return Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(_isSmallScreen ? 16 : 20),
+        child: Row(
+          children: [
+            Container(
+              width: _isSmallScreen ? 60 : 70,
+              height: _isSmallScreen ? 60 : 70,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            SizedBox(width: _isSmallScreen ? 12 : 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 120,
+                    height: _isSmallScreen ? 16 : 18,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: _isSmallScreen ? 8 : 12),
+                  Container(
+                    width: 80,
+                    height: _isSmallScreen ? 12 : 14,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoRatingCard() {
+    return Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(_isSmallScreen ? 16 : 20),
+        child: Row(
+          children: [
+            Icon(
+              Icons.star_border,
+              size: _isSmallScreen ? 40 : 48, // PERBAIKAN: Icon size responsif
+              color: Colors.grey,
+            ),
+            SizedBox(width: _isSmallScreen ? 12 : 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No Reviews Yet',
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 16
+                          : 18, // PERBAIKAN: Font size responsif
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  SizedBox(height: _isSmallScreen ? 4 : 6),
+                  Text(
+                    'Be the first to review this place!',
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 12
+                          : 14, // PERBAIKAN: Font size responsif
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatingSummaryCard(PlaceRatingSummary summary) {
+    return Card(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(_isSmallScreen ? 16 : 20),
+        child: Row(
+          children: [
+            // Rating score circle - PERBAIKAN: Size responsif
+            Container(
+              width: _isSmallScreen ? 60 : 70,
+              height: _isSmallScreen ? 60 : 70,
+              decoration: BoxDecoration(
+                color: AppColors.secondary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    summary.formattedAverageRating,
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 20
+                          : 24, // PERBAIKAN: Font size responsif
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < summary.averageRating.round()
+                            ? Icons.star
+                            : Icons.star_border,
+                        size: _isSmallScreen
+                            ? 8
+                            : 10, // PERBAIKAN: Icon size responsif
+                        color: Colors.white,
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: _isSmallScreen ? 12 : 16),
+
+            // Rating info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Customer Reviews',
+                    style: TextStyle(
+                      fontSize: _isSmallScreen
+                          ? 16
+                          : 18, // PERBAIKAN: Font size responsif
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: _isSmallScreen ? 4 : 6),
+                  Row(
+                    children: [
+                      ...List.generate(5, (index) {
+                        return Icon(
+                          index < summary.averageRating.round()
+                              ? Icons.star
+                              : Icons.star_border,
+                          size: _isSmallScreen
+                              ? 16
+                              : 18, // PERBAIKAN: Icon size responsif
+                          color: AppColors.secondary,
+                        );
+                      }),
+                      SizedBox(width: _isSmallScreen ? 8 : 12),
+                      Text(
+                        '${summary.totalReviews} review${summary.totalReviews > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          fontSize: _isSmallScreen
+                              ? 14
+                              : 16, // PERBAIKAN: Font size responsif
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // View all reviews button
+            if (summary.totalReviews > 0)
+              TextButton(
+                onPressed: () {
+                  if (controller.placeReviews.isNotEmpty) {
+                    _showAllReviewsModal(controller.placeReviews);
+                  }
+                },
+                child: Text(
+                  'View All',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: _isSmallScreen
+                        ? 12
+                        : 14, // PERBAIKAN: Font size responsif
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -877,25 +1335,415 @@ class CustomerBookingDetailView
     try {
       final controller = Get.find<CustomerBookingDetailController>();
 
-      // Buka Google Maps WebView dengan data court
       Get.to(
         () => GoogleSearchWebView(
-          courtName: controller.court.name,
+          courtName: controller.court.placeName,
           courtLocation: controller.court.location,
         ),
         transition: Transition.cupertino,
         duration: const Duration(milliseconds: 300),
       );
-
-      print('Opening Google Maps for: ${controller.court.name}');
     } catch (e) {
-      print('Error opening Google Maps: $e');
       Get.snackbar(
         'Error',
-        'Tidak dapat membuka peta lokasi',
+        'Unable to open map location',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
     }
+  }
+
+  Widget _buildReviewsSection() {
+    return Obx(() {
+      if (controller.isLoadingRatings.value) {
+        return _buildReviewsSkeleton();
+      }
+
+      if (!controller.hasRatings) {
+        return const SizedBox.shrink();
+      }
+
+      final reviews = controller.placeReviews;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Reviews',
+            style: TextStyle(
+              fontSize: _isSmallScreen ? 18 : 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: _isSmallScreen ? 12 : 16),
+
+          // Tampilkan 5 review pertama
+          ...reviews.take(5).map((review) => _buildReviewCard(review)),
+
+          if (reviews.length > 5)
+            Padding(
+              padding: EdgeInsets.only(
+                top: _isSmallScreen ? 12 : 16,
+                bottom: _isSmallScreen ? 16 : 20,
+              ),
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      _showAllReviewsModal(reviews);
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _isSmallScreen ? 28 : 32,
+                          vertical: _isSmallScreen ? 12 : 14,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.rate_review,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            SizedBox(width: _isSmallScreen ? 8 : 10),
+                            Text(
+                              'View All ${reviews.length} Reviews',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: _isSmallScreen ? 15 : 16,
+                              ),
+                            ),
+                            SizedBox(width: _isSmallScreen ? 6 : 8),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildReviewsSkeleton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 100,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...List.generate(3, (index) => _buildReviewSkeleton()),
+      ],
+    );
+  }
+
+  Widget _buildReviewSkeleton() {
+    return Container(
+      margin: EdgeInsets.only(bottom: _isSmallScreen ? 12 : 16),
+      child: Card(
+        color: Colors.white,
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: EdgeInsets.all(_isSmallScreen ? 12 : 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Username and date skeleton
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      width: _isSmallScreen ? 80 : 100,
+                      height: _isSmallScreen ? 14 : 16,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Container(
+                    width: _isSmallScreen ? 60 : 80,
+                    height: _isSmallScreen ? 12 : 14,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: _isSmallScreen ? 8 : 12),
+
+              // Star rating skeleton
+              Row(
+                children: List.generate(5, (index) {
+                  return Container(
+                    width: _isSmallScreen ? 14 : 16,
+                    height: _isSmallScreen ? 14 : 16,
+                    margin: EdgeInsets.only(right: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }),
+              ),
+
+              SizedBox(height: _isSmallScreen ? 8 : 12),
+
+              // Review text skeleton
+              Container(
+                width: double.infinity,
+                height: _isSmallScreen ? 12 : 14,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+
+              SizedBox(height: 6),
+
+              Container(
+                width: double.infinity * 0.7,
+                height: _isSmallScreen ? 12 : 14,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(RatingDetailData review) {
+    final dateFormatter = DateFormat('dd MMM yyyy');
+    final reviewDate = review.createdAt != null
+        ? dateFormatter.format(review.createdAt!)
+        : 'Unknown date';
+
+    return Container(
+      margin: EdgeInsets.only(bottom: _isSmallScreen ? 12 : 16),
+      child: Card(
+        color: Colors.white,
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: EdgeInsets.all(_isSmallScreen ? 12 : 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ✅ PERBAIKAN: Row dengan Flexible untuk prevent overflow
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Username section dengan Flexible
+                  Flexible(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          review.userName,
+                          style: TextStyle(
+                            fontSize: _isSmallScreen ? 14 : 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 4),
+                        // Star rating
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < review.ratingValue
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              size: _isSmallScreen ? 14 : 16,
+                              color: AppColors.secondary,
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(width: 8),
+
+                  // Date section dengan Flexible
+                  Flexible(
+                    flex: 2,
+                    child: Text(
+                      reviewDate,
+                      style: TextStyle(
+                        fontSize: _isSmallScreen ? 11 : 12,
+                        color: Colors.grey,
+                      ),
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Review text
+              if (review.review.isNotEmpty) ...[
+                SizedBox(height: _isSmallScreen ? 8 : 12),
+                Text(
+                  review.review,
+                  style: TextStyle(
+                    fontSize: _isSmallScreen ? 13 : 14,
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              // Field name tag
+              if (review.fieldName.isNotEmpty) ...[
+                SizedBox(height: _isSmallScreen ? 8 : 10),
+                // ✅ PERBAIKAN: Wrap dengan Align dan IntrinsicWidth untuk prevent overflow
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IntrinsicWidth(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(Get.context!).size.width * 0.7,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _isSmallScreen ? 8 : 10,
+                        vertical: _isSmallScreen ? 4 : 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.blue.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '${review.fieldName} - ${review.fieldType}',
+                        style: TextStyle(
+                          fontSize: _isSmallScreen ? 11 : 12,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAllReviewsModal(List<RatingDetailData> reviews) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: _screenHeight * 0.8, // ✅ Gunakan responsive height
+            maxWidth: _isSmallScreen
+                ? _screenWidth * 0.95
+                : 500, // ✅ Responsive width
+          ),
+          child: Column(
+            children: [
+              // Header dengan border bottom
+              Container(
+                padding: EdgeInsets.all(_isSmallScreen ? 16 : 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'All Reviews (${reviews.length})',
+                        style: TextStyle(
+                          fontSize: _isSmallScreen ? 18 : 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: Icon(Icons.close, size: _isSmallScreen ? 20 : 24),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Reviews list
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.all(_isSmallScreen ? 12 : 16),
+                  itemCount: reviews.length,
+                  itemBuilder: (context, index) {
+                    return _buildReviewCard(reviews[index]);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible:
+          true, // ✅ Tambahkan ini - bisa ditutup dengan tap di luar
+    );
   }
 }

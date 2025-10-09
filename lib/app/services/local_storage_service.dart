@@ -100,7 +100,6 @@
 //   String get userEmail => getUserData()?['email']?.toString() ?? '';
 // }
 
-
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -136,7 +135,7 @@ class LocalStorageService extends GetxService {
       print('LocalStorageService not initialized yet!');
       return null;
     }
-    
+
     final userDataString = _preferences!.getString(_keyUserData);
     if (userDataString != null) {
       try {
@@ -152,7 +151,7 @@ class LocalStorageService extends GetxService {
   /// Check if user is logged in
   bool get isLoggedIn {
     if (_preferences == null) return false;
-    
+
     final loggedIn = _preferences!.getBool(_keyIsLoggedIn) ?? false;
     final userData = getUserData();
     return loggedIn && userData != null;
@@ -161,7 +160,7 @@ class LocalStorageService extends GetxService {
   /// Get user role
   String? getUserRole() {
     if (_preferences == null) return null;
-    
+
     final userData = getUserData();
     return userData?['role']?.toString();
   }
@@ -210,8 +209,11 @@ class LocalStorageService extends GetxService {
 
   // ========== USER ROLE CHECKERS ==========
 
-  bool get isCustomer => userRole.toLowerCase() == 'user' || userRole.toLowerCase() == 'customer';
-  bool get isFieldManager => userRole.toLowerCase() == 'field_manager' || userRole.toLowerCase() == 'field_owner';
+  bool get isCustomer =>
+      userRole.toLowerCase() == 'user' || userRole.toLowerCase() == 'customer';
+  bool get isFieldManager =>
+      userRole.toLowerCase() == 'field_manager' ||
+      userRole.toLowerCase() == 'field_owner';
   bool get isFieldAdmin => userRole.toLowerCase() == 'field_admin';
 
   // ========== SAFE SETTERS ==========
@@ -222,7 +224,7 @@ class LocalStorageService extends GetxService {
       print('Cannot save user data: LocalStorageService not initialized');
       return;
     }
-    
+
     await _preferences!.setString(_keyUserData, json.encode(userData));
     await _preferences!.setBool(_keyIsLoggedIn, true);
   }
@@ -248,7 +250,7 @@ class LocalStorageService extends GetxService {
   /// Update specific user field
   Future<void> updateUserField(String key, dynamic value) async {
     if (_preferences == null) return;
-    
+
     final userData = getUserData() ?? {};
     userData[key] = value;
     await saveUserData(userData);
@@ -257,9 +259,12 @@ class LocalStorageService extends GetxService {
   // ========== AUTO LOGIN CREDENTIALS ==========
 
   /// Save credentials for auto-login (use flutter_secure_storage for production)
-  Future<void> saveCredentialsForAutoLogin(String email, String password) async {
+  Future<void> saveCredentialsForAutoLogin(
+    String email,
+    String password,
+  ) async {
     if (_preferences == null) return;
-    
+
     if (rememberMe) {
       await _preferences!.setString('auto_login_email', email);
       await _preferences!.setString('auto_login_password', password);
@@ -269,7 +274,7 @@ class LocalStorageService extends GetxService {
   /// Get saved credentials for auto-login
   Map<String, String>? getSavedCredentials() {
     if (_preferences == null) return null;
-    
+
     if (rememberMe) {
       final email = _preferences!.getString('auto_login_email');
       final password = _preferences!.getString('auto_login_password');
@@ -283,28 +288,27 @@ class LocalStorageService extends GetxService {
   /// Clear saved credentials
   Future<void> clearSavedCredentials() async {
     if (_preferences == null) return;
-    
+
     await _preferences!.remove('auto_login_email');
     await _preferences!.remove('auto_login_password');
   }
 
-    Future<void> clearUserData() async {
+  Future<void> clearUserData() async {
     await _preferences!.remove(_keyUserData);
     await _preferences!.remove(_keyIsLoggedIn);
   }
-
 
   // ========== DATA MANAGEMENT ==========
 
   /// Clear all authentication data (logout)
   Future<void> clearAuthData() async {
     if (_preferences == null) return;
-    
+
     await _preferences!.remove(_keyUserData);
     await _preferences!.remove(_keyIsLoggedIn);
     await _preferences!.remove(_keyToken);
     await _preferences!.remove(_keyRefreshToken);
-    
+
     // Clear saved credentials if not remembered
     if (!rememberMe) {
       await clearSavedCredentials();
@@ -338,7 +342,7 @@ class LocalStorageService extends GetxService {
   /// Save any custom data
   Future<void> saveData<T>(String key, T value) async {
     if (_preferences == null) return;
-    
+
     if (T == String) {
       await _preferences!.setString(key, value as String);
     } else if (T == int) {
@@ -357,7 +361,7 @@ class LocalStorageService extends GetxService {
   /// Get custom data
   T? getData<T>(String key) {
     if (_preferences == null) return null;
-    
+
     try {
       if (T == String) {
         return _preferences!.getString(key) as T?;
@@ -403,7 +407,7 @@ class LocalStorageService extends GetxService {
       print('LocalStorageService not initialized');
       return;
     }
-    
+
     print('=== LOCAL STORAGE DATA ===');
     for (String key in _preferences!.getKeys()) {
       final value = _preferences!.get(key);
@@ -415,11 +419,12 @@ class LocalStorageService extends GetxService {
   /// Clear data by prefix (useful for cleanup)
   Future<void> clearByPrefix(String prefix) async {
     if (_preferences == null) return;
-    
-    final keysToRemove = _preferences!.getKeys()
+
+    final keysToRemove = _preferences!
+        .getKeys()
         .where((key) => key.startsWith(prefix))
         .toList();
-    
+
     for (String key in keysToRemove) {
       await _preferences!.remove(key);
     }

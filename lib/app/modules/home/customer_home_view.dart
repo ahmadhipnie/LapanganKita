@@ -11,6 +11,10 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 class CustomerHomeView extends GetView<CustomerHomeController> {
   const CustomerHomeView({super.key});
 
+  double _screenWidth(BuildContext context) =>
+      MediaQuery.of(context).size.width;
+  bool _isSmallScreen(BuildContext context) => _screenWidth(context) < 600;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,9 +38,14 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
       ),
       body: SafeArea(
         child: Obx(() {
-          if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+          if (controller.isLoading.value && controller.sliderImages.isEmpty) {
+            return _buildLoadingState();
           }
+
+          if (controller.hasError.value && controller.sliderImages.isEmpty) {
+            return _buildErrorState(controller.errorMessage.value);
+          }
+
           return RefreshIndicator(
             onRefresh: () async {
               await controller.refreshData();
@@ -45,44 +54,120 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
             backgroundColor: Colors.white,
             displacement: 40,
             strokeWidth: 2,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildCarouselSection(),
-                  const SizedBox(height: 16),
-                  _buildSmoothIndicator(),
-
-                  // Popular Categories Section
-                  _buildPopularCategories(),
-
-                  // Your Recent Activity Section
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Your Recent Activity',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Recent Activity Widget
-                  _recentActivity(controller: controller),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+            child: _buildContent(),
           );
         }),
       ),
     );
   }
 
-  // Carousel Widget
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text(
+            'Loading data...',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey[500]),
+            const SizedBox(height: 16),
+            Text(
+              controller.getFriendlyMessage(message),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => controller.refreshData(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Try Again'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () {
+                    controller.clearError();
+                    Get.offAllNamed('/customer/navigation');
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Go Back'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          _buildCarouselSection(),
+          const SizedBox(height: 16),
+          _buildSmoothIndicator(),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Popular Categories',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          _buildPopularCategories(),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Your Recent Activity',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+
+          _recentActivity(controller: controller),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCarouselSection() {
     return Obx(() {
       final images = controller.imgList;
@@ -99,13 +184,40 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
           ),
           child: Center(
             child: isRemoteLoading
-                ? const CircularProgressIndicator()
-                : Text(
-                    sliderError.isNotEmpty
-                        ? sliderError
-                        : 'There are no promotions available yet',
-                    style: const TextStyle(color: Colors.black54),
-                    textAlign: TextAlign.center,
+                ? const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 8),
+                      Text(
+                        'Loading promotions...',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_search,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          sliderError.isNotEmpty
+                              ? controller.getFriendlyMessage(sliderError)
+                              : 'No promotions available yet',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                   ),
           ),
         );
@@ -138,7 +250,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Image
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.network(
@@ -146,29 +257,44 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                : null,
+                        return Container(
+                          color: Colors.grey[200],
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
                           ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: Colors.grey[300],
-                          child: const Icon(
-                            Icons.error,
-                            color: Colors.red,
-                            size: 40,
+                          color: Colors.grey[200],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Failed to load image',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
                     ),
                   ),
 
-                  // Gradient Overlay
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -183,7 +309,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                     ),
                   ),
 
-                  // Title
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -199,6 +324,7 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+
                   if (isRemoteLoading)
                     Positioned(
                       top: 12,
@@ -230,7 +356,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
     });
   }
 
-  // Indicators Widget
   Widget _buildSmoothIndicator() {
     return Obx(
       () => AnimatedSmoothIndicator(
@@ -249,125 +374,244 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
     );
   }
 
+  // ✅ PERBAIKAN: Popular Categories - Responsif & Adaptif
   Widget _buildPopularCategories() {
     return Obx(() {
-      final bookingController = Get.find<CustomerBookingController>();
+      try {
+        final bookingController = Get.find<CustomerBookingController>();
 
-      // Tampilkan loading jika data courts masih loading
-      if (bookingController.isLoading.value &&
-          bookingController.allCourts.isEmpty) {
-        return const SizedBox(
-          height: 140,
-          child: Center(child: CircularProgressIndicator()),
+        if (bookingController.isLoading.value &&
+            bookingController.allCourts.isEmpty) {
+          return SizedBox(
+            height: 140,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Loading categories...',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: _isSmallScreen(Get.context!) ? 14 : 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (bookingController.allCourts.isEmpty) {
+          return Padding(
+            padding: EdgeInsets.all(_isSmallScreen(Get.context!) ? 16 : 24),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.sports,
+                  size: _isSmallScreen(Get.context!) ? 48 : 64,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No courts available yet',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: _isSmallScreen(Get.context!) ? 14 : 16,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final categories = controller.popularCategoriesWithIcon;
+
+        if (categories.isEmpty) {
+          return const SizedBox();
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final isSmall = screenWidth < 600;
+            final isMedium = screenWidth >= 600 && screenWidth < 1024;
+
+            double cardWidth;
+            double cardHeight;
+            double iconSize;
+            double fontSize;
+            double countFontSize;
+
+            if (isSmall) {
+              cardWidth = 100;
+              cardHeight = 116;
+              iconSize = 28;
+              fontSize = 13;
+              countFontSize = 11;
+            } else if (isMedium) {
+              cardWidth = 120;
+              cardHeight = 140;
+              iconSize = 34;
+              fontSize = 15;
+              countFontSize = 12;
+            } else {
+              cardWidth = 140;
+              cardHeight = 160;
+              iconSize = 40;
+              fontSize = 16;
+              countFontSize = 13;
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: cardHeight,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmall ? 16 : (isMedium ? 20 : 24),
+                    ),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return _buildCategoryIconCard(
+                        category['name'],
+                        category['count'],
+                        category['icon'],
+                        category['color'],
+                        width: cardWidth,
+                        height: cardHeight,
+                        iconSize: iconSize,
+                        fontSize: fontSize,
+                        countFontSize: countFontSize,
+                        isSmall: isSmall,
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(height: isSmall ? 16 : (isMedium ? 20 : 24)),
+              ],
+            );
+          },
+        );
+      } catch (e) {
+        return Padding(
+          padding: EdgeInsets.all(_isSmallScreen(Get.context!) ? 16 : 24),
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: _isSmallScreen(Get.context!) ? 48 : 64,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Failed to load categories',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: _isSmallScreen(Get.context!) ? 14 : 16,
+                ),
+              ),
+            ],
+          ),
         );
       }
-
-      // Tampilkan empty state jika tidak ada data
-      if (bookingController.allCourts.isEmpty) {
-        return const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'No courts available',
-            style: TextStyle(color: Colors.grey),
-          ),
-        );
-      }
-
-      final categories = controller.popularCategoriesWithIcon;
-
-      if (categories.isEmpty) {
-        return const SizedBox();
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Text(
-              'Popular Categories',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          SizedBox(
-            height: 116,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: categories.map((category) {
-                return _buildCategoryIconCard(
-                  category['name'],
-                  category['count'],
-                  category['icon'],
-                  category['color'],
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
     });
   }
 
-  // Widget untuk Card dengan Icon
   Widget _buildCategoryIconCard(
     String category,
     int count,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    required double width,
+    required double height,
+    required double iconSize,
+    required double fontSize,
+    required double countFontSize,
+    required bool isSmall,
+  }) {
     return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
+      width: width,
+      height: height,
+      margin: EdgeInsets.only(right: isSmall ? 10 : 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isSmall ? 12 : 16),
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.grey.withOpacity(0.15),
+            blurRadius: isSmall ? 4 : 8,
+            offset: Offset(0, isSmall ? 2 : 3),
+            spreadRadius: 0,
           ),
         ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // Gunakan method navigateToBookingWithCategory dari home controller
-          controller.navigateToBookingWithCategory(category);
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon dengan background circle
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 30, color: color),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(isSmall ? 12 : 16),
+          onTap: () {
+            controller.navigateToBookingWithCategory(category);
+          },
+          // ✅ PERBAIKAN: Ganti Column dengan FittedBox wrapper untuk prevent overflow
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmall ? 6 : 10,
+              vertical: isSmall ? 8 : 12,
             ),
-            const SizedBox(height: 8),
-
-            // Category Name
-            Text(
-              category,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // ✅ PENTING: Gunakan min size
+              children: [
+                // Icon with background circle
+                Container(
+                  width: iconSize + (isSmall ? 14 : 18),
+                  height: iconSize + (isSmall ? 14 : 18),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: iconSize, color: color),
+                ),
+                SizedBox(height: isSmall ? 6 : 8), // ✅ Kurangi spacing
+                // Category Name - dengan Flexible untuk prevent overflow
+                Flexible(
+                  child: Text(
+                    category,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: fontSize,
+                      color: Colors.black87,
+                      height: 1.2, // ✅ Kurangi line height
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                SizedBox(height: isSmall ? 2 : 3), // ✅ Kurangi spacing
+                // Court Count - dengan Flexible untuk prevent overflow
+                Flexible(
+                  child: Text(
+                    '$count ${count > 1 ? 'courts' : 'court'}',
+                    style: TextStyle(
+                      fontSize: countFontSize,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w400,
+                      height: 1.2, // ✅ Kurangi line height
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-
-            // Court Count
-            Text(
-              '$count ${count > 1 ? 'courts' : 'court'}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -382,7 +626,20 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
       final recentBookings = controller.getRecentBookings();
 
       if (recentBookings.isEmpty) {
-        return const SizedBox(); // Tidak tampilkan apa-apa jika tidak ada booking
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const SizedBox(height: 60),
+              Icon(Icons.history, size: 48, color: Colors.grey[400]),
+              const SizedBox(height: 8),
+              const Text(
+                'No recent bookings yet',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        );
       }
 
       return Container(
@@ -408,7 +665,6 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
             Center(
               child: TextButton(
                 onPressed: () {
-                  // Navigate to full history page
                   Get.offAllNamed(
                     '/customer/navigation',
                     arguments: {'initialTab': 3},
@@ -507,7 +763,7 @@ class CustomerHomeView extends GetView<CustomerHomeController> {
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
         break;
-      default: // pending
+      default:
         backgroundColor = Colors.orange[100]!;
         textColor = Colors.orange[800]!;
     }

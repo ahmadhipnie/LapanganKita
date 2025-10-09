@@ -8,6 +8,8 @@ import 'package:lapangan_kita/app/modules/history/customer_history_controller.da
 import 'package:lapangan_kita/app/modules/home/customer_home_controller.dart';
 import 'package:lapangan_kita/app/modules/navigation/customer_navigation_controller.dart';
 
+import '../data/repositories/community_repository.dart';
+
 class CustomerNavigationBinding extends Bindings {
   @override
   void dependencies() {
@@ -22,9 +24,15 @@ class CustomerNavigationBinding extends Bindings {
       );
     }
 
+    Get.lazyPut<CommunityRepository>(
+      () => CommunityRepository(apiClient: Get.find<ApiClient>()),
+    );
+
     Get.lazyPut<CourtRepository>(() => CourtRepository(Get.find<ApiClient>()));
     Get.lazyPut<CustomerCommunityController>(
-      () => CustomerCommunityController(),
+      () => CustomerCommunityController(
+        repository: Get.find<CommunityRepository>(),
+      ),
     );
     Get.lazyPut<CustomerHistoryController>(() => CustomerHistoryController());
     Get.lazyPut<CustomerBookingController>(() => CustomerBookingController());

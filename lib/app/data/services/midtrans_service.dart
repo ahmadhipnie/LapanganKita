@@ -21,7 +21,7 @@ class MidtransService {
     try {
       final serverKey = dotenv.env['MIDTRANS_SERVER_KEY'] ?? '';
       final isProduction = dotenv.env['MIDTRANS_IS_PRODUCTION'] == 'true';
-      
+
       final snapUrl = isProduction
           ? 'https://app.midtrans.com/snap/v1/transactions'
           : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
@@ -51,7 +51,7 @@ class MidtransService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return response.data['token'] ?? '';
       }
-      
+
       throw Exception('Failed to create snap token: ${response.statusCode}');
     } catch (e) {
       print('Error creating snap token: $e');
@@ -62,7 +62,7 @@ class MidtransService {
   // Get Snap URL from token
   String getSnapUrl(String snapToken) {
     final isProduction = dotenv.env['MIDTRANS_IS_PRODUCTION'] == 'true';
-    
+
     if (isProduction) {
       return 'https://app.midtrans.com/snap/v2/vtweb/$snapToken';
     } else {
