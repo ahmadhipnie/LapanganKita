@@ -3,6 +3,8 @@ import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_navigat
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_transaction_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_promosi_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_withdraw_binding.dart';
+import 'package:lapangan_kita/app/bindings/test_auth_binding.dart';
+import 'package:lapangan_kita/app/modules/auth/auth_view.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_view.dart';
 import 'package:lapangan_kita/app/bindings/edit_field_fieldmanager_binding.dart';
 import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fieldmanager_view.dart';
@@ -176,6 +178,11 @@ class AppPages {
       name: AppRoutes.FIELD_ADMIN_TRANSACTION,
       page: () => const FieldadminRefundView(),
       binding: FieldadminTransactionBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.AUTH,
+      page: () => const AuthView(),
+      binding: TestAuthBinding(),
     ),
   ];
 }

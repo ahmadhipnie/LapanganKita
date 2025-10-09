@@ -74,7 +74,8 @@ class MyApp extends StatelessWidget {
       initialRoute = _getDashboardRoute();
     } else if (hasCompletedOnboarding) {
       // Jika sudah onboarding tapi belum login, ke login
-      initialRoute = AppRoutes.LOGIN;
+      //! page auth masih dalah percobaan ganti ke page login jika ditemukan kendala
+      initialRoute = AppRoutes.AUTH;
     } else {
       // Jika belum onboarding, ke onboarding
       initialRoute = AppRoutes.ONBOARDING;
@@ -84,6 +85,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'LapanganKita',
       initialRoute: initialRoute,
+      // initialRoute: AppRoutes.AUTH,
       getPages: AppPages.pages,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),

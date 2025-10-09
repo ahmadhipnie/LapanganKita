@@ -24,4 +24,5 @@ abstract class AppRoutes {
   static const FIELD_ADMIN_NAVIGATION = '/fieldadmin/navigation';
   static const FIELD_ADMIN_WITHDRAW = '/fieldadmin/withdraw';
   static const FIELD_ADMIN_TRANSACTION = '/fieldadmin/transaction';
+  static const AUTH = '/auth';
 }
