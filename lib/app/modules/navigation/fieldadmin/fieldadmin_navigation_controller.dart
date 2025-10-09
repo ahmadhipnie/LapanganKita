@@ -1,10 +1,10 @@
 import 'package:get/get.dart';
 
-enum BottomNavItem { withdraw, refund, promosi, logout }
+enum BottomNavItem { transaction, field, promosi, logout }
 
 class FieldadminNavigationController extends GetxController {
   final RxInt currentIndex = 0.obs;
-  final Rx<BottomNavItem> currentTab = BottomNavItem.withdraw.obs;
+  final Rx<BottomNavItem> currentTab = BottomNavItem.transaction.obs;
 
   // Method untuk ganti tab dari mana saja
   void changeTab(int index) {

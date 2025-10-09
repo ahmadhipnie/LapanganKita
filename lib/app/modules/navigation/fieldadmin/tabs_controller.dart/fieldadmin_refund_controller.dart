@@ -124,15 +124,12 @@ class FieldadminTransactionController extends GetxController {
     List<RefundModel> refundItems,
     List<OwnerBooking> bookingItems,
   ) {
-    final statuses = <String>{
-      for (final refund in refundItems) refund.statusLabel,
-      for (final booking in bookingItems) booking.normalizedStatus.label,
-    }..removeWhere((status) => status.trim().isEmpty || status == 'Unknown');
-
+    // Use fixed filter options instead of dynamic status-based options
     statusOptions
       ..clear()
       ..add('All')
-      ..addAll(statuses.toList()..sort());
+      ..add('Refund')    // For cancelled bookings that can be processed
+      ..add('Refunded'); // For already processed refunds
 
     if (!statusOptions.contains(filterStatus.value)) {
       filterStatus.value = 'All';
@@ -146,10 +143,13 @@ class FieldadminTransactionController extends GetxController {
     ];
 
     if (filterStatus.value != 'All') {
-      final selected = filterStatus.value.toLowerCase();
-      list = list
-          .where((item) => item.statusLabel.toLowerCase() == selected)
-          .toList();
+      if (filterStatus.value == 'Refund') {
+        // Show only cancelled bookings that can be processed for refund
+        list = list.where((item) => item.isCancelledBooking).toList();
+      } else if (filterStatus.value == 'Refunded') {
+        // Show only already processed refunds
+        list = list.where((item) => item.isRefund).toList();
+      }
     }
 
     final query = searchQuery.value.trim().toLowerCase();
