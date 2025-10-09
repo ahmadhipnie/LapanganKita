@@ -34,13 +34,18 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
           if (controller.isLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
+
           return RefreshIndicator(
             onRefresh: () => controller.refreshData(),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
+                // ✅ TAMBAHKAN INI - Search Bar
+                SliverToBoxAdapter(child: _buildSearchBar()),
+
                 // Filter Row
                 SliverToBoxAdapter(child: _buildFilterRow()),
+
                 // Content
                 Obx(() {
                   if (controller.bookings.isEmpty) {
@@ -79,7 +84,6 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                   }
 
                   final filteredBookings = _getFilteredBookings();
-
                   if (filteredBookings.isEmpty) {
                     return SliverFillRemaining(
                       child: Center(
@@ -87,28 +91,42 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.filter_alt_off,
+                              Icons.search_off,
                               size: 64,
                               color: Colors.grey[400],
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No ${controller.selectedFilter.value} bookings',
+                              controller.searchQuery.value.isNotEmpty
+                                  ? 'No results found for "${controller.searchQuery.value}"'
+                                  : 'No ${controller.selectedFilter.value} bookings',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 color: Colors.grey[600],
                               ),
+                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
-                              onPressed: () => controller.setFilter('all'),
-                              child: const Text('Show All Bookings'),
+                              onPressed: () {
+                                if (controller.searchQuery.value.isNotEmpty) {
+                                  controller.clearSearch();
+                                } else {
+                                  controller.setFilter('all');
+                                }
+                              },
+                              child: Text(
+                                controller.searchQuery.value.isNotEmpty
+                                    ? 'Clear Search'
+                                    : 'Show All Bookings',
+                              ),
                             ),
                           ],
                         ),
                       ),
                     );
                   }
+
                   return SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final booking = filteredBookings[index];
@@ -123,6 +141,47 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
             ),
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Obx(
+        () => TextField(
+          controller: controller.searchController,
+          onChanged: (value) => controller.updateSearchQuery(value),
+          decoration: InputDecoration(
+            hintText: 'Search by court name, location, or order ID...',
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+            suffixIcon: controller.searchQuery.value.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear, color: Colors.grey[600]),
+                    onPressed: () => controller.clearSearch(),
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.secondary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -202,13 +261,18 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
       return b.date.compareTo(a.date);
     });
 
+    // Filter berdasarkan status
+    List<BookingHistory> filtered;
     if (controller.selectedFilter.value == 'all') {
-      return allBookings;
+      filtered = allBookings;
+    } else {
+      filtered = allBookings
+          .where((booking) => booking.status == controller.selectedFilter.value)
+          .toList();
     }
 
-    return allBookings
-        .where((booking) => booking.status == controller.selectedFilter.value)
-        .toList();
+    // ✅ TAMBAHKAN INI - Filter berdasarkan search query
+    return controller.getSearchFilteredBookings(filtered);
   }
 
   Widget _buildBookingCard(BookingHistory booking) {
@@ -293,7 +357,7 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
 
                               // Order ID - Font size responsif
                               Text(
-                                'ID: ${booking.orderId}',
+                                'Order Id: ${booking.orderId}',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: isSmallScreen ? 11 : 13,

@@ -321,16 +321,36 @@ class CustomerHomeController extends GetxController {
 
   List<BookingHistory> getRecentBookings() {
     try {
-      if (historyController.hasError.value ||
-          historyController.bookings.isEmpty) {
+      // Cek apakah data ada di CustomerHistoryController
+      final historyController = Get.find<CustomerHistoryController>();
+
+      if (historyController.bookings.isEmpty) {
+        print('No bookings found in history controller');
         return [];
       }
 
+      // Ambil semua bookings
       final allBookings = List<BookingHistory>.from(historyController.bookings);
-      allBookings.sort((a, b) => b.date.compareTo(a.date));
 
-      return allBookings.take(3).toList();
+      print('Total bookings available: ${allBookings.length}');
+
+      // Sort: pending dulu, lalu by date (terbaru di atas)
+      allBookings.sort((a, b) {
+        // Pending priority
+        if (a.status == 'pending' && b.status != 'pending') return -1;
+        if (a.status != 'pending' && b.status == 'pending') return 1;
+
+        // Sort by date descending (terbaru di atas)
+        return b.date.compareTo(a.date);
+      });
+
+      // Ambil 5 terakhir
+      final recent = allBookings.take(5).toList();
+      print('Showing ${recent.length} recent bookings');
+
+      return recent;
     } catch (e) {
+      print('Error in getRecentBookings: $e');
       return [];
     }
   }

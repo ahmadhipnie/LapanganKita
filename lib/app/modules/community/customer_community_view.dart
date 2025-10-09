@@ -19,16 +19,19 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
     return Scaffold(
       backgroundColor: AppColors.neutralColor,
       appBar: AppBar(
-        title: const Text('Community'),
-        elevation: 0,
+        centerTitle: false,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Community'),
+            const Text(
+              'Find playing patners, and share your sports journey',
+              style: TextStyle(fontSize: 12),
+              maxLines: 2,
+            ),
+          ],
+        ),
         backgroundColor: AppColors.neutralColor,
-        foregroundColor: Colors.black87,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: controller.refreshPosts,
-          ),
-        ],
       ),
       body: SafeArea(
         child: Obx(() {
@@ -326,10 +329,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           const SizedBox(height: 16),
           _buildPostHeader(post),
           const SizedBox(height: 16),
-          // if (post.postPhoto.isNotEmpty) ...[
-          //   _buildPostImage(post.postPhoto),
-          //   const SizedBox(height: 16),
-          // ],
+          if (post.postPhoto.isNotEmpty) ...[
+            _buildPostImage(post.postPhoto),
+            const SizedBox(height: 16),
+          ],
           Text(
             post.title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -779,11 +782,11 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCardHeader(post),
-          // const SizedBox(height: 12),
-          // if (post.postPhoto.isNotEmpty) ...[
-          //   _buildCompactPostImage(post),
-          //   const SizedBox(height: 12),
-          // ],
+          const SizedBox(height: 12),
+          if (post.postPhoto.isNotEmpty) ...[
+            _buildCompactPostImage(post),
+            const SizedBox(height: 12),
+          ],
           Text(
             post.title,
             maxLines: 2,
@@ -902,11 +905,13 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       final isJoining = controller.isJoining(post.id);
       final isFull = post.joinedPlayers >= post.playersNeeded;
 
-      // Check user's join request status for this booking
-      final userJoinRequest = controller.userJoinRequests.firstWhereOrNull(
-        (request) =>
-            request.bookingId == post.bookingId &&
-            request.userId == controller.currentUserId,
+      // PERBAIKAN: Gunakan method real-time untuk mendapatkan status
+      final userJoinStatus = controller.getUserJoinStatusForBooking(
+        post.bookingId,
+      );
+
+      print(
+        '🎯 Join Button Debug - Post: ${post.id}, Booking: ${post.bookingId}, Status: $userJoinStatus, isFull: $isFull',
       );
 
       // Determine button state based on join request status
@@ -915,8 +920,8 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       Color foregroundColor;
       bool isEnabled;
 
-      if (userJoinRequest != null) {
-        switch (userJoinRequest.status) {
+      if (userJoinStatus != null) {
+        switch (userJoinStatus) {
           case 'pending':
             buttonText = 'Pending';
             backgroundColor = Colors.orange;
@@ -1020,10 +1025,8 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
   }
 
   Widget _buildPostImage(String imagePath) {
-    // Handle relative path from API response
-    final imageUrl = imagePath.startsWith('http')
-        ? imagePath
-        : '${ApiClient.baseUrl}$imagePath';
+    // PERBAIKAN: Gunakan ApiClient yang sudah diperbaiki
+    final imageUrl = _apiClient.getImageUrl(imagePath);
 
     print('🖼️ Post image URL: $imageUrl (from path: $imagePath)');
 
@@ -1043,14 +1046,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             color: Colors.grey[200],
             child: const Center(child: CircularProgressIndicator()),
           ),
-          errorWidget: (context, url, error) => Container(
-            color: Colors.grey[200],
-            child: Icon(
-              Icons.image_not_supported,
-              color: Colors.grey[500],
-              size: 48,
-            ),
-          ),
+          errorWidget: (context, url, error) {
+            print('❌ Error loading image: $error, URL: $url');
+            return SizedBox();
+          },
         ),
       ),
     );
@@ -1059,10 +1058,8 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
   Widget _buildCompactPostImage(CommunityPost post) {
     if (post.postPhoto.isEmpty) return const SizedBox.shrink();
 
-    // Handle relative path from API response
-    final imageUrl = post.postPhoto.startsWith('http')
-        ? post.postPhoto
-        : '${ApiClient.baseUrl}/${post.postPhoto}';
+    // PERBAIKAN: Gunakan ApiClient yang sudah diperbaiki
+    final imageUrl = _apiClient.getImageUrl(post.postPhoto);
 
     print('🖼️ Compact image URL: $imageUrl (from path: ${post.postPhoto})');
 
@@ -1070,8 +1067,8 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       borderRadius: BorderRadius.circular(8),
       child: CachedNetworkImage(
         imageUrl: imageUrl,
-        width: 60,
-        height: 60,
+        width: double.infinity,
+        height: 200,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
           width: 60,
@@ -1082,15 +1079,10 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           ),
           child: const Icon(Icons.image, color: Colors.grey, size: 24),
         ),
-        errorWidget: (context, url, error) => Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.broken_image, color: Colors.grey, size: 24),
-        ),
+        errorWidget: (context, url, error) {
+          print('❌ Error loading compact image: $error, URL: $url');
+          return SizedBox();
+        },
       ),
     );
   }
