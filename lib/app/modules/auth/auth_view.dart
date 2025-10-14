@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
+import '../../data/helper/error_helper.dart';
 import '../login/login_controller.dart';
 import '../register/customer_register_controller.dart';
 import '../register/fieldManager_register_controller.dart';
@@ -300,30 +301,36 @@ class _LoginTabContent extends StatelessWidget {
                     // Error Message
                     Obx(() {
                       final error = controller.errorMessage.value;
-                      if (error == null) return const SizedBox.shrink();
+                      if (error == null || error.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
+                      // Get user-friendly error message
+                      final friendlyError = ErrorHandler()
+                          .getSimpleErrorMessage(error);
 
                       return Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red[50],
+                            color: Colors.red.shade50,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red[200]!),
+                            border: Border.all(color: Colors.red.shade200),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.error_outline,
-                                color: Colors.red[700],
+                                color: Colors.red.shade700,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  error,
+                                  friendlyError, // <-- Sekarang user-friendly
                                   style: TextStyle(
-                                    color: Colors.red[700],
+                                    color: Colors.red.shade700,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
