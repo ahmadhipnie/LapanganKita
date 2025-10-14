@@ -426,7 +426,7 @@ class FieldadminWithdrawController extends GetxController {
       await fetchWithdraws();
 
       Get.snackbar(
-        'Withdraw diproses',
+        'Withdraw approved',
         'Proof of transfer successfully uploaded.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFF16A34A),

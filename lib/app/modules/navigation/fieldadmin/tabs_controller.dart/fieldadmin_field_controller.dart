@@ -97,7 +97,7 @@ class FieldadminFieldController extends GetxController {
     if (adminId == 0) {
       Get.snackbar(
         'Error',
-        'Admin ID tidak ditemukan. Silakan login kembali.',
+        'Admin ID not found. Please log in again..',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
@@ -122,7 +122,7 @@ class FieldadminFieldController extends GetxController {
       if (response.success) {
         await fetchFields();
         Get.snackbar(
-          'Berhasil',
+          'Success',
           response.message.isNotEmpty 
               ? response.message 
               : 'Field ${field.fieldName} has been approved.',
@@ -133,7 +133,7 @@ class FieldadminFieldController extends GetxController {
         );
       } else {
         Get.snackbar(
-          'Gagal',
+          'Failed',
           response.message.isNotEmpty 
               ? response.message 
               : 'Failed to approve field.',
@@ -145,7 +145,7 @@ class FieldadminFieldController extends GetxController {
     } on FieldException catch (e) {
       Get.back(); // Close loading dialog
       Get.snackbar(
-        'Gagal',
+        'Failed',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
@@ -154,8 +154,8 @@ class FieldadminFieldController extends GetxController {
     } catch (e) {
       Get.back(); // Close loading dialog
       Get.snackbar(
-        'Gagal',
-        'Tidak dapat menyetujui field. Silakan coba lagi.',
+        'Failed',
+        'Unable to approve field. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
@@ -170,7 +170,7 @@ class FieldadminFieldController extends GetxController {
     if (adminId == 0) {
       Get.snackbar(
         'Error',
-        'Admin ID tidak ditemukan. Silakan login kembali.',
+        'Admin ID not found. Please log in again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
@@ -195,10 +195,10 @@ class FieldadminFieldController extends GetxController {
       if (response.success) {
         await fetchFields();
         Get.snackbar(
-          'Berhasil',
+          'Success',
           response.message.isNotEmpty 
               ? response.message 
-              : 'Field ${field.fieldName} telah ditolak.',
+              : 'Field ${field.fieldName} has been rejected.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.orange.shade100,
           colorText: Colors.orange.shade900,
@@ -206,10 +206,10 @@ class FieldadminFieldController extends GetxController {
         );
       } else {
         Get.snackbar(
-          'Gagal',
+          'Failed',
           response.message.isNotEmpty 
               ? response.message 
-              : 'Tidak dapat menolak field.',
+              : 'Unable to reject field.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.shade100,
           colorText: Colors.red.shade900,
@@ -218,7 +218,7 @@ class FieldadminFieldController extends GetxController {
     } on FieldException catch (e) {
       Get.back(); // Close loading dialog
       Get.snackbar(
-        'Gagal',
+        'Failed',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
@@ -227,8 +227,8 @@ class FieldadminFieldController extends GetxController {
     } catch (e) {
       Get.back(); // Close loading dialog
       Get.snackbar(
-        'Gagal',
-        'Tidak dapat menolak field. Silakan coba lagi.',
+        'Failed',
+        'Unable to reject field. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,

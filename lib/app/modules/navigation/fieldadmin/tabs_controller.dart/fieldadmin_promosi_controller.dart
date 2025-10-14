@@ -76,7 +76,7 @@ class FieldadminPromosiController extends GetxController {
       return true;
     } on PromosiException catch (e) {
       Get.snackbar(
-        'Gagal membuat promosi',
+        'Failed to create promotion',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFFDE68A),
@@ -84,8 +84,8 @@ class FieldadminPromosiController extends GetxController {
       );
     } catch (e) {
       Get.snackbar(
-        'Gagal membuat promosi',
-        'Terjadi kesalahan. Coba lagi beberapa saat.',
+        'Failed to create promotion',
+        'An error occurred. Please try again later.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFFDE68A),
         colorText: Colors.black87,
@@ -118,7 +118,7 @@ class FieldadminPromosiController extends GetxController {
       return true;
     } on PromosiException catch (e) {
       Get.snackbar(
-        'Gagal memperbarui promosi',
+        'Failed to update promotion',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFFECACA),
@@ -126,8 +126,8 @@ class FieldadminPromosiController extends GetxController {
       );
     } catch (e) {
       Get.snackbar(
-        'Gagal memperbarui promosi',
-        'Terjadi kesalahan. Silakan coba kembali.',
+        'Failed to update promotion',
+        'An error occurred. Please try again..',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFFECACA),
         colorText: Colors.black87,
@@ -150,7 +150,7 @@ class FieldadminPromosiController extends GetxController {
       return true;
     } on PromosiException catch (e) {
       Get.snackbar(
-        'Gagal menghapus promosi',
+        'Failed to delete promotion',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFFECACA),
@@ -158,8 +158,8 @@ class FieldadminPromosiController extends GetxController {
       );
     } catch (e) {
       Get.snackbar(
-        'Gagal menghapus promosi',
-        'Terjadi kesalahan. Silakan coba lagi.',
+        'Failed to delete promotion',
+        'An error occurred. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFFECACA),
         colorText: Colors.black87,

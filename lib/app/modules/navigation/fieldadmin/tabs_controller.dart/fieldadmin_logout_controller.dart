@@ -32,15 +32,15 @@ class FieldadminLogoutController extends GetxController {
       await _localStorage.logout();
       Get.offAllNamed(AppRoutes.LOGIN);
       Get.snackbar(
-        'Berhasil',
-        'Anda telah keluar dari akun.',
+        'Success',
+        'You have logged out of your account.',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
       Get.snackbar(
-        'Gagal',
-        'Tidak dapat logout. Silakan coba lagi.',
+        'Failed',
+        'Unable to logout. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),
       );

@@ -74,8 +74,8 @@ class EditFieldFieldmanagerController extends GetxController {
     if (args == null) {
       debugPrint('EditFieldFieldmanagerController: No field data provided.');
       Get.snackbar(
-        'Data tidak ditemukan',
-        'Tidak ada data lapangan untuk diedit.',
+        'Data not found',
+        'No field data available for editing.',
         snackPosition: SnackPosition.BOTTOM,
       );
       _fillDefaults();
@@ -121,8 +121,8 @@ class EditFieldFieldmanagerController extends GetxController {
       '${args.runtimeType}',
     );
     Get.snackbar(
-      'Data tidak valid',
-      'Format data field tidak dikenali.',
+      'Data not found',
+      'Field data format not recognized.',
       snackPosition: SnackPosition.BOTTOM,
     );
     _fillDefaults();
@@ -184,8 +184,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final fieldId = _fieldId;
     if (fieldId == null) {
       Get.snackbar(
-        'Data tidak ditemukan',
-        'Identitas lapangan tidak tersedia.',
+        'Data not found',
+        'Field identity is not available.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -194,8 +194,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final userId = _localStorage.userId;
     if (userId <= 0) {
       Get.snackbar(
-        'Sesi berakhir',
-        'Silakan masuk kembali untuk melanjutkan.',
+        'Session expired',
+        'Please log in again to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -204,8 +204,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final placeId = _placeId ?? _homeController?.place.value?.id;
     if (placeId == null) {
       Get.snackbar(
-        'Tempat belum terdaftar',
-        'Daftarkan tempat Anda sebelum mengubah lapangan.',
+        'Place not registered',
+        'Register your place before modifying the field.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -216,8 +216,8 @@ class EditFieldFieldmanagerController extends GetxController {
 
     if (openTime == null || closeTime == null) {
       Get.snackbar(
-        'Jam operasional belum lengkap',
-        'Pilih jam buka dan jam tutup terlebih dahulu.',
+        'Operational hours incomplete',
+        'Please select opening and closing hours first.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -226,8 +226,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final parsedPrice = _parseInt(priceController.text);
     if (parsedPrice == null || parsedPrice <= 0) {
       Get.snackbar(
-        'Harga tidak valid',
-        'Masukkan angka untuk harga per jam.',
+        'Invalid price',
+        'Please enter a number for the price per hour.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -236,8 +236,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final parsedMaxPerson = _parseInt(maxPersonController.text);
     if (parsedMaxPerson == null || parsedMaxPerson <= 0) {
       Get.snackbar(
-        'Kapasitas tidak valid',
-        'Masukkan angka untuk kapasitas maksimum.',
+        'Invalid capacity',
+        'Please enter a number for the maximum capacity.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -246,8 +246,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final currentFieldType = fieldType.value.trim();
     if (currentFieldType.isEmpty) {
       Get.snackbar(
-        'Tipe lapangan wajib',
-        'Pilih tipe lapangan terlebih dahulu.',
+        'Field type is required',
+        'Please select a field type first.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -256,8 +256,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final currentStatus = status.value.trim();
     if (currentStatus.isEmpty) {
       Get.snackbar(
-        'Status wajib',
-        'Pilih status ketersediaan lapangan.',
+        'Status is required',
+        'Please select a field availability status.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -308,15 +308,15 @@ class EditFieldFieldmanagerController extends GetxController {
       return true;
     } on FieldException catch (e) {
       Get.snackbar(
-        'Gagal memperbarui lapangan',
+        'Failed to update field',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
     } catch (_) {
       Get.snackbar(
-        'Gagal memperbarui lapangan',
-        'Terjadi kesalahan tak terduga. Coba lagi beberapa saat.',
+        'Failed to update field',
+        'An unexpected error occurred. Please try again in a moment..',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -454,8 +454,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final fieldId = _fieldId;
     if (fieldId == null) {
       Get.snackbar(
-        'Data tidak ditemukan',
-        'Identitas lapangan tidak tersedia.',
+        'Data not found',
+        'Field identity is not available.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -464,8 +464,8 @@ class EditFieldFieldmanagerController extends GetxController {
     final userId = _localStorage.userId;
     if (userId <= 0) {
       Get.snackbar(
-        'Sesi berakhir',
-        'Silakan masuk kembali untuk melanjutkan.',
+        'Session expired',
+        'Please log in again to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -480,7 +480,7 @@ class EditFieldFieldmanagerController extends GetxController {
 
       final message = response.message.isNotEmpty
           ? response.message
-          : 'Data lapangan berhasil dihapus.';
+          : 'Data field successfully deleted.';
 
       if (_homeController != null) {
         await _homeController.fetchFieldsForPlace(force: true);
@@ -490,15 +490,15 @@ class EditFieldFieldmanagerController extends GetxController {
       return true;
     } on FieldException catch (e) {
       Get.snackbar(
-        'Gagal menghapus lapangan',
+        'Failed to delete field',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
     } catch (_) {
       Get.snackbar(
-        'Gagal menghapus lapangan',
-        'Terjadi kesalahan tak terduga. Coba lagi beberapa saat.',
+        'Failed to delete field',
+        'An unexpected error occurred. Please try again in a moment.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
