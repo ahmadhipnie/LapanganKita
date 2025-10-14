@@ -8,6 +8,8 @@ class UserModel {
     required this.dateOfBirth,
     required this.accountNumber,
     required this.bankType,
+    required this.nomorTelepon,
+    required this.photoProfil,
     required this.role,
     required this.isVerified,
     required this.createdAt,
@@ -22,6 +24,8 @@ class UserModel {
   final DateTime? dateOfBirth;
   final String? accountNumber;
   final String? bankType;
+  final String? nomorTelepon;
+  final String? photoProfil; 
   final String role;
   final bool? isVerified;
   final DateTime? createdAt;
@@ -56,6 +60,8 @@ class UserModel {
       dateOfBirth: parseNullableDate(json['date_of_birth']),
       accountNumber: json['account_number']?.toString(),
       bankType: json['bank_type']?.toString(),
+      nomorTelepon: json['nomor_telepon']?.toString(),
+      photoProfil: json['photo_profil']?.toString(),
       role: json['role']?.toString() ?? '',
       isVerified: parseNullableBool(json['is_verified']),
       createdAt: parseNullableDate(json['created_at']),
@@ -65,7 +71,6 @@ class UserModel {
 
   Map<String, dynamic> toJson() {
     String? formatDate(DateTime? date) => date?.toIso8601String();
-
     return {
       'id': id,
       'name': name,
@@ -75,6 +80,8 @@ class UserModel {
       'date_of_birth': formatDate(dateOfBirth),
       'account_number': accountNumber,
       'bank_type': bankType,
+      'nomor_telepon': nomorTelepon,
+      'photo_profil': photoProfil,
       'role': role,
       'is_verified': isVerified,
       'created_at': formatDate(createdAt),

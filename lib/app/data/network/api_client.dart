@@ -3,14 +3,14 @@ import 'package:dio/dio.dart';
 class ApiClient {
   ApiClient({Dio? dio}) : _dio = dio ?? createDefaultDio();
 
-  static const String baseUrl = 'https://3a320df197b7.ngrok-free.app/api/';
-  static const String baseUrlWithoutApi = 'https://3a320df197b7.ngrok-free.app';
+  static const String baseUrl = 'https://51b6a505d9ba.ngrok-free.app/api/';
+  static const String baseUrlWithoutApi = 'https://51b6a505d9ba.ngrok-free.app';
 
   static final BaseOptions _defaultOptions = BaseOptions(
     baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 15),
-    sendTimeout: const Duration(seconds: 15),
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 30),
     contentType: 'application/json',
     responseType: ResponseType.json,
   );

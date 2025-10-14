@@ -9,7 +9,10 @@ import 'package:lapangan_kita/app/data/repositories/report_repository.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_booking_controller.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_history_controller.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_home_controller.dart';
-import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_profile_controller.dart';
+// import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_profile_controller.dart';
+
+import '../data/repositories/auth_repository.dart';
+import '../modules/profile/customer_profile_controller.dart';
 
 class FieldManagerTabsBinding extends Bindings {
   @override
@@ -62,9 +65,17 @@ class FieldManagerTabsBinding extends Bindings {
       () => FieldManagerHistoryController(),
       fenix: true,
     );
-    Get.lazyPut<FieldManagerProfileController>(
-      () => FieldManagerProfileController(),
+    Get.lazyPut<CustomerProfileController>(
+      () => CustomerProfileController(),
       fenix: true,
     );
+    Get.lazyPut<AuthRepository>(
+      () => AuthRepository(Get.find<ApiClient>()),
+      fenix: true,
+    );
+    // Get.lazyPut<FieldManagerProfileController>(
+    //   () => FieldManagerProfileController(),
+    //   fenix: true,
+    // );
   }
 }

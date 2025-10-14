@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../edit_profile_fieldmanager_controller.dart';
+
 class EditFieldView extends StatefulWidget {
   final String title;
   final String hint;
@@ -46,6 +48,7 @@ class EditFieldView extends StatefulWidget {
 class _EditFieldViewState extends State<EditFieldView> {
   String? selectedGender;
   String? selectedBankType;
+  // bool _isSaving = false;
   final List<String> genderOptions = ['male', 'female'];
   final List<String> bankOptions = [
     'BCA',
@@ -71,6 +74,7 @@ class _EditFieldViewState extends State<EditFieldView> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<EditProfileFieldmanagerController>();
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -161,20 +165,38 @@ class _EditFieldViewState extends State<EditFieldView> {
             else if (widget.isBirthdate)
               GestureDetector(
                 onTap: () async {
+                  // Parse existing date if available
+                  DateTime initialDate = DateTime.now();
+                  if (widget.controller?.text.isNotEmpty == true) {
+                    try {
+                      // Try to parse DD/MM/YYYY format first
+                      final parts = widget.controller!.text.split('/');
+                      if (parts.length == 3) {
+                        initialDate = DateTime(
+                          int.parse(parts[2]), // year
+                          int.parse(parts[1]), // month
+                          int.parse(parts[0]), // day
+                        );
+                      }
+                    } catch (e) {
+                      print('Error parsing date: $e');
+                    }
+                  }
+
                   DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: widget.controller?.text.isNotEmpty == true
-                        ? DateTime.tryParse(widget.controller!.text) ??
-                              DateTime.now()
-                        : DateTime.now(),
+                    initialDate: initialDate,
                     firstDate: DateTime(1900),
                     lastDate: DateTime.now(),
                   );
+
                   if (picked != null && widget.controller != null) {
                     setState(() {
-                      widget.controller!.text = picked
-                          .toIso8601String()
-                          .substring(0, 10);
+                      // Save as DD/MM/YYYY format
+                      widget.controller!.text =
+                          '${picked.day.toString().padLeft(2, '0')}/'
+                          '${picked.month.toString().padLeft(2, '0')}/'
+                          '${picked.year}';
                     });
                   }
                 },
@@ -225,19 +247,41 @@ class _EditFieldViewState extends State<EditFieldView> {
                 style: const TextStyle(color: Colors.grey),
               ),
             const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+            // Save Button - at the bottom of the build method
+            Obx(
+              () => SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                   ),
-                ),
-                onPressed: widget.onSave ?? () => Get.back(),
-                child: const Text(
-                  'Simpan',
-                  style: TextStyle(color: Colors.white),
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () {
+                          // Call onSave - controller handles Get.back() on success
+                          if (widget.onSave != null) {
+                            widget.onSave!();
+                          }
+                        },
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Save',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
                 ),
               ),
             ),

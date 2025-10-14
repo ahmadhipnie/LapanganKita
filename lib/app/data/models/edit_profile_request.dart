@@ -1,13 +1,4 @@
 class UpdateProfileRequest {
-  final String name;
-  final String email;
-  final String? gender;
-  final String? address;
-  final String? dateOfBirth;
-  final String? accountNumber;
-  final String? bankType;
-  final String? role;
-
   UpdateProfileRequest({
     required this.name,
     required this.email,
@@ -16,18 +7,33 @@ class UpdateProfileRequest {
     this.dateOfBirth,
     this.accountNumber,
     this.bankType,
-    this.role,
+    this.nomorTelepon,
+    this.photoProfil,
+    required this.role,
   });
+
+  final String name;
+  final String email;
+  final String? gender;
+  final String? address;
+  final String? dateOfBirth;
+  final String? accountNumber;
+  final String? bankType;
+  final String? nomorTelepon;
+  final String? photoProfil;
+  final String role;
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'email': email,
-      'gender': gender,
-      'address': address,
-      'date_of_birth': dateOfBirth,
-      'account_number': accountNumber,
-      'bank_type': bankType,
+      if (gender != null) 'gender': gender,
+      if (address != null) 'address': address,
+      if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
+      if (accountNumber != null) 'account_number': accountNumber,
+      if (bankType != null) 'bank_type': bankType,
+      if (nomorTelepon != null) 'nomor_telepon': nomorTelepon,
+      if (photoProfil != null) 'photo_profil': photoProfil,
       'role': role,
     };
   }

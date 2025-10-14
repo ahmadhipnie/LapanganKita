@@ -132,7 +132,6 @@ class LocalStorageService extends GetxService {
   /// Get user data as Map
   Map<String, dynamic>? getUserData() {
     if (_preferences == null) {
-      print('LocalStorageService not initialized yet!');
       return null;
     }
 
@@ -141,7 +140,6 @@ class LocalStorageService extends GetxService {
       try {
         return json.decode(userDataString) as Map<String, dynamic>;
       } catch (e) {
-        print('Error decoding user data: $e');
         return null;
       }
     }
@@ -195,25 +193,74 @@ class LocalStorageService extends GetxService {
   /// Check if token exists
   bool get hasToken => token != null && token!.isNotEmpty;
 
-  // ========== USER INFO GETTERS ==========
+  // ========== USER INFO GETTERS (Based on UserModel) ==========
 
   String get userName => getUserData()?['name']?.toString() ?? '';
   String get userEmail => getUserData()?['email']?.toString() ?? '';
-  String? get userAvatar => getUserData()?['avatar_url']?.toString();
-  String? get userPhone => getUserData()?['phone']?.toString();
   String? get userGender => getUserData()?['gender']?.toString();
   String? get userAddress => getUserData()?['address']?.toString();
-  String? get userBirthdate => getUserData()?['date_of_birth']?.toString();
+
+  // Date of birth
+  String? get userDateOfBirth => getUserData()?['date_of_birth']?.toString();
+  DateTime? get userDateOfBirthParsed {
+    final dob = userDateOfBirth;
+    if (dob == null || dob.isEmpty) return null;
+    return DateTime.tryParse(dob);
+  }
+
+  // Account details
   String? get userAccountNumber => getUserData()?['account_number']?.toString();
   String? get userBankType => getUserData()?['bank_type']?.toString();
+
+  // Contact info - Using correct field name from UserModel
+  String? get userPhone => getUserData()?['nomor_telepon']?.toString();
+  String? get userNomorTelepon => getUserData()?['nomor_telepon']?.toString();
+
+  // Photo profile - Using correct field name from UserModel
+  String? get userPhotoProfil => getUserData()?['photo_profil']?.toString();
+  String? get userAvatar => getUserData()?['photo_profil']?.toString();
+
+  // Verification status
+  bool get userIsVerified {
+    final userData = getUserData();
+    if (userData == null) return false;
+
+    final isVerified = userData['is_verified'];
+    if (isVerified == null) return false;
+    if (isVerified is bool) return isVerified;
+    if (isVerified is num) return isVerified != 0;
+    if (isVerified is String) {
+      final lower = isVerified.toLowerCase();
+      if (lower == 'true' || lower == '1') return true;
+    }
+    return false;
+  }
+
+  // Timestamps
+  String? get userCreatedAt => getUserData()?['created_at']?.toString();
+  String? get userUpdatedAt => getUserData()?['updated_at']?.toString();
+
+  DateTime? get userCreatedAtParsed {
+    final created = userCreatedAt;
+    if (created == null || created.isEmpty) return null;
+    return DateTime.tryParse(created);
+  }
+
+  DateTime? get userUpdatedAtParsed {
+    final updated = userUpdatedAt;
+    if (updated == null || updated.isEmpty) return null;
+    return DateTime.tryParse(updated);
+  }
 
   // ========== USER ROLE CHECKERS ==========
 
   bool get isCustomer =>
       userRole.toLowerCase() == 'user' || userRole.toLowerCase() == 'customer';
+
   bool get isFieldManager =>
       userRole.toLowerCase() == 'field_manager' ||
       userRole.toLowerCase() == 'field_owner';
+
   bool get isFieldAdmin => userRole.toLowerCase() == 'field_admin';
 
   // ========== SAFE SETTERS ==========
@@ -221,7 +268,6 @@ class LocalStorageService extends GetxService {
   /// Save complete user data
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     if (_preferences == null) {
-      print('Cannot save user data: LocalStorageService not initialized');
       return;
     }
 
@@ -258,7 +304,7 @@ class LocalStorageService extends GetxService {
 
   // ========== AUTO LOGIN CREDENTIALS ==========
 
-  /// Save credentials for auto-login (use flutter_secure_storage for production)
+  /// Save credentials for auto-login
   Future<void> saveCredentialsForAutoLogin(
     String email,
     String password,
@@ -294,6 +340,8 @@ class LocalStorageService extends GetxService {
   }
 
   Future<void> clearUserData() async {
+    if (_preferences == null) return;
+
     await _preferences!.remove(_keyUserData);
     await _preferences!.remove(_keyIsLoggedIn);
   }
@@ -399,23 +447,6 @@ class LocalStorageService extends GetxService {
     return _preferences!.getKeys();
   }
 
-  // ========== DEBUG & MAINTENANCE ==========
-
-  /// Print all stored data (for debugging)
-  void printAllData() {
-    if (_preferences == null) {
-      print('LocalStorageService not initialized');
-      return;
-    }
-
-    print('=== LOCAL STORAGE DATA ===');
-    for (String key in _preferences!.getKeys()) {
-      final value = _preferences!.get(key);
-      print('$key: $value');
-    }
-    print('==========================');
-  }
-
   /// Clear data by prefix (useful for cleanup)
   Future<void> clearByPrefix(String prefix) async {
     if (_preferences == null) return;
@@ -429,4 +460,5 @@ class LocalStorageService extends GetxService {
       await _preferences!.remove(key);
     }
   }
+
 }
