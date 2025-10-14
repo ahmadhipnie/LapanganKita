@@ -7,6 +7,9 @@ class CustomerProfileBinding extends Bindings {
   @override
   void dependencies() {
     AuthRepositoryBinding().dependencies();
-    Get.lazyPut<CustomerProfileController>(() => CustomerProfileController());
+    Get.lazyPut<CustomerProfileController>(
+      () => CustomerProfileController(),
+      fenix: true,
+    );
   }
 }

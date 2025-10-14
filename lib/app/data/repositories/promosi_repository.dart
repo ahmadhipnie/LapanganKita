@@ -32,16 +32,16 @@ class PromosiRepository {
 
       throw PromosiException(
         _extractMessage(body) ??
-            'Gagal memuat data promosi (status $statusCode).',
+            'Failed to load promotion data (status $statusCode).',
       );
     } on DioException catch (e) {
       if (_isTimeout(e)) {
         throw const PromosiException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Please check your connection.',
         );
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
-      throw PromosiException(message ?? 'Gagal memuat data promosi.');
+      throw PromosiException(message ?? 'Failed to load promotion data.');
     } on FormatException catch (e) {
       throw PromosiException(e.message);
     }
@@ -60,21 +60,21 @@ class PromosiRepository {
         if (data is Map<String, dynamic>) {
           return PromosiModel.fromJson(data);
         }
-        throw const PromosiException('Data promosi tidak ditemukan.');
+        throw const PromosiException('Promotion data not found.');
       }
 
       throw PromosiException(
         _extractMessage(body) ??
-            'Gagal memuat detail promosi (status $statusCode).',
+            'Failed to load promotion details (status $statusCode).',
       );
     } on DioException catch (e) {
       if (_isTimeout(e)) {
         throw const PromosiException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Please check your connection.',
         );
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
-      throw PromosiException(message ?? 'Gagal memuat detail promosi.');
+      throw PromosiException(message ?? 'Failed to load promotion details.');
     } on FormatException catch (e) {
       throw PromosiException(e.message);
     }
@@ -102,16 +102,16 @@ class PromosiRepository {
 
       throw PromosiException(
         _extractMessage(body) ??
-            'Gagal memuat slider promosi (status $statusCode).',
+            'Failed to load promotion slider (status $statusCode).',
       );
     } on DioException catch (e) {
       if (_isTimeout(e)) {
         throw const PromosiException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Please check your connection.',
         );
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
-      throw PromosiException(message ?? 'Gagal memuat slider promosi.');
+      throw PromosiException(message ?? 'Failed to load promotion slider.');
     } on FormatException catch (e) {
       throw PromosiException(e.message);
     }
@@ -141,20 +141,21 @@ class PromosiRepository {
         if (data is Map<String, dynamic>) {
           return PromosiModel.fromJson(data);
         }
-        throw const PromosiException('Respons server tidak valid.');
+        throw const PromosiException('Invalid server response.');
       }
 
       throw PromosiException(
-        _extractMessage(body) ?? 'Gagal membuat promosi (status $statusCode).',
+        _extractMessage(body) ??
+            'Failed to create promotion (status $statusCode).',
       );
     } on DioException catch (e) {
       if (_isTimeout(e)) {
         throw const PromosiException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Please check your connection.',
         );
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
-      throw PromosiException(message ?? 'Gagal membuat promosi.');
+      throw PromosiException(message ?? 'Failed to create promotion.');
     } on FormatException catch (e) {
       throw PromosiException(e.message);
     }
@@ -162,9 +163,7 @@ class PromosiRepository {
 
   Future<PromosiModel> updatePromosi({required int id, File? file}) async {
     if (file == null) {
-      throw const PromosiException(
-        'Silakan pilih gambar promosi terlebih dahulu.',
-      );
+      throw const PromosiException('Please select a promotion image first.');
     }
 
     try {
@@ -191,30 +190,30 @@ class PromosiRepository {
         if (data is Map<String, dynamic>) {
           return PromosiModel.fromJson(data);
         }
-        throw const PromosiException('Respons server tidak valid.');
+        throw const PromosiException('Invalid server response.');
       }
 
       if (statusCode == 404) {
-        throw const PromosiException('Endpoint promosi tidak ditemukan.');
+        throw const PromosiException('Promotion endpoint not found.');
       }
 
       throw PromosiException(
         _extractMessage(body) ??
-            'Gagal memperbarui promosi (status $statusCode).',
+            'Failed to update promotion (status $statusCode).',
       );
     } on DioException catch (e) {
       if (_isTimeout(e)) {
         throw const PromosiException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Please check your connection.',
         );
       }
       final response = e.response;
       if (response?.statusCode == 404) {
-        throw const PromosiException('Endpoint promosi tidak ditemukan.');
+        throw const PromosiException('Promotion endpoint not found.');
       }
 
       final message = _extractMessage(response?.data) ?? e.message;
-      throw PromosiException(message ?? 'Gagal memperbarui promosi.');
+      throw PromosiException(message ?? 'Failed to update promotion.');
     } on FormatException catch (e) {
       throw PromosiException(e.message);
     }
@@ -235,16 +234,16 @@ class PromosiRepository {
 
       throw PromosiException(
         _extractMessage(body) ??
-            'Gagal menghapus promosi (status $statusCode).',
+            'Failed to delete promotion (status $statusCode).',
       );
     } on DioException catch (e) {
       if (_isTimeout(e)) {
         throw const PromosiException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Please check your connection.',
         );
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
-      throw PromosiException(message ?? 'Gagal menghapus promosi.');
+      throw PromosiException(message ?? 'Failed to delete promotion.');
     }
   }
 

@@ -1,8 +1,14 @@
 import 'package:get/get.dart';
+import 'package:lapangan_kita/app/data/repositories/auth_repository.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
+import 'package:lapangan_kita/app/data/network/api_client.dart';
+
+import '../edit_profile_fieldmanager/edit_profile_fieldmanager_controller.dart';
 
 class CustomerProfileController extends GetxController {
   final LocalStorageService _localStorage = LocalStorageService.instance;
+  final AuthRepository _authRepository = Get.find<AuthRepository>();
+  final ApiClient _apiClient = Get.find<ApiClient>();
 
   // User data
   final name = ''.obs;
@@ -13,13 +19,63 @@ class CustomerProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadUserData();
+    loadUserData();
   }
 
-  void _loadUserData() {
-    // Safe check: pastikan LocalStorageService sudah terinisialisasi
+  // Reset all observable values
+  void _resetData() {
+    name.value = '';
+    email.value = '';
+    avatarUrl.value = '';
+    isLoading.value = false;
+  }
+
+  // Load from API instead of localStorage only
+  Future<void> loadUserData() async {
+    isLoading.value = true;
+    try {
+      // Get userId from localStorage
+      final userId = _localStorage.userId;
+
+      if (userId == 0) {
+        // Fallback to localStorage if no userId
+        _loadFromLocalStorage();
+        return;
+      }
+
+      // Fetch from API
+      final response = await _authRepository.getUserById(userId: userId);
+
+      if (response.success && response.user != null) {
+        final user = response.user!;
+
+        // Update observable values
+        name.value = user.name;
+        email.value = user.email;
+
+        // Get photo_profil and convert to full URL
+        if (user.photoProfil != null && user.photoProfil!.isNotEmpty) {
+          avatarUrl.value = _apiClient.getImageUrl(user.photoProfil!);
+        } else {
+          avatarUrl.value = '';
+        }
+
+        // Update localStorage with fresh data
+        await _localStorage.saveUserData(user.toJson());
+      } else {
+        // Fallback to localStorage
+        _loadFromLocalStorage();
+      }
+    } catch (e) {
+      // Fallback to localStorage on error
+      _loadFromLocalStorage();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void _loadFromLocalStorage() {
     if (_localStorage.getUserData() == null) {
-      print('No user data found in LocalStorage');
       return;
     }
 
@@ -28,11 +84,15 @@ class CustomerProfileController extends GetxController {
       if (userData != null) {
         name.value = userData['name']?.toString() ?? 'Field Manager';
         email.value = userData['email']?.toString() ?? 'email@example.com';
-        avatarUrl.value = userData['avatar_url']?.toString() ?? '';
+
+        final photoProfil = userData['photo_profil']?.toString() ?? '';
+        if (photoProfil.isNotEmpty) {
+          avatarUrl.value = _apiClient.getImageUrl(photoProfil);
+        } else {
+          avatarUrl.value = '';
+        }
       }
     } catch (e) {
-      print('Error loading user data: $e');
-      // Set default values if error occurs
       name.value = 'Field Manager';
       email.value = 'email@example.com';
       avatarUrl.value = '';
@@ -40,18 +100,28 @@ class CustomerProfileController extends GetxController {
   }
 
   void reloadUserData() {
-    _loadUserData();
+    loadUserData();
   }
 
   Future<void> logout() async {
     isLoading.value = true;
-
     try {
       // Clear local storage data
       await _localStorage.clearUserData();
 
+      // Reset controller data
+      _resetData();
+
+      // Delete this controller instance
+      Get.delete<CustomerProfileController>();
+
+      // Also delete edit profile controller if exists
+      if (Get.isRegistered<EditProfileFieldmanagerController>()) {
+        Get.delete<EditProfileFieldmanagerController>();
+      }
+
       // Navigate to login page
-      Get.offAllNamed('/login');
+      Get.offAllNamed('/auth');
 
       Get.snackbar(
         'Success',
@@ -59,7 +129,6 @@ class CustomerProfileController extends GetxController {
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
-      print('Error during logout: $e');
       Get.snackbar(
         'Error',
         'Failed to logout. Please try again.',
@@ -68,5 +137,12 @@ class CustomerProfileController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  @override
+  void onClose() {
+    // Clean up when controller is deleted
+    _resetData();
+    super.onClose();
   }
 }

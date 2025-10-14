@@ -52,7 +52,7 @@ class FieldManagerProfileController extends GetxController {
       await _localStorage.clearUserData();
 
       // Navigate to login page
-      Get.offAllNamed('/login');
+      Get.offAllNamed('/auth');
 
       Get.snackbar(
         'Success',

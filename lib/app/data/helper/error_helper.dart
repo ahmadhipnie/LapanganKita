@@ -10,6 +10,118 @@ class ErrorHandler {
   factory ErrorHandler() => _instance;
   ErrorHandler._internal();
 
+  // Indonesian to English message translations
+  static const Map<String, String> _messageTranslations = {
+    // Password related
+    'Password lama tidak sesuai': 'Old password is incorrect',
+    'Password berhasil diubah': 'Password successfully changed',
+    'Password baru tidak boleh sama dengan password lama': 
+        'New password must be different from old password',
+    'Password minimal 8 karakter': 'Password must be at least 8 characters',
+    'Password harus diisi': 'Password is required',
+    
+    // User/Auth related
+    'Email sudah terdaftar': 'Email already registered',
+    'Email tidak ditemukan': 'Email not found',
+    'Email atau password salah': 'Email or password is incorrect',
+    'User tidak ditemukan': 'User not found',
+    'User berhasil diupdate': 'User successfully updated',
+    'Gagal mengupdate user': 'Failed to update user',
+    'Data user tidak ditemukan': 'User data not found',
+    
+    // Profile/Update related
+    'Berhasil memperbarui profil': 'Profile updated successfully',
+    'Gagal memperbarui profil': 'Failed to update profile',
+    'Foto profil berhasil diupdate': 'Profile photo updated successfully',
+    'Gagal mengupload foto': 'Failed to upload photo',
+    
+    // Generic success/error
+    'Berhasil': 'Success',
+    'Gagal': 'Failed',
+    'Sukses': 'Success',
+    'Data tidak ditemukan': 'Data not found',
+    'Terjadi kesalahan': 'An error occurred',
+    'Koneksi gagal': 'Connection failed',
+    'Silakan coba lagi': 'Please try again',
+    
+    // Validation
+    'Kolom wajib diisi': 'This field is required',
+    'Format tidak valid': 'Invalid format',
+    'Data tidak valid': 'Invalid data',
+  };
+
+  // Translate Indonesian message to English
+  String translateMessage(String message) {
+    if (message.isEmpty) return message;
+
+    // Try exact match first (case-sensitive)
+    if (_messageTranslations.containsKey(message)) {
+      return _messageTranslations[message]!;
+    }
+
+    // Try exact match (case-insensitive)
+    final exactMatch = _messageTranslations.entries.firstWhere(
+      (entry) => entry.key.toLowerCase() == message.toLowerCase(),
+      orElse: () => MapEntry('', ''),
+    );
+    if (exactMatch.value.isNotEmpty) {
+      return exactMatch.value;
+    }
+
+    // Try partial match for longer messages
+    final lowerMessage = message.toLowerCase();
+    for (var entry in _messageTranslations.entries) {
+      if (lowerMessage.contains(entry.key.toLowerCase())) {
+        // Replace the Indonesian part with English
+        return message.replaceAll(
+          RegExp(entry.key, caseSensitive: false),
+          entry.value,
+        );
+      }
+    }
+
+    // If no translation found, return original
+    return message;
+  }
+
+  // Extract and translate message from API response
+  String? extractAndTranslateMessage(dynamic data) {
+    final message = _extractMessageFromData(data);
+    if (message == null || message.isEmpty) return null;
+    return translateMessage(message);
+  }
+
+  // Helper to extract message from various data formats
+  String? _extractMessageFromData(dynamic data) {
+    if (data == null) return null;
+    
+    if (data is Map) {
+      // Try 'message' field
+      if (data['message'] != null && data['message'].toString().isNotEmpty) {
+        return data['message'].toString();
+      }
+
+      // Try 'errors' field
+      final errors = data['errors'];
+      if (errors is List && errors.isNotEmpty) {
+        return errors.map((e) => e.toString()).join(', ');
+      }
+
+      if (errors is Map && errors.isNotEmpty) {
+        return errors.values
+            .expand((value) => value is Iterable ? value : [value])
+            .map((e) => e.toString())
+            .join(', ');
+      }
+    }
+
+    if (data is String && data.isNotEmpty) {
+      return data;
+    }
+
+    return null;
+  }
+
   // Method untuk mendapatkan pesan error yang SIMPLE dalam English
   String getSimpleErrorMessage(dynamic error) {
     if (error is DioException) {
@@ -20,14 +132,23 @@ class ErrorHandler {
         return 'Server is temporarily offline. Please try again in a few minutes.';
       }
 
+      // Try to extract message from response and translate
+      final extractedMessage = extractAndTranslateMessage(error.response?.data);
+      if (extractedMessage != null && extractedMessage.isNotEmpty) {
+        return extractedMessage;
+      }
+
+      // Status code fallbacks
       if (statusCode == 404) return 'Data not found.';
       if (statusCode == 401) return 'Session expired. Please login again.';
       if (statusCode >= 500) return 'Server is busy. Please try again later.';
+      
       if (error.type == DioExceptionType.connectionTimeout ||
           error.type == DioExceptionType.receiveTimeout ||
           error.type == DioExceptionType.sendTimeout) {
         return 'Connection timeout. Please check your internet.';
       }
+
       if (error.type == DioExceptionType.connectionError) {
         return 'Unable to connect to server. Please check your network.';
       }
@@ -37,18 +158,26 @@ class ErrorHandler {
     }
 
     // String-based fallback (non-Dio errors)
-    final errorString = error.toString().toLowerCase();
+    final errorString = error.toString();
+    
+    // Try to translate if it's a direct message
+    final translated = translateMessage(errorString);
+    if (translated != errorString) {
+      return translated;
+    }
 
+    final errorLower = errorString.toLowerCase();
+    
     // Handle ngrok offline error (string-based)
     if (_isNgrokOfflineError(errorString)) {
       return 'Server is temporarily offline. Please try again in a few minutes.';
-    } else if (errorString.contains('connection') ||
-        errorString.contains('socket')) {
+    } else if (errorLower.contains('connection') ||
+        errorLower.contains('socket')) {
       return 'Connection problem. Please check your internet.';
-    } else if (errorString.contains('timeout')) {
+    } else if (errorLower.contains('timeout')) {
       return 'Request timeout. Please try again.';
-    } else if (errorString.contains('not found') ||
-        errorString.contains('404')) {
+    } else if (errorLower.contains('not found') ||
+        errorLower.contains('404')) {
       return 'Data not found.';
     } else {
       return 'Something went wrong. Please try again.';
@@ -58,7 +187,6 @@ class ErrorHandler {
   // Method untuk deteksi ngrok offline
   bool _isNgrokOfflineError(dynamic error) {
     final errorString = error.toString().toLowerCase();
-
     return errorString.contains('ngrok') ||
         errorString.contains('err_ngrok') ||
         errorString.contains('offline') ||
@@ -109,7 +237,6 @@ class ErrorHandler {
         break;
     }
 
-    // Gunakan Get.snackbar asli
     Get.snackbar(
       title,
       message,
@@ -129,22 +256,22 @@ class ErrorHandler {
 
   // Method untuk success messages
   void showSuccessMessage(String message) {
-    showCustomSnackbar('Success', message, SnackbarType.success);
+    showCustomSnackbar('Success', translateMessage(message), SnackbarType.success);
   }
 
   // Method untuk warning messages
   void showWarningMessage(String message) {
-    showCustomSnackbar('Warning', message, SnackbarType.warning);
+    showCustomSnackbar('Warning', translateMessage(message), SnackbarType.warning);
   }
 
   // Method untuk info messages
   void showInfoMessage(String message) {
-    showCustomSnackbar('Info', message, SnackbarType.info);
+    showCustomSnackbar('Info', translateMessage(message), SnackbarType.info);
   }
 
   // Method untuk error messages
   void showErrorMessage(String message) {
-    showCustomSnackbar('Error', message, SnackbarType.error);
+    showCustomSnackbar('Error', translateMessage(message), SnackbarType.error);
   }
 
   // Main method untuk handle error
@@ -161,11 +288,10 @@ class ErrorHandler {
     if (hasError != null) {
       hasError.value = true;
     }
+
     if (errorMessage != null) {
       errorMessage.value = userFriendlyMessage;
     }
-
-    print('Error: $context - $error');
 
     // Tampilkan snackbar jika diperlukan
     if (showSnackbar && !_isMinorError(userFriendlyMessage)) {
@@ -186,6 +312,7 @@ class ErrorHandler {
     if (hasError != null) {
       hasError.value = false;
     }
+
     if (errorMessage != null) {
       errorMessage.value = '';
     }
@@ -254,5 +381,9 @@ extension ErrorHandlerExtension on GetxController {
 
   String getFriendlyError(dynamic error) {
     return ErrorHandler().getSimpleErrorMessage(error);
+  }
+
+  String translateMsg(String message) {
+    return ErrorHandler().translateMessage(message);
   }
 }

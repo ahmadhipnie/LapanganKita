@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
+import 'edit_fields/edit_image_view.dart';
 import 'edit_profile_fieldmanager_controller.dart';
 import 'edit_fields/edit_field_view.dart';
 
@@ -37,18 +39,76 @@ class EditProfileFieldmanagerView
             Center(
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey[300],
-                    child: Icon(Icons.person, size: 60, color: Colors.white),
-                  ),
+                  Obx(() {
+                    // Preview newly selected file
+                    if (controller.selectedPhotoFile.value != null) {
+                      return CircleAvatar(
+                        radius: 60,
+                        backgroundImage: FileImage(
+                          controller.selectedPhotoFile.value!,
+                        ),
+                      );
+                    }
+                    // Display photo from server
+                    else if (controller.photoProfileUrl.isNotEmpty) {
+                      return CachedNetworkImage(
+                        imageUrl: controller.photoProfileUrl,
+                        imageBuilder: (context, imageProvider) => CircleAvatar(
+                          radius: 60,
+                          backgroundImage: imageProvider,
+                        ),
+                        placeholder: (context, url) => CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[300],
+                          child: const CircularProgressIndicator(),
+                        ),
+                        errorWidget: (context, url, error) {
+                          return CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.grey[300],
+                            child: const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    // Default avatar
+                    return CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[300],
+                      child: const Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Colors.white,
+                      ),
+                    );
+                  }),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () => Get.to(
+                      () => EditImageFieldView(
+                        title: 'Profile Photo',
+                        currentImageUrl: controller.photoProfileUrl,
+                        currentImageFile: controller.selectedPhotoFile.value,
+                        onImageSelected: (file) {
+                          controller.selectedPhotoFile.value = file;
+                        },
+                        onSave: controller.saveProfile,
+                      ),
+                    ),
                     child: const Text(
                       'Edit',
                       style: TextStyle(color: AppColors.secondary),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Email text display
+                  Text(
+                    controller.emailController.text,
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -72,20 +132,25 @@ class EditProfileFieldmanagerView
             ),
             _buildProfileItem(
               context,
-              icon: Icons.email_outlined,
-              title: 'Email',
-              value: controller.emailController.text,
+              icon: Icons.phone_outlined,
+              title: 'Phone Number',
+              value: controller.phoneController.text.isEmpty
+                  ? 'Not set yet'
+                  : controller.phoneController.text,
               onTap: () => Get.to(
                 () => EditFieldView(
-                  title: 'Email',
-                  hint: 'Email',
-                  helperText: 'Change your email address',
-                  controller: controller.emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  title: 'Phone Number',
+                  hint: 'Enter your phone number',
+                  helperText: 'Max 13 digits (e.g., 081234567890)',
+                  controller: controller.phoneController,
+                  keyboardType:
+                      TextInputType.number, // Changed from TextInputType.phone
+                  maxLength: 13, // Add this
                   onSave: controller.saveProfile,
                 ),
               ),
             ),
+
             _buildProfileItem(
               context,
               icon: Icons.wc_outlined,

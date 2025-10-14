@@ -118,7 +118,6 @@ class CustomerHomeController extends GetxController {
     },
   );
 
-  // ✅ FIX: Get popular categories with data from allCourts
   List<Map<String, dynamic>> get popularCategoriesWithIcon {
     try {
       final bookingController = Get.find<CustomerBookingController>();
@@ -127,23 +126,15 @@ class CustomerHomeController extends GetxController {
 
       final Map<String, int> categoryCount = {};
 
-      // ✅ FILTER HANYA YANG AVAILABLE
       final availableCourts = bookingController.allCourts
           .where((court) => court.status == 'available')
           .toList();
 
-      print('=== POPULAR CATEGORIES DEBUG ===');
-      print('Total courts: ${bookingController.allCourts.length}');
-      print('Available courts: ${availableCourts.length}');
-
       for (final court in availableCourts) {
         for (final type in court.types) {
           categoryCount[type] = (categoryCount[type] ?? 0) + 1;
-          print('Court: ${court.name}, Type: $type, Status: ${court.status}');
         }
       }
-
-      print('Category count: $categoryCount');
 
       final sortedCategories = categoryCount.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
@@ -157,7 +148,6 @@ class CustomerHomeController extends GetxController {
         };
       }).toList();
     } catch (e) {
-      print('Error in popularCategoriesWithIcon: $e');
       return [];
     }
   }
@@ -325,14 +315,11 @@ class CustomerHomeController extends GetxController {
       final historyController = Get.find<CustomerHistoryController>();
 
       if (historyController.bookings.isEmpty) {
-        print('No bookings found in history controller');
         return [];
       }
 
       // Ambil semua bookings
       final allBookings = List<BookingHistory>.from(historyController.bookings);
-
-      print('Total bookings available: ${allBookings.length}');
 
       // Sort: pending dulu, lalu by date (terbaru di atas)
       allBookings.sort((a, b) {
@@ -346,11 +333,9 @@ class CustomerHomeController extends GetxController {
 
       // Ambil 5 terakhir
       final recent = allBookings.take(5).toList();
-      print('Showing ${recent.length} recent bookings');
 
       return recent;
     } catch (e) {
-      print('Error in getRecentBookings: $e');
       return [];
     }
   }
