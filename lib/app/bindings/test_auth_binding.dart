@@ -30,6 +30,7 @@ class TestAuthBinding extends Bindings {
       () => FieldManagerRegisterController(
         authRepository: Get.find<AuthRepository>(),
       ),
+      fenix: true,
     );
 
     if (!Get.isRegistered<Dio>()) {
@@ -51,6 +52,7 @@ class TestAuthBinding extends Bindings {
       () => CustomerRegisterController(
         authRepository: Get.find<AuthRepository>(),
       ),
+      fenix: true,
     );
 
     Get.lazyPut<Dio>(() => ApiClient.createDefaultDio(), fenix: true);
@@ -61,7 +63,8 @@ class TestAuthBinding extends Bindings {
     );
     Get.lazyPut<LoginController>(
       () => LoginController(authRepository: Get.find<AuthRepository>()),
+      fenix: true,
     );
-    Get.lazyPut<AuthController>(() => AuthController());
+    Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
   }
 }
