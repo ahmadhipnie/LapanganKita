@@ -66,8 +66,8 @@ class PlaceEditController extends GetxController {
     final args = Get.arguments;
     if (args is! PlaceModel) {
       Get.snackbar(
-        'Data tidak ditemukan',
-        'Tidak ada data tempat untuk diedit.',
+        'Data not found',
+        'No place data found to edit.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -220,8 +220,8 @@ class PlaceEditController extends GetxController {
     // final user = _sessionService.rememberedUser;
     if (!_storageService.isLoggedIn) {
       Get.snackbar(
-        'Sesi berakhir',
-        'Silakan masuk kembali untuk melanjutkan.',
+        'Session expired',
+        'Please log in again to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -265,15 +265,15 @@ class PlaceEditController extends GetxController {
       return true;
     } on PlaceException catch (e) {
       Get.snackbar(
-        'Gagal memperbarui tempat',
+        'Failed to update place',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
     } catch (_) {
       Get.snackbar(
-        'Gagal memperbarui tempat',
-        'Terjadi kesalahan tak terduga. Coba lagi beberapa saat.',
+        'Failed to update place',
+        'An unexpected error occurred. Please try again later.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -293,8 +293,8 @@ class PlaceEditController extends GetxController {
     // final user = _sessionService.rememberedUser;
     if (!_storageService.isLoggedIn) {
       Get.snackbar(
-        'Sesi berakhir',
-        'Silakan masuk kembali untuk melanjutkan.',
+        'Session expired',
+        'Please log in again to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -348,7 +348,7 @@ class PlaceEditController extends GetxController {
       }
 
       Get.snackbar(
-        'Berhasil',
+        'Success',
         successMessage,
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -356,15 +356,15 @@ class PlaceEditController extends GetxController {
       return true;
     } on AddOnException catch (e) {
       Get.snackbar(
-        'Gagal memperbarui add-on',
+        'Failed to update add-on',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
     } catch (_) {
       Get.snackbar(
-        'Gagal memperbarui add-on',
-        'Terjadi kesalahan tak terduga. Coba lagi nanti.',
+        'Failed to update add-on',
+        'An unexpected error occurred. Please try again later.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -378,8 +378,8 @@ class PlaceEditController extends GetxController {
     // final user = _sessionService.rememberedUser;
     if (!_storageService.isLoggedIn) {
       Get.snackbar(
-        'Sesi berakhir',
-        'Silakan masuk kembali untuk melanjutkan.',
+        'Session expired',
+        'Please log in again to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -407,7 +407,7 @@ class PlaceEditController extends GetxController {
       addOns.refresh();
 
       Get.snackbar(
-        'Berhasil',
+        'Success',
         successMessage,
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -415,15 +415,15 @@ class PlaceEditController extends GetxController {
       return true;
     } on AddOnException catch (e) {
       Get.snackbar(
-        'Gagal menghapus add-on',
+        'Failed to delete add-on',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
     } catch (_) {
       Get.snackbar(
-        'Gagal menghapus add-on',
-        'Terjadi kesalahan tak terduga. Coba lagi nanti.',
+        'Failed to delete add-on',
+        'An unexpected error occurred. Please try again later.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;

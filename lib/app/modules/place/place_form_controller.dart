@@ -79,8 +79,8 @@ class PlaceFormController extends GetxController {
         stockText.isEmpty ||
         description.isEmpty) {
       Get.snackbar(
-        'Form add-on belum lengkap',
-        'Isi nama, harga, stok, dan deskripsi add-on terlebih dahulu.',
+        'The add-on form is incomplete',
+        'Please fill in the name, price, stock, and description fields.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -91,8 +91,8 @@ class PlaceFormController extends GetxController {
 
     if (price == null || price < 0) {
       Get.snackbar(
-        'Harga add-on tidak valid',
-        'Masukkan angka yang benar untuk harga per jam.',
+        'Invalid add-on price',
+        'Please enter a valid number for the hourly rate.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -100,8 +100,8 @@ class PlaceFormController extends GetxController {
 
     if (stock == null || stock < 0) {
       Get.snackbar(
-        'Stok add-on tidak valid',
-        'Masukkan angka yang benar untuk stok add-on.',
+        'Invalid add-on stock',
+        'Please enter a valid number for the add-on stock.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -123,8 +123,8 @@ class PlaceFormController extends GetxController {
     // final user = _sessionService.rememberedUser;
     if (!_storageService.isLoggedIn) {
       Get.snackbar(
-        'Sesi berakhir',
-        'Silakan masuk kembali untuk melanjutkan.',
+        'Session expired',
+        'Please log in again to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -133,8 +133,8 @@ class PlaceFormController extends GetxController {
     final userId = _storageService.userId;
     if (userId == 0) {
       Get.snackbar(
-        'Data pengguna tidak valid',
-        'Silakan masuk kembali untuk melanjutkan.',
+        'Invalid user data',
+        'Please log in again to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -169,10 +169,10 @@ class PlaceFormController extends GetxController {
       }
 
       Get.snackbar(
-        'Berhasil',
+        'Success',
         response.message.isNotEmpty
             ? response.message
-            : 'Tempat berhasil dibuat.',
+            : 'Place created successfully.',
         snackPosition: SnackPosition.BOTTOM,
       );
 
@@ -181,15 +181,15 @@ class PlaceFormController extends GetxController {
       return true;
     } on PlaceException catch (e) {
       Get.snackbar(
-        'Gagal menyimpan tempat',
+        'Failed to save place',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
     } catch (_) {
       Get.snackbar(
-        'Gagal menyimpan tempat',
-        'Terjadi kesalahan tak terduga. Coba lagi beberapa saat.',
+        'Failed to save place',
+        'An unexpected error occurred. Please try again later.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -223,22 +223,22 @@ class PlaceFormController extends GetxController {
     try {
       final response = await _addOnRepository.createAddOn(payload);
       Get.snackbar(
-        'Add-on tersimpan',
+        'Add-on saved',
         response.message.isNotEmpty
             ? response.message
-            : 'Add-on berhasil dibuat.',
+            : 'Add-on created successfully.',
         snackPosition: SnackPosition.BOTTOM,
       );
     } on AddOnException catch (e) {
       Get.snackbar(
-        'Gagal membuat add-on',
+        'Failed to create add-on',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (_) {
       Get.snackbar(
-        'Gagal membuat add-on',
-        'Terjadi kesalahan tak terduga saat menyimpan add-on.',
+        'Failed to create add-on',
+        'An unexpected error occurred while saving the add-on.',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
