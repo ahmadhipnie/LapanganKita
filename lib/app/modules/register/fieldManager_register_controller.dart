@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import 'package:lapangan_kita/app/data/models/register_request.dart';
 import 'package:lapangan_kita/app/data/repositories/auth_repository.dart';
 import 'package:lapangan_kita/app/routes/app_routes.dart';
+
+import '../../data/helper/error_helper.dart'; // ADD THIS
 
 class FieldManagerRegisterController extends GetxController {
   FieldManagerRegisterController({required AuthRepository authRepository})
     : _authRepository = authRepository;
 
   final AuthRepository _authRepository;
+  final ErrorHandler _errorHandler = ErrorHandler(); // ADD THIS
 
   final formKey = GlobalKey<FormState>();
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  final phoneController = TextEditingController(); // ADD THIS
   final passwordController = TextEditingController();
   final streetController = TextEditingController();
   final cityController = TextEditingController();
@@ -26,7 +29,8 @@ class FieldManagerRegisterController extends GetxController {
   final gender = ''.obs;
   final bank = ''.obs;
   final isLoading = false.obs;
-  final RxnString errorMessage = RxnString();
+  final RxString errorMessage = ''.obs;
+
   final bankList = [
     'BCA',
     'BNI',
@@ -60,6 +64,20 @@ class FieldManagerRegisterController extends GetxController {
     return null;
   }
 
+  // ADD THIS - Phone validation
+  String? validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Phone number is required';
+    }
+    if (value.length < 10) {
+      return 'Phone number must be at least 10 digits';
+    }
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'Phone number must contain only digits';
+    }
+    return null;
+  }
+
   void togglePasswordVisibility() {
     isPasswordVisible.value = !isPasswordVisible.value;
   }
@@ -81,6 +99,7 @@ class FieldManagerRegisterController extends GetxController {
   void onClose() {
     nameController.dispose();
     emailController.dispose();
+    phoneController.dispose(); // ADD THIS
     passwordController.dispose();
     streetController.dispose();
     cityController.dispose();
@@ -92,20 +111,22 @@ class FieldManagerRegisterController extends GetxController {
 
   Future<void> submitRegistration() async {
     if (!(formKey.currentState?.validate() ?? false)) {
-      Get.snackbar('Error', 'Registration form not valid!');
+      _errorHandler.showErrorMessage('Registration form not valid!');
       return;
     }
+
     if (gender.value.isEmpty) {
-      Get.snackbar('Error', 'Please select a gender.');
+      _errorHandler.showErrorMessage('Please select a gender.');
       return;
     }
+
     if (bank.value.isEmpty) {
-      Get.snackbar('Error', 'Please select a bank.');
+      _errorHandler.showErrorMessage('Please select a bank.');
       return;
     }
 
     FocusManager.instance.primaryFocus?.unfocus();
-    errorMessage.value = null;
+    errorMessage.value = '';
     isLoading.value = true;
 
     final request = RegisterRequest(
@@ -117,6 +138,7 @@ class FieldManagerRegisterController extends GetxController {
       dateOfBirth: dobController.text.trim(),
       accountNumber: accountNumberController.text.trim(),
       bankType: bank.value,
+      nomorTelepon: phoneController.text.trim(), // ADD THIS
       role: 'field_owner',
     );
 
@@ -133,9 +155,10 @@ class FieldManagerRegisterController extends GetxController {
 
       _resetForm();
 
-      Get.snackbar('Success', response.message);
+      _errorHandler.showSuccessMessage(response.message);
+
       if (response.note != null && response.note!.isNotEmpty) {
-        Get.snackbar('Info', response.note!);
+        _errorHandler.showInfoMessage(response.note!);
       }
 
       if (response.emailSent == true) {
@@ -146,21 +169,12 @@ class FieldManagerRegisterController extends GetxController {
       } else {
         await Get.offAllNamed(AppRoutes.PLACE_FORM);
       }
-    } on AuthException catch (e) {
-      errorMessage.value = e.message;
-      Get.snackbar(
-        'Registration Failed',
-        e.message,
-        backgroundColor: Colors.red.shade50,
-        colorText: Colors.red.shade900,
-      );
     } catch (e) {
-      errorMessage.value = 'Unexpected error: $e';
-      Get.snackbar(
-        'Registration Failed',
-        'Unexpected error: $e',
-        backgroundColor: Colors.red.shade50,
-        colorText: Colors.red.shade900,
+      _errorHandler.handleGeneralError(
+        context: 'Field Manager Registration',
+        error: e,
+        errorMessage: errorMessage,
+        showSnackbar: true,
       );
     } finally {
       isLoading.value = false;
@@ -180,6 +194,7 @@ class FieldManagerRegisterController extends GetxController {
     formKey.currentState?.reset();
     nameController.clear();
     emailController.clear();
+    phoneController.clear(); // ADD THIS
     passwordController.clear();
     streetController.clear();
     cityController.clear();

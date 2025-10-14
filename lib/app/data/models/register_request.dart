@@ -9,6 +9,7 @@ class RegisterRequest {
     required this.accountNumber,
     required this.bankType,
     required this.role,
+    required this.nomorTelepon,
   });
 
   final String name;
@@ -20,6 +21,7 @@ class RegisterRequest {
   final String accountNumber;
   final String bankType;
   final String role;
+  final String nomorTelepon;
 
   Map<String, dynamic> toJson() {
     return {
@@ -32,6 +34,7 @@ class RegisterRequest {
       'account_number': accountNumber,
       'bank_type': bankType,
       'role': role,
+      'nomor_telepon' : nomorTelepon,
     };
   }
 }

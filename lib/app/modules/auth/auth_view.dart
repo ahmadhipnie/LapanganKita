@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import '../login/login_controller.dart';
@@ -733,6 +734,68 @@ class _CustomerRegisterForm extends GetView<CustomerRegisterController> {
 
                     const SizedBox(height: 16),
 
+                    // Phone Number Field
+                    TextFormField(
+                      controller: controller.phoneController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 13,
+
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        hintText: 'Enter your phone number',
+                        prefixIcon: const Icon(Icons.phone_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF2563EB),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Phone number is required';
+                        }
+                        if (v.length < 10) {
+                          return 'Phone number must be at least 10 digits';
+                        }
+                        if (!RegExp(r'^[0-9]+$').hasMatch(v)) {
+                          return 'Phone number must contain only digits';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
                     // ✅ Gender Dropdown Field
                     Obx(
                       () => DropdownButtonFormField<String>(
@@ -1411,6 +1474,66 @@ class _FieldManagerRegisterForm
                         ),
                       ),
                       validator: controller.validateEmail,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: controller.phoneController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 13,
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        hintText: 'Enter your phone number',
+                        prefixIcon: const Icon(Icons.phone_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF2563EB),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Phone number is required';
+                        }
+                        if (v.length < 10) {
+                          return 'Phone number must be at least 10 digits';
+                        }
+                        if (!RegExp(r'^[0-9]+$').hasMatch(v)) {
+                          return 'Phone number must contain only digits';
+                        }
+                        return null;
+                      },
                     ),
 
                     const SizedBox(height: 16),

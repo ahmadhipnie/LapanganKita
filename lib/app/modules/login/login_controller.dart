@@ -8,7 +8,7 @@ import '../../data/helper/error_helper.dart'; // Add this
 
 class LoginController extends GetxController {
   LoginController({required AuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final AuthRepository _authRepository;
   final LocalStorageService _localStorage = LocalStorageService.instance;
@@ -178,10 +178,10 @@ class LoginController extends GetxController {
         validatePassword(passwordController.text) == null;
   }
 
-  @override
-  void onClose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.onClose();
-  }
+  // @override
+  // void onClose() {
+  //   emailController.dispose();
+  //   passwordController.dispose();
+  //   super.onClose();
+  // }
 }

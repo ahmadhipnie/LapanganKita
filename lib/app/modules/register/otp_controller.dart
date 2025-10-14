@@ -137,7 +137,7 @@ class OTPController extends GetxController {
       //   Get.find<LoginController>().resetForm();
       // }
 
-      await Get.offAllNamed(AppRoutes.LOGIN);
+      await Get.offAllNamed(AppRoutes.AUTH);
     } catch (e) {
       final message = e is AuthException
           ? e.message
