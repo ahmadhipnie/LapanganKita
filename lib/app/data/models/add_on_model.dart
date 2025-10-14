@@ -3,7 +3,8 @@ import 'dart:io';
 class AddOnPayload {
   const AddOnPayload({
     required this.name,
-    required this.pricePerHour,
+    required this.price,
+    required this.category,
     required this.stock,
     required this.description,
     required this.placeId,
@@ -12,7 +13,8 @@ class AddOnPayload {
   });
 
   final String name;
-  final int pricePerHour;
+  final int price;
+  final String category; // 'once time' or 'per hour'
   final int stock;
   final String description;
   final int placeId;
@@ -24,7 +26,8 @@ class AddOnUpdatePayload {
   const AddOnUpdatePayload({
     required this.id,
     required this.name,
-    required this.pricePerHour,
+    required this.price,
+    required this.category,
     required this.stock,
     required this.description,
     required this.userId,
@@ -34,7 +37,8 @@ class AddOnUpdatePayload {
 
   final int id;
   final String name;
-  final int pricePerHour;
+  final int price;
+  final String category; // 'once time' or 'per hour'
   final int stock;
   final String description;
   final int userId;
@@ -46,7 +50,8 @@ class AddOnModel {
   const AddOnModel({
     required this.id,
     required this.name,
-    required this.pricePerHour,
+    required this.price,
+    required this.category,
     required this.stock,
     required this.description,
     this.photo,
@@ -54,11 +59,15 @@ class AddOnModel {
     this.userId,
     this.createdAt,
     this.updatedAt,
+    this.placeName,
+    this.placeAddress,
+    this.placeOwnerName,
   });
 
   final int id;
   final String name;
-  final int pricePerHour;
+  final int price;
+  final String category; // 'once time' or 'per hour'
   final int stock;
   final String description;
   final String? photo;
@@ -66,11 +75,15 @@ class AddOnModel {
   final int? userId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? placeName;
+  final String? placeAddress;
+  final String? placeOwnerName;
 
   AddOnModel copyWith({
     int? id,
     String? name,
-    int? pricePerHour,
+    int? price,
+    String? category,
     int? stock,
     String? description,
     String? photo,
@@ -78,11 +91,15 @@ class AddOnModel {
     int? userId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? placeName,
+    String? placeAddress,
+    String? placeOwnerName,
   }) {
     return AddOnModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      pricePerHour: pricePerHour ?? this.pricePerHour,
+      price: price ?? this.price,
+      category: category ?? this.category,
       stock: stock ?? this.stock,
       description: description ?? this.description,
       photo: photo ?? this.photo,
@@ -90,6 +107,9 @@ class AddOnModel {
       userId: userId ?? this.userId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      placeName: placeName ?? this.placeName,
+      placeAddress: placeAddress ?? this.placeAddress,
+      placeOwnerName: placeOwnerName ?? this.placeOwnerName,
     );
   }
 
@@ -119,7 +139,8 @@ class AddOnModel {
     return AddOnModel(
       id: parseInt(source['id'] ?? source['id_add_on']),
       name: source['add_on_name']?.toString() ?? '',
-      pricePerHour: parseInt(source['price_per_hour']),
+      price: parseInt(source['price']),
+      category: source['category']?.toString() ?? 'once time',
       stock: parseInt(source['stock']),
       description: source['add_on_description']?.toString() ?? '',
       photo: source['add_on_photo']?.toString(),
@@ -131,6 +152,9 @@ class AddOnModel {
           : int.tryParse(source['id_users']?.toString() ?? ''),
       createdAt: parseDate(source['created_at']),
       updatedAt: parseDate(source['updated_at']),
+      placeName: source['place_name']?.toString(),
+      placeAddress: source['place_address']?.toString(),
+      placeOwnerName: source['place_owner_name']?.toString(),
     );
   }
 }

@@ -229,8 +229,33 @@ class PlaceFormView extends GetView<PlaceFormController> {
                                                 controller.addOnPriceController,
                                             keyboardType: TextInputType.number,
                                             decoration: const InputDecoration(
-                                              labelText: 'Price per Hour',
+                                              labelText: 'Price',
                                               border: OutlineInputBorder(),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Obx(
+                                            () => DropdownButtonFormField<String>(
+                                              value: controller.addOnCategory.value,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Category',
+                                                border: OutlineInputBorder(),
+                                              ),
+                                              items: const [
+                                                DropdownMenuItem(
+                                                  value: 'once time',
+                                                  child: Text('Once Time'),
+                                                ),
+                                                DropdownMenuItem(
+                                                  value: 'per hour',
+                                                  child: Text('Per Hour'),
+                                                ),
+                                              ],
+                                              onChanged: (value) {
+                                                if (value != null) {
+                                                  controller.addOnCategory.value = value;
+                                                }
+                                              },
                                             ),
                                           ),
                                           const SizedBox(height: 12),

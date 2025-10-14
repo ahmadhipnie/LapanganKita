@@ -6,6 +6,8 @@ import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fie
 import 'package:lapangan_kita/app/bindings/fieldmanager_withdraw_binding.dart';
 import 'package:lapangan_kita/app/modules/fieldmanager_withdraw/fieldmanager_withdraw_view.dart';
 import '../../../../data/models/performance_report_model.dart';
+import '../../../../data/repositories/field_repository.dart';
+import '../../../../services/local_storage_service.dart';
 import '../tabs_controller/fieldmanager_home_controller.dart';
 
 class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
@@ -60,6 +62,57 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
           fontWeight: FontWeight.w600,
           color: color,
         ),
+      ),
+    );
+  }
+
+  // Verification status chip (pending, approved, rejected)
+  Widget _verificationChip(dynamic verificationStatus) {
+    final statusStr = (verificationStatus?.toString() ?? 'pending').toLowerCase();
+    String label;
+    Color color;
+    IconData icon;
+    
+    switch (statusStr) {
+      case 'approved':
+        label = 'Approved';
+        color = const Color(0xFF10B981); // green
+        icon = Icons.check_circle;
+        break;
+      case 'rejected':
+        label = 'Rejected';
+        color = const Color(0xFFEF4444); // red
+        icon = Icons.cancel;
+        break;
+      case 'pending':
+      default:
+        label = 'Pending';
+        color = const Color(0xFFF59E0B); // orange
+        icon = Icons.schedule;
+        break;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -343,6 +396,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
           : transactions.take(limit).toList();
       final isLoading = c.isLoadingReport.value;
       final errorMessage = c.reportError.value;
+      if (errorMessage.isNotEmpty) {
+        debugPrint('Performance report error: $errorMessage');
+      }
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,9 +456,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        errorMessage,
-                        style: const TextStyle(color: Color(0xFF7F1D1D)),
+                      const Text(
+                        "We're having trouble retrieving the performance report right now.",
+                        style: TextStyle(color: Color(0xFF7F1D1D)),
                       ),
                       const SizedBox(height: 12),
                       Align(
@@ -751,10 +807,10 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                               await c.fetchPlacesForOwner();
 
                               Get.snackbar(
-                                'Berhasil',
+                                'Success',
                                 message.isNotEmpty
                                     ? message
-                                    : 'Data tempat berhasil diperbarui.',
+                                    : 'Place data updated successfully.',
                                 snackPosition: SnackPosition.BOTTOM,
                               );
                             }
@@ -821,6 +877,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
   }
 
   Widget _placeErrorCard(String message, FieldManagerHomeController c) {
+    if (message.isNotEmpty) {
+      debugPrint('Place data error: $message');
+    }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -847,7 +906,10 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(message, style: const TextStyle(color: Color(0xFF7F1D1D))),
+          const Text(
+            "We're having trouble loading your place data right now.",
+            style: TextStyle(color: Color(0xFF7F1D1D)),
+          ),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
@@ -863,26 +925,35 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
   }
 
   Widget _placeBadge({required IconData icon, required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: const Color(0xFF4B5563)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF374151),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 240),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: const Color(0xFF4B5563)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                style: const TextStyle(
+                  color: Color(0xFF374151),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -986,58 +1057,119 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Expanded(
-                child: Text(
-                  'Field Management',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 420;
+
+              Widget buildAddFieldButton({bool expand = false}) {
+                final button = TextButton.icon(
+                  onPressed: hasPlace ? () => _navigateToAddField(c) : null,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF2563EB),
+                    backgroundColor: hasPlace
+                        ? const Color(0xFFDBEAFE)
+                        : const Color(0xFFF3F4F6),
+                    disabledForegroundColor: const Color(0xFF9CA3AF),
+                    minimumSize: expand
+                        ? const Size.fromHeight(44)
+                        : const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Field'),
+                );
+
+                final wrappedButton = Tooltip(
+                  message: hasPlace
+                      ? 'Create a new field'
+                      : 'Register your place before adding fields.',
+                  child: button,
+                );
+
+                if (expand) {
+                  return SizedBox(width: double.infinity, child: wrappedButton);
+                }
+
+                return SizedBox(height: 40, child: wrappedButton);
+              }
+
+              Widget buildRefreshButton({
+                Alignment alignment = Alignment.center,
+                bool compact = false,
+              }) {
+                final iconButton = IconButton(
+                  onPressed: c.refreshFields,
+                  icon: const Icon(Icons.refresh, color: Color(0xFF2563EB)),
+                  tooltip: 'Refresh data',
+                  splashRadius: 22,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints.tightFor(
+                    width: compact ? 44 : 40,
+                    height: compact ? 44 : 40,
+                  ),
+                );
+
+                final sizedButton = SizedBox(
+                  width: compact ? 44 : 40,
+                  height: compact ? 44 : 40,
+                  child: iconButton,
+                );
+
+                if (alignment != Alignment.center) {
+                  return Align(alignment: alignment, child: sizedButton);
+                }
+
+                return sizedButton;
+              }
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Tooltip(
-                      message: hasPlace
-                          ? 'Create a new field'
-                          : 'Register your place before adding fields.',
-                      child: SizedBox(
-                        height: 40,
-                        child: TextButton.icon(
-                          onPressed: hasPlace
-                              ? () => _navigateToAddField(c)
-                              : null,
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF2563EB),
-                            disabledForegroundColor: const Color(0xFF9CA3AF),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Field Management',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Field'),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        buildRefreshButton(compact: true),
+                      ],
                     ),
-                    SizedBox(
-                      height: 40,
-                      width: 40,
-                      child: IconButton(
-                        onPressed: c.refreshFields,
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Color(0xFF2563EB),
-                        ),
-                        tooltip: 'Refresh data',
-                      ),
-                    ),
+                    const SizedBox(height: 12),
+                    buildAddFieldButton(expand: true),
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Field Management',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      buildRefreshButton(),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(children: [const Spacer(), buildAddFieldButton()]),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           if (allFields.isNotEmpty)
@@ -1225,6 +1357,8 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                             children: [
                               Text(
                                 name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -1233,6 +1367,8 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                               const SizedBox(height: 4),
                               Text(
                                 type,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Color(0xFF6B7280),
                                   fontSize: 13,
@@ -1241,7 +1377,14 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                             ],
                           ),
                         ),
-                        _statusChip(status),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _statusChip(status),
+                            const SizedBox(height: 6),
+                            _verificationChip(field['isVerifiedAdmin']),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -1253,11 +1396,14 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                           color: Color(0xFF6B7280),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          '${field['openHour'] ?? '-'} - ${field['closeHour'] ?? '-'}',
-                          style: const TextStyle(
-                            color: Color(0xFF111827),
-                            fontSize: 13,
+                        Expanded(
+                          child: Text(
+                            '${field['openHour'] ?? '-'} - ${field['closeHour'] ?? '-'}',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
@@ -1271,96 +1417,35 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                           color: Color(0xFF6B7280),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'Max ${field['maxPerson'] ?? '-'} people',
-                          style: const TextStyle(
-                            color: Color(0xFF111827),
-                            fontSize: 13,
+                        Expanded(
+                          child: Text(
+                            'Max ${field['maxPerson'] ?? '-'} people',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '${_formatCurrency(price)}/hour',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2563EB),
+                        Expanded(
+                          child: Text(
+                            '${_formatCurrency(price)}/hour',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2563EB),
+                            ),
                           ),
                         ),
-                        PopupMenuButton<String>(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          onSelected: (value) async {
-                            if (value == 'detail') {
-                              _showFieldDetailBottomSheet(context, field);
-                            } else if (value == 'edit') {
-                              final result = await Get.to(
-                                () => const EditFieldFieldmanagerView(),
-                                binding: EditFieldFieldmanagerBinding(),
-                                arguments: field,
-                              );
-
-                              if (result is Map) {
-                                if (result['deleted'] == true) {
-                                  final message =
-                                      result['message']?.toString().trim() ??
-                                      '';
-
-                                  await c.fetchFieldsForPlace(force: true);
-
-                                  Get.snackbar(
-                                    'Berhasil',
-                                    message.isNotEmpty
-                                        ? message
-                                        : 'Data lapangan berhasil dihapus.',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                  );
-                                  return;
-                                }
-
-                                if (result['updated'] == true) {
-                                  final message =
-                                      result['message']?.toString().trim() ??
-                                      '';
-
-                                  await c.fetchFieldsForPlace(force: true);
-
-                                  Get.snackbar(
-                                    'Berhasil',
-                                    message.isNotEmpty
-                                        ? message
-                                        : 'Data lapangan berhasil diperbarui.',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                  );
-                                }
-                              }
-                            }
-                          },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'detail',
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: Icon(Icons.visibility_outlined),
-                                title: Text('View details'),
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: Icon(Icons.edit_outlined),
-                                title: Text('Edit field'),
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(width: 8),
+                        _buildFieldPopupMenu(context, c, field),
                       ],
                     ),
                   ],
@@ -1370,6 +1455,198 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFieldPopupMenu(
+    BuildContext context,
+    FieldManagerHomeController c,
+    Map<String, dynamic> field,
+  ) {
+    final verificationStatus = field['isVerifiedAdmin']?.toString().toLowerCase() ?? 'pending';
+    
+    return PopupMenuButton<String>(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      onSelected: (value) async {
+        if (value == 'detail') {
+          _showFieldDetailBottomSheet(context, field);
+        } else if (value == 'edit') {
+          final result = await Get.to(
+            () => const EditFieldFieldmanagerView(),
+            binding: EditFieldFieldmanagerBinding(),
+            arguments: field,
+          );
+
+          if (result is Map) {
+            if (result['deleted'] == true) {
+              final message = result['message']?.toString().trim() ?? '';
+              await c.fetchFieldsForPlace(force: true);
+              Get.snackbar(
+                'Success',
+                message.isNotEmpty
+                    ? message
+                    : 'Field data has been successfully deleted.',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+
+            if (result['updated'] == true) {
+              final message = result['message']?.toString().trim() ?? '';
+              await c.fetchFieldsForPlace(force: true);
+              Get.snackbar(
+                'Success',
+                message.isNotEmpty
+                    ? message
+                    : 'Field data updated successfully.',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            }
+          }
+        } else if (value == 'delete') {
+          // Show confirmation dialog
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (dialogCtx) => AlertDialog(
+              title: const Text('Delete Field'),
+              content: const Text(
+                'Are you sure you want to delete this field? This action cannot be undone.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF4444),
+                  ),
+                  onPressed: () => Navigator.of(dialogCtx).pop(true),
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm != true) return;
+
+          // Show loading dialog
+          Get.dialog(
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+            barrierDismissible: false,
+          );
+
+          try {
+            final fieldId = field['id'];
+            if (fieldId == null) {
+              Get.back();
+              Get.snackbar(
+                'Error',
+                'Field ID not found',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+
+            final localStorage = LocalStorageService.instance;
+            final userData = localStorage.getUserData();
+            final userId = int.tryParse(userData?['id']?.toString() ?? '0') ?? 0;
+            
+            if (userId == 0) {
+              Get.back();
+              Get.snackbar(
+                'Error',
+                'User not authenticated',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+
+            final fieldRepository = Get.find<FieldRepository>();
+            final response = await fieldRepository.deleteField(
+              fieldId: fieldId,
+              userId: userId,
+            );
+
+            Get.back(); // Close loading dialog
+
+            if (response.success) {
+              await c.fetchFieldsForPlace(force: true);
+              Get.snackbar(
+                'Success',
+                response.message,
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            } else {
+              Get.snackbar(
+                'Failed',
+                response.message,
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            }
+          } catch (e) {
+            Get.back(); // Close loading dialog
+            Get.snackbar(
+              'Error',
+              'An error occurred: ${e.toString()}',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          }
+        }
+      },
+      itemBuilder: (_) {
+        // Build menu items based on verification status
+        List<PopupMenuEntry<String>> items = [
+          const PopupMenuItem(
+            value: 'detail',
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.visibility_outlined),
+              title: Text('View details'),
+            ),
+          ),
+        ];
+
+        // If pending: no edit or delete option
+        if (verificationStatus == 'pending') {
+          // Only show detail option
+        }
+        // If rejected: show delete option
+        else if (verificationStatus == 'rejected') {
+          items.add(
+            const PopupMenuItem(
+              value: 'delete',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.delete_outlined, color: Color(0xFFEF4444)),
+                title: Text('Delete field', style: TextStyle(color: Color(0xFFEF4444))),
+              ),
+            ),
+          );
+        }
+        // If approved: show edit option (default)
+        else {
+          items.add(
+            const PopupMenuItem(
+              value: 'edit',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.edit_outlined),
+                title: Text('Edit field'),
+              ),
+            ),
+          );
+        }
+
+        return items;
+      },
     );
   }
 
@@ -1433,7 +1710,15 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _statusChip(field['status']),
+                    const SizedBox(width: 8),
+                    _verificationChip(field['isVerifiedAdmin']),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 _detailRow('Field Type', field['type']),
                 _detailRow(
                   'Operating Hours',
@@ -1449,88 +1734,245 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                     int.tryParse(field['price']?.toString() ?? '') ?? 0,
                   ),
                 ),
-                _detailRow('Status', field['status']),
                 _detailRow('Description', field['description']),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () async {
-                          Navigator.of(ctx).pop();
-                          final result = await Get.to(
-                            () => const EditFieldFieldmanagerView(),
-                            binding: EditFieldFieldmanagerBinding(),
-                            arguments: field,
-                          );
-
-                          if (result is Map) {
-                            if (result['deleted'] == true) {
-                              final message =
-                                  result['message']?.toString().trim() ?? '';
-
-                              await controller.fetchFieldsForPlace(force: true);
-
-                              Get.snackbar(
-                                'Berhasil',
-                                message.isNotEmpty
-                                    ? message
-                                    : 'Data lapangan berhasil dihapus.',
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                              return;
-                            }
-
-                            if (result['updated'] == true) {
-                              final message =
-                                  result['message']?.toString().trim() ?? '';
-
-                              await controller.fetchFieldsForPlace(force: true);
-
-                              Get.snackbar(
-                                'Berhasil',
-                                message.isNotEmpty
-                                    ? message
-                                    : 'Data lapangan berhasil diperbarui.',
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.edit, color: Colors.white),
-                        label: const Text(
-                          'Edit Field',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Close'),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildActionButtons(ctx, field),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext ctx, Map<String, dynamic> field) {
+    final verificationStatus = field['isVerifiedAdmin']?.toString().toLowerCase() ?? 'pending';
+    
+    // If status is pending, only show close button
+    if (verificationStatus == 'pending') {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Close'),
+        ),
+      );
+    }
+    
+    // If status is rejected, show delete button and close button
+    if (verificationStatus == 'rejected') {
+      return Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                // Show confirmation dialog
+                final confirm = await showDialog<bool>(
+                  context: ctx,
+                  builder: (dialogCtx) => AlertDialog(
+                    title: const Text('Delete Field'),
+                    content: const Text(
+                      'Are you sure you want to delete this field? This action cannot be undone.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogCtx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                        ),
+                        onPressed: () => Navigator.of(dialogCtx).pop(true),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm != true) return;
+
+                Navigator.of(ctx).pop();
+
+                // Show loading dialog
+                Get.dialog(
+                  const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  barrierDismissible: false,
+                );
+
+                try {
+                  final fieldId = field['id'];
+                  if (fieldId == null) {
+                    Get.back();
+                    Get.snackbar(
+                      'Error',
+                      'Field ID not found',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                    return;
+                  }
+
+                  final localStorage = LocalStorageService.instance;
+                  final userData = localStorage.getUserData();
+                  final userId = int.tryParse(userData?['id']?.toString() ?? '0') ?? 0;
+                  
+                  if (userId == 0) {
+                    Get.back();
+                    Get.snackbar(
+                      'Error',
+                      'User not authenticated',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                    return;
+                  }
+
+                  final fieldRepository = Get.find<FieldRepository>();
+                  final response = await fieldRepository.deleteField(
+                    fieldId: fieldId,
+                    userId: userId,
+                  );
+
+                  Get.back(); // Close loading dialog
+
+                  if (response.success) {
+                    await controller.fetchFieldsForPlace(force: true);
+                    Get.snackbar(
+                      'Success',
+                      response.message,
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  } else {
+                    Get.snackbar(
+                      'Failed',
+                      response.message,
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  }
+                } catch (e) {
+                  Get.back(); // Close loading dialog
+                  Get.snackbar(
+                    'Error',
+                    'An error occurred: ${e.toString()}',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                }
+              },
+              icon: const Icon(Icons.delete, color: Colors.white),
+              label: const Text(
+                'Delete Field',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Close'),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // If status is approved, show edit button and close button (default behavior)
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              minimumSize: const Size(0, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final result = await Get.to(
+                () => const EditFieldFieldmanagerView(),
+                binding: EditFieldFieldmanagerBinding(),
+                arguments: field,
+              );
+
+              if (result is Map) {
+                if (result['deleted'] == true) {
+                  final message =
+                      result['message']?.toString().trim() ?? '';
+
+                  await controller.fetchFieldsForPlace(force: true);
+
+                  Get.snackbar(
+                    'Success',
+                    message.isNotEmpty
+                        ? message
+                        : 'Field data has been successfully deleted.',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                  return;
+                }
+
+                if (result['updated'] == true) {
+                  final message =
+                      result['message']?.toString().trim() ?? '';
+
+                  await controller.fetchFieldsForPlace(force: true);
+
+                  Get.snackbar(
+                    'Success',
+                    message.isNotEmpty
+                        ? message
+                        : 'Field data updated successfully.',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.edit, color: Colors.white),
+            label: const Text(
+              'Edit Field',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1561,6 +2003,9 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
   }
 
   Widget _fieldsErrorState(String message, FieldManagerHomeController c) {
+    if (message.isNotEmpty) {
+      debugPrint('Field data error: $message');
+    }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -1587,7 +2032,10 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(message, style: const TextStyle(color: Color(0xFF7F1D1D))),
+          const Text(
+            "We couldn't load your field data right now. Please try again shortly.",
+            style: TextStyle(color: Color(0xFF7F1D1D)),
+          ),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,

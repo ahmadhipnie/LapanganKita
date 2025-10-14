@@ -13,6 +13,7 @@ class BookingRepository {
       final response = await _apiClient.raw.get<Map<String, dynamic>>(
         'bookings/owner/bookings/',
         queryParameters: {'owner_id': ownerId},
+        options: Options(headers: {'Cache-Control': 'no-cache'}),
       );
 
       final statusCode = response.statusCode ?? 0;

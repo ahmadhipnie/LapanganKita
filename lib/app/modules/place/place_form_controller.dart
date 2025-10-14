@@ -41,6 +41,7 @@ class PlaceFormController extends GetxController {
   final addOnPriceController = TextEditingController();
   final addOnQtyController = TextEditingController();
   final addOnDescController = TextEditingController();
+  final addOnCategory = 'once time'.obs; // 'once time' or 'per hour'
   final addOnImage = Rx<File?>(null);
 
   final Rxn<PlaceModel> lastCreatedPlace = Rxn<PlaceModel>();
@@ -209,8 +210,9 @@ class PlaceFormController extends GetxController {
   }) async {
     final payload = AddOnPayload(
       name: addOnNameController.text.trim(),
-      pricePerHour:
+      price:
           int.tryParse(addOnPriceController.text.replaceAll('.', '')) ?? 0,
+      category: addOnCategory.value,
       stock: int.tryParse(addOnQtyController.text.trim()) ?? 0,
       description: addOnDescController.text.trim(),
       placeId: place.id,
@@ -254,6 +256,7 @@ class PlaceFormController extends GetxController {
     addOnPriceController.clear();
     addOnQtyController.clear();
     addOnDescController.clear();
+    addOnCategory.value = 'once time';
     addOnImage.value = null;
   }
 
