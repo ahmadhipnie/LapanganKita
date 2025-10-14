@@ -11,6 +11,7 @@ class FieldModel {
     required this.status,
     required this.maxPerson,
     required this.placeId,
+    this.isVerifiedAdmin,
     this.createdAt,
     this.updatedAt,
     this.placeName,
@@ -29,6 +30,7 @@ class FieldModel {
   final String status;
   final int maxPerson;
   final int placeId;
+  final String? isVerifiedAdmin; // pending, approved, rejected
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? placeName;
@@ -66,6 +68,7 @@ class FieldModel {
       status: parseString(json['status']),
       maxPerson: parseInt(json['max_person']),
       placeId: parseInt(json['id_place'] ?? json['place_id']),
+      isVerifiedAdmin: json['is_verified_admin']?.toString(),
       createdAt: parseDate(json['created_at']),
       updatedAt: parseDate(json['updated_at']),
       placeName: json['place_name']?.toString(),
@@ -87,6 +90,7 @@ class FieldModel {
       'status': status,
       'max_person': maxPerson,
       'id_place': placeId,
+      'is_verified_admin': isVerifiedAdmin,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'place_name': placeName,

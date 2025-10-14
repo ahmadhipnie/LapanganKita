@@ -683,7 +683,7 @@ class CustomerBookingDetailView
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  controller.formatRupiah(addOn.pricePerHour.toDouble()),
+                  controller.formatRupiah(addOn.price.toDouble()),
                   style: TextStyle(
                     fontSize: _isSmallScreen
                         ? 15

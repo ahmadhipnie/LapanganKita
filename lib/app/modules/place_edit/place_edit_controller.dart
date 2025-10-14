@@ -136,7 +136,8 @@ class PlaceEditController extends GetxController {
 
   Future<AddOnActionResult> createAddOn({
     required String name,
-    required int pricePerHour,
+    required int price,
+    required String category,
     required int stock,
     required String description,
     File? photo,
@@ -172,7 +173,8 @@ class PlaceEditController extends GetxController {
       final response = await _addOnRepository.createAddOn(
         AddOnPayload(
           name: name,
-          pricePerHour: pricePerHour,
+          price: price,
+          category: category,
           stock: stock,
           description: description,
           placeId: placeId,
@@ -283,7 +285,8 @@ class PlaceEditController extends GetxController {
   Future<bool> updateAddOn({
     required AddOnModel addOn,
     required String name,
-    required int pricePerHour,
+    required int price,
+    required String category,
     required int stock,
     required String description,
   }) async {
@@ -306,7 +309,8 @@ class PlaceEditController extends GetxController {
         AddOnUpdatePayload(
           id: addOn.id,
           name: name,
-          pricePerHour: pricePerHour,
+          price: price,
+          category: category,
           stock: stock,
           description: description,
           userId: userId,
@@ -334,7 +338,8 @@ class PlaceEditController extends GetxController {
         if (index >= 0) {
           addOns[index] = addOns[index].copyWith(
             name: name,
-            pricePerHour: pricePerHour,
+            price: price,
+            category: category,
             stock: stock,
             description: description,
           );

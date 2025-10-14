@@ -548,12 +548,13 @@ class CustomerBookingDetailController extends GetxController {
           orElse: () => AddOnModel(
             id: 0,
             name: name,
-            pricePerHour: 0,
+            price: 0,
+            category: 'once time',
             stock: 0,
             description: '',
           ),
         );
-        addOnPrice += addOn.pricePerHour * quantity;
+        addOnPrice += addOn.price * quantity;
       }
     });
 
@@ -590,7 +591,8 @@ class CustomerBookingDetailController extends GetxController {
             orElse: () => AddOnModel(
               id: 0,
               name: name,
-              pricePerHour: 0,
+              price: 0,
+              category: 'once time',
               stock: 0,
               description: '',
             ),
@@ -638,15 +640,16 @@ class CustomerBookingDetailController extends GetxController {
             orElse: () => AddOnModel(
               id: 0,
               name: name,
-              pricePerHour: 0,
+              price: 0,
+              category: 'once time',
               stock: 0,
               description: '',
             ),
           );
-          if (addOn.id != 0 && addOn.pricePerHour > 0) {
+          if (addOn.id != 0 && addOn.price > 0) {
             items.add({
               'id': 'addon_${addOn.id}',
-              'price': addOn.pricePerHour.toInt(),
+              'price': addOn.price.toInt(),
               'quantity': quantity,
               'name': addOn.name,
             });

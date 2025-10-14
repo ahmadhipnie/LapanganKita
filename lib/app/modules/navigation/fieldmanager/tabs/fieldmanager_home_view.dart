@@ -6,6 +6,8 @@ import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fie
 import 'package:lapangan_kita/app/bindings/fieldmanager_withdraw_binding.dart';
 import 'package:lapangan_kita/app/modules/fieldmanager_withdraw/fieldmanager_withdraw_view.dart';
 import '../../../../data/models/performance_report_model.dart';
+import '../../../../data/repositories/field_repository.dart';
+import '../../../../services/local_storage_service.dart';
 import '../tabs_controller/fieldmanager_home_controller.dart';
 
 class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
@@ -60,6 +62,57 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
           fontWeight: FontWeight.w600,
           color: color,
         ),
+      ),
+    );
+  }
+
+  // Verification status chip (pending, approved, rejected)
+  Widget _verificationChip(dynamic verificationStatus) {
+    final statusStr = (verificationStatus?.toString() ?? 'pending').toLowerCase();
+    String label;
+    Color color;
+    IconData icon;
+    
+    switch (statusStr) {
+      case 'approved':
+        label = 'Approved';
+        color = const Color(0xFF10B981); // green
+        icon = Icons.check_circle;
+        break;
+      case 'rejected':
+        label = 'Rejected';
+        color = const Color(0xFFEF4444); // red
+        icon = Icons.cancel;
+        break;
+      case 'pending':
+      default:
+        label = 'Pending';
+        color = const Color(0xFFF59E0B); // orange
+        icon = Icons.schedule;
+        break;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -754,10 +807,10 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                               await c.fetchPlacesForOwner();
 
                               Get.snackbar(
-                                'Berhasil',
+                                'Success',
                                 message.isNotEmpty
                                     ? message
-                                    : 'Data tempat berhasil diperbarui.',
+                                    : 'Place data updated successfully.',
                                 snackPosition: SnackPosition.BOTTOM,
                               );
                             }
@@ -1324,7 +1377,14 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                             ],
                           ),
                         ),
-                        _statusChip(status),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _statusChip(status),
+                            const SizedBox(height: 6),
+                            _verificationChip(field['isVerifiedAdmin']),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -1385,75 +1445,7 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        PopupMenuButton<String>(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          onSelected: (value) async {
-                            if (value == 'detail') {
-                              _showFieldDetailBottomSheet(context, field);
-                            } else if (value == 'edit') {
-                              final result = await Get.to(
-                                () => const EditFieldFieldmanagerView(),
-                                binding: EditFieldFieldmanagerBinding(),
-                                arguments: field,
-                              );
-
-                              if (result is Map) {
-                                if (result['deleted'] == true) {
-                                  final message =
-                                      result['message']?.toString().trim() ??
-                                      '';
-
-                                  await c.fetchFieldsForPlace(force: true);
-
-                                  Get.snackbar(
-                                    'Berhasil',
-                                    message.isNotEmpty
-                                        ? message
-                                        : 'Data lapangan berhasil dihapus.',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                  );
-                                  return;
-                                }
-
-                                if (result['updated'] == true) {
-                                  final message =
-                                      result['message']?.toString().trim() ??
-                                      '';
-
-                                  await c.fetchFieldsForPlace(force: true);
-
-                                  Get.snackbar(
-                                    'Berhasil',
-                                    message.isNotEmpty
-                                        ? message
-                                        : 'Data lapangan berhasil diperbarui.',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                  );
-                                }
-                              }
-                            }
-                          },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'detail',
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: Icon(Icons.visibility_outlined),
-                                title: Text('View details'),
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: Icon(Icons.edit_outlined),
-                                title: Text('Edit field'),
-                              ),
-                            ),
-                          ],
-                        ),
+                        _buildFieldPopupMenu(context, c, field),
                       ],
                     ),
                   ],
@@ -1463,6 +1455,198 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFieldPopupMenu(
+    BuildContext context,
+    FieldManagerHomeController c,
+    Map<String, dynamic> field,
+  ) {
+    final verificationStatus = field['isVerifiedAdmin']?.toString().toLowerCase() ?? 'pending';
+    
+    return PopupMenuButton<String>(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      onSelected: (value) async {
+        if (value == 'detail') {
+          _showFieldDetailBottomSheet(context, field);
+        } else if (value == 'edit') {
+          final result = await Get.to(
+            () => const EditFieldFieldmanagerView(),
+            binding: EditFieldFieldmanagerBinding(),
+            arguments: field,
+          );
+
+          if (result is Map) {
+            if (result['deleted'] == true) {
+              final message = result['message']?.toString().trim() ?? '';
+              await c.fetchFieldsForPlace(force: true);
+              Get.snackbar(
+                'Success',
+                message.isNotEmpty
+                    ? message
+                    : 'Field data has been successfully deleted.',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+
+            if (result['updated'] == true) {
+              final message = result['message']?.toString().trim() ?? '';
+              await c.fetchFieldsForPlace(force: true);
+              Get.snackbar(
+                'Success',
+                message.isNotEmpty
+                    ? message
+                    : 'Field data updated successfully.',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            }
+          }
+        } else if (value == 'delete') {
+          // Show confirmation dialog
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (dialogCtx) => AlertDialog(
+              title: const Text('Delete Field'),
+              content: const Text(
+                'Are you sure you want to delete this field? This action cannot be undone.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF4444),
+                  ),
+                  onPressed: () => Navigator.of(dialogCtx).pop(true),
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm != true) return;
+
+          // Show loading dialog
+          Get.dialog(
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+            barrierDismissible: false,
+          );
+
+          try {
+            final fieldId = field['id'];
+            if (fieldId == null) {
+              Get.back();
+              Get.snackbar(
+                'Error',
+                'Field ID not found',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+
+            final localStorage = LocalStorageService.instance;
+            final userData = localStorage.getUserData();
+            final userId = int.tryParse(userData?['id']?.toString() ?? '0') ?? 0;
+            
+            if (userId == 0) {
+              Get.back();
+              Get.snackbar(
+                'Error',
+                'User not authenticated',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+
+            final fieldRepository = Get.find<FieldRepository>();
+            final response = await fieldRepository.deleteField(
+              fieldId: fieldId,
+              userId: userId,
+            );
+
+            Get.back(); // Close loading dialog
+
+            if (response.success) {
+              await c.fetchFieldsForPlace(force: true);
+              Get.snackbar(
+                'Success',
+                response.message,
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            } else {
+              Get.snackbar(
+                'Failed',
+                response.message,
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            }
+          } catch (e) {
+            Get.back(); // Close loading dialog
+            Get.snackbar(
+              'Error',
+              'An error occurred: ${e.toString()}',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          }
+        }
+      },
+      itemBuilder: (_) {
+        // Build menu items based on verification status
+        List<PopupMenuEntry<String>> items = [
+          const PopupMenuItem(
+            value: 'detail',
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.visibility_outlined),
+              title: Text('View details'),
+            ),
+          ),
+        ];
+
+        // If pending: no edit or delete option
+        if (verificationStatus == 'pending') {
+          // Only show detail option
+        }
+        // If rejected: show delete option
+        else if (verificationStatus == 'rejected') {
+          items.add(
+            const PopupMenuItem(
+              value: 'delete',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.delete_outlined, color: Color(0xFFEF4444)),
+                title: Text('Delete field', style: TextStyle(color: Color(0xFFEF4444))),
+              ),
+            ),
+          );
+        }
+        // If approved: show edit option (default)
+        else {
+          items.add(
+            const PopupMenuItem(
+              value: 'edit',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.edit_outlined),
+                title: Text('Edit field'),
+              ),
+            ),
+          );
+        }
+
+        return items;
+      },
     );
   }
 
@@ -1526,7 +1710,15 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _statusChip(field['status']),
+                    const SizedBox(width: 8),
+                    _verificationChip(field['isVerifiedAdmin']),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 _detailRow('Field Type', field['type']),
                 _detailRow(
                   'Operating Hours',
@@ -1542,88 +1734,245 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                     int.tryParse(field['price']?.toString() ?? '') ?? 0,
                   ),
                 ),
-                _detailRow('Status', field['status']),
                 _detailRow('Description', field['description']),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () async {
-                          Navigator.of(ctx).pop();
-                          final result = await Get.to(
-                            () => const EditFieldFieldmanagerView(),
-                            binding: EditFieldFieldmanagerBinding(),
-                            arguments: field,
-                          );
-
-                          if (result is Map) {
-                            if (result['deleted'] == true) {
-                              final message =
-                                  result['message']?.toString().trim() ?? '';
-
-                              await controller.fetchFieldsForPlace(force: true);
-
-                              Get.snackbar(
-                                'Berhasil',
-                                message.isNotEmpty
-                                    ? message
-                                    : 'Data lapangan berhasil dihapus.',
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                              return;
-                            }
-
-                            if (result['updated'] == true) {
-                              final message =
-                                  result['message']?.toString().trim() ?? '';
-
-                              await controller.fetchFieldsForPlace(force: true);
-
-                              Get.snackbar(
-                                'Berhasil',
-                                message.isNotEmpty
-                                    ? message
-                                    : 'Data lapangan berhasil diperbarui.',
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.edit, color: Colors.white),
-                        label: const Text(
-                          'Edit Field',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Close'),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildActionButtons(ctx, field),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext ctx, Map<String, dynamic> field) {
+    final verificationStatus = field['isVerifiedAdmin']?.toString().toLowerCase() ?? 'pending';
+    
+    // If status is pending, only show close button
+    if (verificationStatus == 'pending') {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Close'),
+        ),
+      );
+    }
+    
+    // If status is rejected, show delete button and close button
+    if (verificationStatus == 'rejected') {
+      return Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                // Show confirmation dialog
+                final confirm = await showDialog<bool>(
+                  context: ctx,
+                  builder: (dialogCtx) => AlertDialog(
+                    title: const Text('Delete Field'),
+                    content: const Text(
+                      'Are you sure you want to delete this field? This action cannot be undone.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogCtx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                        ),
+                        onPressed: () => Navigator.of(dialogCtx).pop(true),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm != true) return;
+
+                Navigator.of(ctx).pop();
+
+                // Show loading dialog
+                Get.dialog(
+                  const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  barrierDismissible: false,
+                );
+
+                try {
+                  final fieldId = field['id'];
+                  if (fieldId == null) {
+                    Get.back();
+                    Get.snackbar(
+                      'Error',
+                      'Field ID not found',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                    return;
+                  }
+
+                  final localStorage = LocalStorageService.instance;
+                  final userData = localStorage.getUserData();
+                  final userId = int.tryParse(userData?['id']?.toString() ?? '0') ?? 0;
+                  
+                  if (userId == 0) {
+                    Get.back();
+                    Get.snackbar(
+                      'Error',
+                      'User not authenticated',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                    return;
+                  }
+
+                  final fieldRepository = Get.find<FieldRepository>();
+                  final response = await fieldRepository.deleteField(
+                    fieldId: fieldId,
+                    userId: userId,
+                  );
+
+                  Get.back(); // Close loading dialog
+
+                  if (response.success) {
+                    await controller.fetchFieldsForPlace(force: true);
+                    Get.snackbar(
+                      'Success',
+                      response.message,
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  } else {
+                    Get.snackbar(
+                      'Failed',
+                      response.message,
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  }
+                } catch (e) {
+                  Get.back(); // Close loading dialog
+                  Get.snackbar(
+                    'Error',
+                    'An error occurred: ${e.toString()}',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                }
+              },
+              icon: const Icon(Icons.delete, color: Colors.white),
+              label: const Text(
+                'Delete Field',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Close'),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // If status is approved, show edit button and close button (default behavior)
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              minimumSize: const Size(0, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final result = await Get.to(
+                () => const EditFieldFieldmanagerView(),
+                binding: EditFieldFieldmanagerBinding(),
+                arguments: field,
+              );
+
+              if (result is Map) {
+                if (result['deleted'] == true) {
+                  final message =
+                      result['message']?.toString().trim() ?? '';
+
+                  await controller.fetchFieldsForPlace(force: true);
+
+                  Get.snackbar(
+                    'Success',
+                    message.isNotEmpty
+                        ? message
+                        : 'Field data has been successfully deleted.',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                  return;
+                }
+
+                if (result['updated'] == true) {
+                  final message =
+                      result['message']?.toString().trim() ?? '';
+
+                  await controller.fetchFieldsForPlace(force: true);
+
+                  Get.snackbar(
+                    'Success',
+                    message.isNotEmpty
+                        ? message
+                        : 'Field data updated successfully.',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.edit, color: Colors.white),
+            label: const Text(
+              'Edit Field',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ),
+      ],
     );
   }
 

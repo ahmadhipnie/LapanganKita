@@ -37,13 +37,14 @@ class FieldadminNavigationView extends GetView<FieldadminNavigationController> {
             ),
             
             BottomNavigationBarItem(
-              icon: Icon(Icons.campaign_outlined),
-              label: 'Promosi',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.stadium_outlined),
               label: 'Field',
             ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.campaign_outlined),
+              label: 'Promosi',
+            ),
+            
             BottomNavigationBarItem(
               icon: Icon(Icons.logout),
               label: 'Logout',

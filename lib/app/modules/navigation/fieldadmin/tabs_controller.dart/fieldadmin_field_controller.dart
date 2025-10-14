@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-import 'package:lapangan_kita/app/data/models/place_model.dart';
-import 'package:lapangan_kita/app/data/repositories/place_repository.dart';
+import 'package:lapangan_kita/app/data/models/field_model.dart';
+import 'package:lapangan_kita/app/data/repositories/field_repository.dart';
+import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
 class FieldadminFieldController extends GetxController {
-  FieldadminFieldController({PlaceRepository? placeRepository})
-      : _placeRepository = placeRepository ?? Get.find<PlaceRepository>();
+  FieldadminFieldController({
+    FieldRepository? fieldRepository,
+    LocalStorageService? storageService,
+  }) : _fieldRepository = fieldRepository ?? Get.find<FieldRepository>(),
+       _storageService = storageService ?? LocalStorageService.instance;
 
-  final PlaceRepository _placeRepository;
+  final FieldRepository _fieldRepository;
+  final LocalStorageService _storageService;
 
-  final RxList<PlaceModel> places = <PlaceModel>[].obs;
+  final RxList<FieldModel> fields = <FieldModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
-  final RxString filterStatus = 'All'.obs;
+  final RxString filterStatus = 'All'.obs; // All, Pending, Approved, Rejected
   final RxString searchQuery = ''.obs;
 
   static final NumberFormat _currencyFormatter = NumberFormat.currency(
@@ -28,49 +33,55 @@ class FieldadminFieldController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchPlaces();
+    fetchFields();
   }
 
-  Future<void> fetchPlaces() async {
+  Future<void> fetchFields() async {
     isLoading.value = true;
     errorMessage.value = '';
 
     try {
-      final results = await _placeRepository.getAllPlaces();
-      places.assignAll(results);
-    } on PlaceException catch (e) {
+      final results = await _fieldRepository.getAllFields();
+      fields.assignAll(results);
+    } on FieldException catch (e) {
       errorMessage.value = e.message;
-      places.clear();
+      fields.clear();
     } catch (e) {
       errorMessage.value = 'Gagal memuat data field. Silakan coba lagi.';
-      places.clear();
-      debugPrint('Error fetching places: $e');
+      fields.clear();
+      debugPrint('Error fetching fields: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> refreshPlaces() => fetchPlaces();
+  Future<void> refreshFields() => fetchFields();
 
-  List<PlaceModel> get filteredPlaces {
+  List<FieldModel> get filteredFields {
     final query = searchQuery.value.trim().toLowerCase();
     
-    var list = places.toList();
+    var list = fields.toList();
 
-    // TODO: Implementasi filter berdasarkan status approval ketika field status tersedia
-    // if (filterStatus.value != 'All') {
-    //   list = list.where((place) => place.status == filterStatus.value).toList();
-    // }
-
-    if (query.isNotEmpty) {
-      list = list.where((place) {
-        return place.placeName.toLowerCase().contains(query) ||
-            place.address.toLowerCase().contains(query) ||
-            (place.ownerName?.toLowerCase().contains(query) ?? false) ||
-            (place.ownerEmail?.toLowerCase().contains(query) ?? false);
+    // Filter berdasarkan status verifikasi
+    if (filterStatus.value != 'All') {
+      final statusFilter = filterStatus.value.toLowerCase();
+      list = list.where((field) {
+        final fieldStatus = (field.isVerifiedAdmin ?? 'pending').toLowerCase();
+        return fieldStatus == statusFilter;
       }).toList();
     }
 
+    // Filter berdasarkan search query
+    if (query.isNotEmpty) {
+      list = list.where((field) {
+        return field.fieldName.toLowerCase().contains(query) ||
+            (field.placeName?.toLowerCase().contains(query) ?? false) ||
+            (field.placeAddress?.toLowerCase().contains(query) ?? false) ||
+            (field.placeOwnerName?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    // Sort berdasarkan tanggal (terbaru dulu)
     list.sort((a, b) {
       final dateA = a.createdAt ?? DateTime.now();
       final dateB = b.createdAt ?? DateTime.now();
@@ -80,32 +91,68 @@ class FieldadminFieldController extends GetxController {
     return list;
   }
 
-  Future<void> approveField(PlaceModel place) async {
-    try {
-      // TODO: Implementasi approve field ketika endpoint tersedia
-      // Untuk sementara, tampilkan pesan bahwa fitur sedang dikembangkan
+  Future<void> approveField(FieldModel field) async {
+    final adminId = _storageService.userId;
+    
+    if (adminId == 0) {
       Get.snackbar(
-        'Info',
-        'Fitur approve field akan segera tersedia. Endpoint API diperlukan.',
+        'Error',
+        'Admin ID tidak ditemukan. Silakan login kembali.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.blue.shade100,
-        colorText: Colors.blue.shade900,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
       );
-      
-      // Contoh implementasi ketika endpoint sudah tersedia:
-      // await _placeRepository.updatePlaceStatus(
-      //   placeId: place.id,
-      //   status: 'approved',
-      // );
-      // await fetchPlaces();
-      // Get.snackbar(
-      //   'Berhasil',
-      //   'Field ${place.placeName} telah disetujui.',
-      //   snackPosition: SnackPosition.BOTTOM,
-      //   backgroundColor: Colors.green.shade100,
-      //   colorText: Colors.green.shade900,
-      // );
+      return;
+    }
+
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final response = await _fieldRepository.verifyField(
+        fieldId: field.id,
+        isVerifiedAdmin: 'approved',
+        adminId: adminId,
+      );
+
+      Get.back(); // Close loading dialog
+
+      if (response.success) {
+        await fetchFields();
+        Get.snackbar(
+          'Berhasil',
+          response.message.isNotEmpty 
+              ? response.message 
+              : 'Field ${field.fieldName} has been approved.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.shade100,
+          colorText: Colors.green.shade900,
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        Get.snackbar(
+          'Gagal',
+          response.message.isNotEmpty 
+              ? response.message 
+              : 'Failed to approve field.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade100,
+          colorText: Colors.red.shade900,
+        );
+      }
+    } on FieldException catch (e) {
+      Get.back(); // Close loading dialog
+      Get.snackbar(
+        'Gagal',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
     } catch (e) {
+      Get.back(); // Close loading dialog
       Get.snackbar(
         'Gagal',
         'Tidak dapat menyetujui field. Silakan coba lagi.',
@@ -113,35 +160,72 @@ class FieldadminFieldController extends GetxController {
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
+      debugPrint('Error approving field: $e');
     }
   }
 
-  Future<void> rejectField(PlaceModel place, String reason) async {
-    try {
-      // TODO: Implementasi reject field ketika endpoint tersedia
+  Future<void> rejectField(FieldModel field, String reason) async {
+    final adminId = _storageService.userId;
+    
+    if (adminId == 0) {
       Get.snackbar(
-        'Info',
-        'Fitur reject field akan segera tersedia. Endpoint API diperlukan.',
+        'Error',
+        'Admin ID tidak ditemukan. Silakan login kembali.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.blue.shade100,
-        colorText: Colors.blue.shade900,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
       );
-      
-      // Contoh implementasi ketika endpoint sudah tersedia:
-      // await _placeRepository.updatePlaceStatus(
-      //   placeId: place.id,
-      //   status: 'rejected',
-      //   note: reason,
-      // );
-      // await fetchPlaces();
-      // Get.snackbar(
-      //   'Berhasil',
-      //   'Field ${place.placeName} telah ditolak.',
-      //   snackPosition: SnackPosition.BOTTOM,
-      //   backgroundColor: Colors.orange.shade100,
-      //   colorText: Colors.orange.shade900,
-      // );
+      return;
+    }
+
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final response = await _fieldRepository.verifyField(
+        fieldId: field.id,
+        isVerifiedAdmin: 'rejected',
+        adminId: adminId,
+      );
+
+      Get.back(); // Close loading dialog
+
+      if (response.success) {
+        await fetchFields();
+        Get.snackbar(
+          'Berhasil',
+          response.message.isNotEmpty 
+              ? response.message 
+              : 'Field ${field.fieldName} telah ditolak.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange.shade100,
+          colorText: Colors.orange.shade900,
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        Get.snackbar(
+          'Gagal',
+          response.message.isNotEmpty 
+              ? response.message 
+              : 'Tidak dapat menolak field.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade100,
+          colorText: Colors.red.shade900,
+        );
+      }
+    } on FieldException catch (e) {
+      Get.back(); // Close loading dialog
+      Get.snackbar(
+        'Gagal',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
     } catch (e) {
+      Get.back(); // Close loading dialog
       Get.snackbar(
         'Gagal',
         'Tidak dapat menolak field. Silakan coba lagi.',
@@ -149,6 +233,7 @@ class FieldadminFieldController extends GetxController {
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
+      debugPrint('Error rejecting field: $e');
     }
   }
 

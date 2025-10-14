@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs_controller.dart/fieldadmin_field_controller.dart';
-import 'package:lapangan_kita/app/data/models/place_model.dart';
+import 'package:lapangan_kita/app/data/models/field_model.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 class FieldadminFieldView extends GetView<FieldadminFieldController> {
   const FieldadminFieldView({super.key});
+
+  static String _getImageUrl(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) {
+      return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=300&fit=crop';
+    }
+    if (imagePath.startsWith('http')) return imagePath;
+    
+    const baseUrl = 'https://51b6a505d9ba.ngrok-free.app';
+    String cleanPath = imagePath;
+    if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    
+    return '$baseUrl/$cleanPath';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,28 +46,28 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
                 if (controller.errorMessage.isNotEmpty) {
                   return _ErrorState(
                     message: controller.errorMessage.value,
-                    onRetry: controller.fetchPlaces,
+                    onRetry: controller.fetchFields,
                   );
                 }
 
-                final places = controller.filteredPlaces;
-                if (places.isEmpty) {
-                  return _EmptyState(onRefresh: controller.refreshPlaces);
+                final fields = controller.filteredFields;
+                if (fields.isEmpty) {
+                  return _EmptyState(onRefresh: controller.refreshFields);
                 }
 
                 return RefreshIndicator(
-                  onRefresh: controller.refreshPlaces,
+                  onRefresh: controller.refreshFields,
                   child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: places.length,
+                    itemCount: fields.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final place = places[index];
+                      final field = fields[index];
                       return _FieldCard(
-                        place: place,
-                        onApprove: () => _showApproveDialog(context, place),
-                        onReject: () => _showRejectDialog(context, place),
-                        onDetail: () => _showDetailDialog(context, place),
+                        field: field,
+                        onApprove: () => _showApproveDialog(context, field),
+                        onReject: () => _showRejectDialog(context, field),
+                        onDetail: () => _showDetailDialog(context, field),
                       );
                     },
                   ),
@@ -66,74 +81,142 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
   }
 
   Widget _buildSearchBar() {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.grey[50],
-      child: SizedBox(
-        height: 52,
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Search field name, address, or owner...',
-            prefixIcon: const Icon(Icons.search, size: 20),
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            border: InputBorder.none,
-            isDense: true,
+    return Column(
+      children: [
+        Card(
+          elevation: 1,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.grey[50],
+          child: SizedBox(
+            height: 52,
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search field name, address, or owner...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              style: const TextStyle(fontSize: 15),
+              onChanged: (val) => controller.searchQuery.value = val,
+            ),
           ),
-          style: const TextStyle(fontSize: 15),
-          onChanged: (val) => controller.searchQuery.value = val,
         ),
-      ),
+        const SizedBox(height: 8),
+        Obx(() => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _FilterChip(
+                label: 'All',
+                isSelected: controller.filterStatus.value == 'All',
+                onTap: () => controller.filterStatus.value = 'All',
+              ),
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: 'Pending',
+                isSelected: controller.filterStatus.value == 'pending',
+                onTap: () => controller.filterStatus.value = 'pending',
+                color: Colors.orange,
+              ),
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: 'Approved',
+                isSelected: controller.filterStatus.value == 'approved',
+                onTap: () => controller.filterStatus.value = 'approved',
+                color: Colors.green,
+              ),
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: 'Rejected',
+                isSelected: controller.filterStatus.value == 'rejected',
+                onTap: () => controller.filterStatus.value = 'rejected',
+                color: Colors.red,
+              ),
+            ],
+          ),
+        )),
+      ],
     );
   }
 
-  void _showDetailDialog(BuildContext context, PlaceModel place) {
+  void _showDetailDialog(BuildContext context, FieldModel field) {
+    final photoUrl = field.fieldPhoto != null && field.fieldPhoto!.isNotEmpty
+        ? _getImageUrl(field.fieldPhoto!)
+        : null;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Field Details'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (place.placePhoto != null && place.placePhoto!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    place.placePhoto!,
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.9,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (photoUrl != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      photoUrl,
                       height: 150,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image_not_supported, size: 48),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 150,
+                        width: double.infinity,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported, size: 48),
+                      ),
                     ),
                   ),
+                if (photoUrl != null) const SizedBox(height: 16),
+                _DetailRow(label: 'Field Name', value: field.fieldName),
+                _DetailRow(label: 'Type', value: _formatFieldType(field.fieldType)),
+                _DetailRow(label: 'Price/Hour', value: controller.formatCurrency(field.pricePerHour)),
+                _DetailRow(label: 'Max Person', value: field.maxPerson.toString()),
+                _DetailRow(label: 'Opening Time', value: field.openingTime),
+                _DetailRow(label: 'Closing Time', value: field.closingTime),
+                _DetailRow(label: 'Status', value: field.status),
+                _DetailRow(label: 'Verification', value: _formatVerificationStatus(field.isVerifiedAdmin)),
+                const Divider(height: 20),
+                if (field.placeName != null)
+                  _DetailRow(label: 'Place', value: field.placeName!),
+                if (field.placeAddress != null)
+                  _DetailRow(label: 'Address', value: field.placeAddress!),
+                if (field.placeOwnerName != null)
+                  _DetailRow(label: 'Owner', value: field.placeOwnerName!),
+                const Divider(height: 20),
+                _DetailRow(
+                  label: 'Created',
+                  value: controller.formatDate(field.createdAt),
                 ),
-              if (place.placePhoto != null && place.placePhoto!.isNotEmpty)
-                const SizedBox(height: 16),
-              _DetailRow(label: 'Field Name', value: place.placeName),
-              _DetailRow(label: 'Address', value: place.address),
-              _DetailRow(
-                label: 'Balance',
-                value: controller.formatCurrency(place.balance),
-              ),
-              if (place.ownerName != null)
-                _DetailRow(label: 'Owner', value: place.ownerName!),
-              if (place.ownerEmail != null)
-                _DetailRow(label: 'Email', value: place.ownerEmail!),
-              _DetailRow(
-                label: 'Created',
-                value: controller.formatDate(place.createdAt),
-              ),
-              _DetailRow(
-                label: 'Updated',
-                value: controller.formatDate(place.updatedAt),
-              ),
-            ],
+                _DetailRow(
+                  label: 'Updated',
+                  value: controller.formatDate(field.updatedAt),
+                ),
+                if (field.description.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Description:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    field.description,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
         actions: [
@@ -146,13 +229,13 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
     );
   }
 
-  void _showApproveDialog(BuildContext context, PlaceModel place) {
+  void _showApproveDialog(BuildContext context, FieldModel field) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Approve Field'),
         content: Text(
-          'Are you sure you want to approve field "${place.placeName}"?',
+          'Are you sure you want to approve field "${field.fieldName}"?',
         ),
         actions: [
           TextButton(
@@ -166,7 +249,7 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
-              controller.approveField(place);
+              controller.approveField(field);
             },
             child: const Text('Approve'),
           ),
@@ -175,7 +258,7 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
     );
   }
 
-  void _showRejectDialog(BuildContext context, PlaceModel place) {
+  void _showRejectDialog(BuildContext context, FieldModel field) {
     final reasonController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
@@ -189,7 +272,7 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Reject field "${place.placeName}"?'),
+              Text('Reject field "${field.fieldName}"?'),
               const SizedBox(height: 16),
               TextFormField(
                 controller: reasonController,
@@ -222,7 +305,7 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
             onPressed: () {
               if (formKey.currentState?.validate() ?? false) {
                 Navigator.of(ctx).pop();
-                controller.rejectField(place, reasonController.text.trim());
+                controller.rejectField(field, reasonController.text.trim());
               }
             },
             child: const Text('Reject'),
@@ -231,23 +314,60 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
       ),
     );
   }
+
+  String _formatFieldType(String type) {
+    switch (type.toLowerCase()) {
+      case 'futsal':
+        return 'Futsal';
+      case 'badminton':
+        return 'Badminton';
+      case 'tennis':
+        return 'Tennis';
+      case 'basket':
+      case 'basketball':
+        return 'Basketball';
+      default:
+        return type;
+    }
+  }
+
+  String _formatVerificationStatus(String? status) {
+    final normalized = (status ?? 'pending').toLowerCase();
+    switch (normalized) {
+      case 'approved':
+        return 'Approved ✓';
+      case 'rejected':
+        return 'Rejected ✗';
+      case 'pending':
+      default:
+        return 'Pending ⏳';
+    }
+  }
 }
 
 class _FieldCard extends StatelessWidget {
   const _FieldCard({
-    required this.place,
+    required this.field,
     required this.onApprove,
     required this.onReject,
     required this.onDetail,
   });
 
-  final PlaceModel place;
+  final FieldModel field;
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onDetail;
 
   @override
   Widget build(BuildContext context) {
+    final photoUrl = field.fieldPhoto != null && field.fieldPhoto!.isNotEmpty
+        ? FieldadminFieldView._getImageUrl(field.fieldPhoto!)
+        : null;
+    
+    final verificationStatus = (field.isVerifiedAdmin ?? 'pending').toLowerCase();
+    final statusColor = _getStatusColor(verificationStatus);
+    final statusLabel = _getStatusLabel(verificationStatus);
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
@@ -262,11 +382,11 @@ class _FieldCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (place.placePhoto != null && place.placePhoto!.isNotEmpty)
+                  if (photoUrl != null)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        place.placePhoto!,
+                        photoUrl,
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
@@ -278,29 +398,64 @@ class _FieldCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  if (place.placePhoto != null && place.placePhoto!.isNotEmpty)
-                    const SizedBox(width: 12),
+                  if (photoUrl != null) const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          place.placeName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                field.fieldName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: statusColor, width: 1),
+                              ),
+                              child: Text(
+                                statusLabel,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          place.address,
+                          _formatFieldType(field.fieldType),
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
+                        if (field.placeAddress != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            field.placeAddress!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -309,17 +464,35 @@ class _FieldCard extends StatelessWidget {
               const SizedBox(height: 12),
               const Divider(height: 1),
               const SizedBox(height: 12),
-              if (place.ownerName != null)
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoRow(
+                      icon: Icons.attach_money,
+                      label: 'Price',
+                      value: 'Rp ${_formatNumber(field.pricePerHour)}',
+                    ),
+                  ),
+                  Expanded(
+                    child: _InfoRow(
+                      icon: Icons.people_outline,
+                      label: 'Max',
+                      value: '${field.maxPerson} people',
+                    ),
+                  ),
+                ],
+              ),
+              if (field.placeOwnerName != null)
                 _InfoRow(
                   icon: Icons.person_outline,
                   label: 'Owner',
-                  value: place.ownerName!,
+                  value: field.placeOwnerName!,
                 ),
-              if (place.ownerEmail != null)
+              if (field.placeName != null)
                 _InfoRow(
-                  icon: Icons.email_outlined,
-                  label: 'Email',
-                  value: place.ownerEmail!,
+                  icon: Icons.stadium_outlined,
+                  label: 'Place',
+                  value: field.placeName!,
                 ),
               const SizedBox(height: 12),
               Row(
@@ -327,10 +500,12 @@ class _FieldCard extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: verificationStatus == 'approved'
+                            ? Colors.grey
+                            : Colors.green,
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: onApprove,
+                      onPressed: verificationStatus == 'approved' ? null : onApprove,
                       icon: const Icon(Icons.check_circle_outline, size: 18),
                       label: const Text('Approve'),
                     ),
@@ -339,10 +514,12 @@ class _FieldCard extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                        backgroundColor: verificationStatus == 'rejected'
+                            ? Colors.grey
+                            : Colors.red,
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: onReject,
+                      onPressed: verificationStatus == 'rejected' ? null : onReject,
                       icon: const Icon(Icons.cancel_outlined, size: 18),
                       label: const Text('Reject'),
                     ),
@@ -353,6 +530,53 @@ class _FieldCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'pending':
+      default:
+        return Colors.orange;
+    }
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status) {
+      case 'approved':
+        return 'APPROVED';
+      case 'rejected':
+        return 'REJECTED';
+      case 'pending':
+      default:
+        return 'PENDING';
+    }
+  }
+
+  String _formatFieldType(String type) {
+    switch (type.toLowerCase()) {
+      case 'futsal':
+        return 'Futsal';
+      case 'badminton':
+        return 'Badminton';
+      case 'tennis':
+        return 'Tennis';
+      case 'basket':
+      case 'basketball':
+        return 'Basketball';
+      default:
+        return type;
+    }
+  }
+
+  String _formatNumber(int number) {
+    return number.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
     );
   }
 }
@@ -487,6 +711,49 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.color,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = color ?? Colors.blue;
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? chipColor : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? chipColor : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : Colors.grey[700],
+          ),
+        ),
       ),
     );
   }

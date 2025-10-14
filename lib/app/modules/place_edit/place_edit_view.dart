@@ -517,7 +517,7 @@ class PlaceEditView extends GetView<PlaceEditController> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${_formatCurrency(addOn.pricePerHour)} / hour',
+                        '${_formatCurrency(addOn.price)} ${addOn.category == "per hour" ? "/ hour" : ""}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF2563EB),
@@ -712,6 +712,7 @@ class _CreateAddOnSheetState extends State<_CreateAddOnSheet> {
   final _descController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   File? _photo;
+  String _category = 'once time';
 
   @override
   void dispose() {
@@ -858,11 +859,30 @@ class _CreateAddOnSheetState extends State<_CreateAddOnSheet> {
               TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(
-                  labelText: 'Price per Hour (Rp)',
+                  labelText: 'Price (Rp)',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
+                ),
+                value: _category,
+                items: const [
+                  DropdownMenuItem(value: 'once time', child: Text('Once Time')),
+                  DropdownMenuItem(value: 'per hour', child: Text('Per Hour')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _category = value ?? 'once time';
+                  });
+                },
                 validator: (value) =>
                     value == null || value.trim().isEmpty ? 'Required' : null,
               ),
@@ -938,7 +958,8 @@ class _CreateAddOnSheetState extends State<_CreateAddOnSheet> {
                             final navigator = Navigator.of(context);
                             final result = await widget.controller.createAddOn(
                               name: _nameController.text.trim(),
-                              pricePerHour: price,
+                              price: price,
+                              category: _category,
                               stock: stock,
                               description: _descController.text.trim(),
                               photo: _photo,
@@ -1006,18 +1027,20 @@ class _EditAddOnSheetState extends State<_EditAddOnSheet> {
   late final TextEditingController _priceController;
   late final TextEditingController _stockController;
   late final TextEditingController _descController;
+  late String _category;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.addOn.name);
     _priceController = TextEditingController(
-      text: widget.addOn.pricePerHour.toString(),
+      text: widget.addOn.price.toString(),
     );
     _stockController = TextEditingController(
       text: widget.addOn.stock.toString(),
     );
     _descController = TextEditingController(text: widget.addOn.description);
+    _category = widget.addOn.category;
   }
 
   @override
@@ -1078,11 +1101,30 @@ class _EditAddOnSheetState extends State<_EditAddOnSheet> {
               TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(
-                  labelText: 'Price per Hour (Rp)',
+                  labelText: 'Price (Rp)',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
+                ),
+                value: _category,
+                items: const [
+                  DropdownMenuItem(value: 'once time', child: Text('Once Time')),
+                  DropdownMenuItem(value: 'per hour', child: Text('Per Hour')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _category = value ?? 'once time';
+                  });
+                },
                 validator: (value) =>
                     value == null || value.trim().isEmpty ? 'Required' : null,
               ),
@@ -1160,7 +1202,8 @@ class _EditAddOnSheetState extends State<_EditAddOnSheet> {
                             final success = await widget.controller.updateAddOn(
                               addOn: widget.addOn,
                               name: _nameController.text.trim(),
-                              pricePerHour: price,
+                              price: price,
+                              category: _category,
                               stock: stock,
                               description: _descController.text.trim(),
                             );

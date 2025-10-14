@@ -4,6 +4,7 @@ import '../models/field_create_response.dart';
 import '../models/field_delete_response.dart';
 import '../models/field_model.dart';
 import '../models/field_update_response.dart';
+import '../models/field_verification_response.dart';
 import '../network/api_client.dart';
 
 class FieldRepository {
@@ -42,38 +43,67 @@ class FieldRepository {
         ),
       });
 
+      print('Creating field with data: ${formData.fields}');
+      
       final response = await _apiClient.raw.post<Map<String, dynamic>>(
         'fields',
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+        options: Options(
+          contentType: 'multipart/form-data',
+          sendTimeout: const Duration(minutes: 2), // Increase timeout for file upload
+          receiveTimeout: const Duration(minutes: 2),
+        ),
       );
 
       final statusCode = response.statusCode ?? 0;
       final body = response.data;
+
+      print('Response status: $statusCode, body: $body');
 
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final parsed = FieldCreateResponse.fromJson(body);
         if (parsed.success) {
           return parsed;
         }
-        throw const FieldException('Gagal membuat field.');
+        throw const FieldException('Failed to create field.');
       }
 
       throw FieldException(
-        _extractMessage(body) ?? 'Gagal membuat field (status $statusCode).',
+        _extractMessage(body) ?? 'Failed to create field (status $statusCode).',
       );
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
+      print('DioException type: ${e.type}');
+      print('DioException message: ${e.message}');
+      print('DioException response: ${e.response?.data}');
+      print('DioException statusCode: ${e.response?.statusCode}');
+      
+      if (e.type == DioExceptionType.sendTimeout) {
         throw const FieldException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Upload took too long. Try using a smaller photo or check your internet connection..',
         );
       }
-      final message = _extractMessage(e.response?.data) ?? e.message;
-      throw FieldException(message ?? 'Gagal membuat field.');
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw const FieldException(
+          'Unable to connect to server. Check your connection..',
+        );
+      }
+      
+      // Handle other DioException types
+      if (e.response != null) {
+        final message = _extractMessage(e.response?.data);
+        throw FieldException(message ?? 'Failed to create field (${e.response?.statusCode}).');
+      }
+      
+      final message = e.message;
+      throw FieldException(message ?? 'Failed to create field.');
     } on FormatException catch (e) {
+      print('FormatException: ${e.message}');
       throw FieldException(e.message);
+    } catch (e) {
+      print('Unexpected error: $e');
+      throw FieldException('Error: $e');
     }
   }
 
@@ -110,39 +140,67 @@ class FieldRepository {
           ),
       });
 
+      print('Updating field with data: ${formData.fields}');
+      
       final response = await _apiClient.raw.put<Map<String, dynamic>>(
         'fields/$fieldId',
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+        options: Options(
+          contentType: 'multipart/form-data',
+          sendTimeout: const Duration(minutes: 2), // Increase timeout for file upload
+          receiveTimeout: const Duration(minutes: 2),
+        ),
       );
 
       final statusCode = response.statusCode ?? 0;
       final body = response.data;
+
+      print('Response status: $statusCode, body: $body');
 
       if (statusCode >= 200 && statusCode < 300 && body != null) {
         final parsed = FieldUpdateResponse.fromJson(body);
         if (parsed.success) {
           return parsed;
         }
-        throw const FieldException('Gagal memperbarui field.');
+        throw const FieldException('Gagal memperbarui lapangan.');
       }
 
       throw FieldException(
         _extractMessage(body) ??
-            'Gagal memperbarui field (status $statusCode).',
+            'Gagal memperbarui lapangan (status $statusCode).',
       );
     } on DioException catch (e) {
+      print('Update Field - DioException type: ${e.type}');
+      print('Update Field - DioException message: ${e.message}');
+      print('Update Field - DioException response: ${e.response?.data}');
+      
+      if (e.type == DioExceptionType.sendTimeout) {
+        throw const FieldException(
+          'Upload terlalu lama. Coba gunakan foto yang lebih kecil atau periksa koneksi internet Anda.',
+        );
+      }
+      
       if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
+          e.type == DioExceptionType.receiveTimeout) {
         throw const FieldException(
           'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
         );
       }
-      final message = _extractMessage(e.response?.data) ?? e.message;
-      throw FieldException(message ?? 'Gagal memperbarui field.');
+      
+      // Handle other DioException types
+      if (e.response != null) {
+        final message = _extractMessage(e.response?.data);
+        throw FieldException(message ?? 'Gagal memperbarui lapangan (${e.response?.statusCode}).');
+      }
+      
+      final message = e.message;
+      throw FieldException(message ?? 'Gagal memperbarui lapangan.');
     } on FormatException catch (e) {
+      print('Update Field - FormatException: ${e.message}');
       throw FieldException(e.message);
+    } catch (e) {
+      print('Update Field - Unexpected error: $e');
+      throw FieldException('Error: $e');
     }
   }
 
@@ -150,6 +208,9 @@ class FieldRepository {
     try {
       final response = await _apiClient.raw.get<Map<String, dynamic>>(
         'fields/place/$placeId',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
 
       final statusCode = response.statusCode ?? 0;
@@ -168,20 +229,40 @@ class FieldRepository {
 
       throw FieldException(
         _extractMessage(body) ??
-            'Gagal mengambil data field (status $statusCode).',
+            'Gagal mengambil data lapangan (status $statusCode).',
       );
     } on DioException catch (e) {
+      print('Get Fields - DioException type: ${e.type}');
+      print('Get Fields - DioException message: ${e.message}');
+      print('Get Fields - DioException response: ${e.response?.data}');
+      
+      if (e.type == DioExceptionType.sendTimeout) {
+        throw const FieldException(
+          'Permintaan terlalu lama. Periksa koneksi internet Anda.',
+        );
+      }
+      
       if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
+          e.type == DioExceptionType.receiveTimeout) {
         throw const FieldException(
           'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
         );
       }
-      final message = _extractMessage(e.response?.data) ?? e.message;
-      throw FieldException(message ?? 'Gagal mengambil data field.');
+      
+      // Handle other DioException types
+      if (e.response != null) {
+        final message = _extractMessage(e.response?.data);
+        throw FieldException(message ?? 'Gagal mengambil data lapangan (${e.response?.statusCode}).');
+      }
+      
+      final message = e.message;
+      throw FieldException(message ?? 'Gagal mengambil data lapangan.');
     } on FormatException catch (e) {
+      print('Get Fields - FormatException: ${e.message}');
       throw FieldException(e.message);
+    } catch (e) {
+      print('Get Fields - Unexpected error: $e');
+      throw FieldException('Error: $e');
     }
   }
 
@@ -199,23 +280,23 @@ class FieldRepository {
         if (data is Map<String, dynamic>) {
           return FieldModel.fromJson(data);
         }
-        throw const FieldException('Data field tidak valid.');
+        throw const FieldException('Field data is invalid.');
       }
 
       throw FieldException(
         _extractMessage(body) ??
-            'Gagal mengambil detail field (status $statusCode).',
+            'Failed to fetch field details (status $statusCode).',
       );
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
         throw const FieldException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Check your connection..',
         );
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
-      throw FieldException(message ?? 'Gagal mengambil detail field.');
+      throw FieldException(message ?? 'Failed to fetch field details.');
     } on FormatException catch (e) {
       throw FieldException(e.message);
     }
@@ -229,6 +310,9 @@ class FieldRepository {
       final response = await _apiClient.raw.delete<Map<String, dynamic>>(
         'fields/$fieldId',
         data: {'id_users': userId},
+        options: Options(
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
 
       final statusCode = response.statusCode ?? 0;
@@ -239,22 +323,129 @@ class FieldRepository {
         if (parsed.success) {
           return parsed;
         }
-        throw const FieldException('Gagal menghapus field.');
+        throw const FieldException('Gagal menghapus lapangan.');
       }
 
       throw FieldException(
-        _extractMessage(body) ?? 'Gagal menghapus field (status $statusCode).',
+        _extractMessage(body) ?? 'Gagal menghapus lapangan (status $statusCode).',
+      );
+    } on DioException catch (e) {
+      print('Delete Field - DioException type: ${e.type}');
+      print('Delete Field - DioException message: ${e.message}');
+      print('Delete Field - DioException response: ${e.response?.data}');
+      
+      if (e.type == DioExceptionType.sendTimeout) {
+        throw const FieldException(
+          'Permintaan terlalu lama. Periksa koneksi internet Anda.',
+        );
+      }
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw const FieldException(
+          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+        );
+      }
+      
+      // Handle other DioException types
+      if (e.response != null) {
+        final message = _extractMessage(e.response?.data);
+        throw FieldException(message ?? 'Gagal menghapus lapangan (${e.response?.statusCode}).');
+      }
+      
+      final message = e.message;
+      throw FieldException(message ?? 'Gagal menghapus lapangan.');
+    } on FormatException catch (e) {
+      print('Delete Field - FormatException: ${e.message}');
+      throw FieldException(e.message);
+    } catch (e) {
+      print('Delete Field - Unexpected error: $e');
+      throw FieldException('Error: $e');
+    }
+  }
+
+  Future<FieldVerificationResponse> verifyField({
+    required int fieldId,
+    required String isVerifiedAdmin, // "approved" or "rejected"
+    required int adminId,
+  }) async {
+    try {
+      final response = await _apiClient.raw.patch<Map<String, dynamic>>(
+        'fields/$fieldId/verification',
+        data: {
+          'is_verified_admin': isVerifiedAdmin,
+          'admin_id': adminId,
+        },
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        final parsed = FieldVerificationResponse.fromJson(body);
+        if (parsed.success) {
+          return parsed;
+        }
+        throw FieldException(
+          parsed.message.isNotEmpty 
+              ? parsed.message 
+              : 'Gagal memverifikasi field.',
+        );
+      }
+
+      throw FieldException(
+        _extractMessage(body) ??
+            'Failed to verify field (status $statusCode).',
       );
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
         throw const FieldException(
-          'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          'Unable to connect to server. Check your connection..',
         );
       }
       final message = _extractMessage(e.response?.data) ?? e.message;
-      throw FieldException(message ?? 'Gagal menghapus field.');
+      throw FieldException(message ?? 'Failed to verify field.');
+    } on FormatException catch (e) {
+      throw FieldException(e.message);
+    }
+  }
+
+  Future<List<FieldModel>> getAllFields() async {
+    try {
+      final response = await _apiClient.raw.get<Map<String, dynamic>>(
+        'fields',
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        final data = body['data'];
+        if (data is List) {
+          return data
+              .whereType<Map<String, dynamic>>()
+              .map(FieldModel.fromJson)
+              .toList();
+        }
+        return const <FieldModel>[];
+      }
+
+      throw FieldException(
+        _extractMessage(body) ??
+            'Failed to fetch field data (status $statusCode).',
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const FieldException(
+          'Unable to connect to server. Check your connection..',
+        );
+      }
+      final message = _extractMessage(e.response?.data) ?? e.message;
+      throw FieldException(message ?? 'Failed to fetch field data.');
     } on FormatException catch (e) {
       throw FieldException(e.message);
     }
