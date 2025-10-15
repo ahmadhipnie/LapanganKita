@@ -234,15 +234,28 @@ class CustomerBookingDetailView
   }
 
   Widget _buildOpeningHours() {
+    String formatTimeRange(String timeRange) {
+      if (timeRange.isEmpty || timeRange == "24 Hours") return timeRange;
+
+      // Split by "-" untuk ambil opening & closing
+      final times = timeRange.split(' - ');
+      if (times.length == 2) {
+        final opening = times[0].substring(0, 5); // 08:00
+        final closing = times[1].substring(0, 5); // 22:00
+        return '$opening - $closing';
+      }
+
+      // Jika hanya satu waktu
+      return timeRange.length >= 5 ? timeRange.substring(0, 5) : timeRange;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Opening Hours',
           style: TextStyle(
-            fontSize: _isSmallScreen
-                ? 18
-                : 20, // PERBAIKAN: Font size responsif
+            fontSize: _isSmallScreen ? 18 : 20,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -253,18 +266,16 @@ class CustomerBookingDetailView
             Text(
               'Monday - Sunday',
               style: TextStyle(
-                fontSize: _isSmallScreen
-                    ? 14
-                    : 16, // PERBAIKAN: Font size responsif
+                fontSize: _isSmallScreen ? 14 : 16,
                 color: Colors.grey,
               ),
             ),
             Text(
-              controller.court.openingHours['monday-sunday'] ?? "24 Hours",
+              formatTimeRange(
+                controller.court.openingHours['monday-sunday'] ?? "24 Hours",
+              ),
               style: TextStyle(
-                fontSize: _isSmallScreen
-                    ? 14
-                    : 16, // PERBAIKAN: Font size responsif
+                fontSize: _isSmallScreen ? 14 : 16,
                 color: Colors.grey,
               ),
             ),
