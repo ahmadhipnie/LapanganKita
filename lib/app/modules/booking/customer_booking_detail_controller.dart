@@ -35,6 +35,7 @@ class CustomerBookingDetailController extends GetxController {
   final RxMap<String, int> selectedEquipment = <String, int>{}.obs;
   final RxMap<String, int> selectedAddOns = <String, int>{}.obs;
   final RxList<AddOnModel> availableAddOns = <AddOnModel>[].obs;
+  final RxString selectedAddOnCategory = ''.obs;
   final RxList<OwnerBooking> approvedBookings = <OwnerBooking>[].obs;
   final RxBool isLoadingAddOns = false.obs;
   final RxBool isRefreshingAddOns = false.obs;
@@ -342,13 +343,17 @@ class CustomerBookingDetailController extends GetxController {
 
   Future<void> _loadAddOns() async {
     if (court.placeId == 0) return;
-
     isLoadingAddOns.value = true;
     try {
       final addOns = await _addOnRepository.getAddOnsByPlace(
         placeId: court.placeId,
       );
       availableAddOns.assignAll(addOns);
+
+      // ✅ SET DEFAULT CATEGORY (first category or empty)
+      if (addOns.isNotEmpty) {
+        selectedAddOnCategory.value = addOns.first.category;
+      }
     } catch (e) {
       print('Error loading add-ons: $e');
     } finally {

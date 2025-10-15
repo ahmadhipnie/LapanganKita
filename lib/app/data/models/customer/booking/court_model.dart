@@ -14,10 +14,11 @@ class Court {
   final String fieldType;
   final String status;
   final int maxPerson;
-  final int placeId; // ← TAMBAH INI
+  final int placeId;
   final String placeName;
   final String placeAddress;
   final String placeOwnerName;
+  final String isVerifiedAdmin; // ADD THIS
 
   Court({
     required this.id,
@@ -35,10 +36,11 @@ class Court {
     required this.fieldType,
     required this.status,
     required this.maxPerson,
-    required this.placeId, // ← TAMBAH INI
+    required this.placeId,
     required this.placeName,
     required this.placeAddress,
     required this.placeOwnerName,
+    required this.isVerifiedAdmin, // ADD THIS
   });
 
   factory Court.fromJson(Map<String, dynamic> json) {
@@ -61,28 +63,30 @@ class Court {
       fieldType: json['field_type'] ?? '',
       status: json['status'] ?? '',
       maxPerson: json['max_person'] ?? 0,
-      placeId: json['id_place'] ?? 0, // ← TAMBAH INI, ambil dari id_place
+      placeId: json['id_place'] ?? 0,
       placeName: json['place_name'] ?? '',
       placeAddress: json['place_address'] ?? '',
       placeOwnerName: json['place_owner_name'] ?? '',
+      isVerifiedAdmin: json['is_verified_admin'] ?? 'pending', // ADD THIS
     );
   }
 
   static List<String> _parseFieldTypes(String fieldType) {
     if (fieldType.isEmpty) return ['Unknown'];
-
     switch (fieldType.toLowerCase()) {
       case 'futsal':
         return ['Futsal'];
       case 'mini soccer':
         return ['Mini Soccer'];
       case 'basketball':
+      case 'basket':
         return ['Basketball'];
       case 'tennis':
         return ['Tennis'];
       case 'badminton':
         return ['Badminton'];
       case 'volleyball':
+      case 'voli':
         return ['Volleyball'];
       default:
         return [fieldType];
@@ -102,9 +106,10 @@ class Court {
       'closing_time': closingTime,
       'status': status,
       'max_person': maxPerson,
-      'id_place': placeId, // ← TAMBAH INI
+      'id_place': placeId,
       'place_name': placeName,
       'place_owner_name': placeOwnerName,
+      'is_verified_admin': isVerifiedAdmin, // ADD THIS
     };
   }
 }

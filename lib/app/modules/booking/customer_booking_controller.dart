@@ -67,7 +67,6 @@ class CustomerBookingController extends GetxController {
   Future<void> _loadCourts() async {
     isLoading.value = true;
     errorHandler.clearError(hasError: hasError, errorMessage: errorMessage);
-
     try {
       final courts = await errorHandler.handleFutureError(
         future: _courtRepository.getCourts(),
@@ -77,16 +76,19 @@ class CustomerBookingController extends GetxController {
         showSnackbar: false,
         fallbackValue: [],
       );
-
       allCourts.assignAll(courts);
 
-      // ✅ INISIALISASI filteredCourts HANYA DENGAN AVAILABLE
-      final availableCourts = courts
-          .where((court) => court.status == 'available')
+      // ✅ FILTER: status = 'available' DAN is_verified_admin = 'approved'
+      final availableAndApprovedCourts = courts
+          .where(
+            (court) =>
+                court.status == 'available' &&
+                court.isVerifiedAdmin == 'approved',
+          )
           .toList();
-      filteredCourts.assignAll(availableCourts);
 
-      print('Filtered courts: ${filteredCourts.length}');
+      filteredCourts.assignAll(availableAndApprovedCourts);
+      print('Filtered courts (available & approved): ${filteredCourts.length}');
 
       // Extract available categories and locations
       _extractAvailableOptions();
@@ -112,28 +114,32 @@ class CustomerBookingController extends GetxController {
 
   void _extractAvailableOptions() {
     try {
-      // ✅ EXTRACT HANYA DARI AVAILABLE COURTS
-      final availableCourts = allCourts
-          .where((court) => court.status == 'available')
+      // ✅ EXTRACT HANYA DARI AVAILABLE & APPROVED COURTS
+      final availableAndApprovedCourts = allCourts
+          .where(
+            (court) =>
+                court.status == 'available' &&
+                court.isVerifiedAdmin == 'approved',
+          )
           .toList();
 
       // Extract unique categories dari field_type
-      final categories = availableCourts
+      final categories = availableAndApprovedCourts
           .expand((court) => court.types)
           .toSet()
           .toList();
       availableCategories.assignAll(categories);
 
       // Extract unique locations (hanya nama kota)
-      final locations = availableCourts
+      final locations = availableAndApprovedCourts
           .map((court) => _extractCity(court.location))
           .where((city) => city.isNotEmpty)
           .toSet()
           .toList();
       availableLocations.assignAll(locations);
 
-      print('✅ Available categories: $categories');
-      print('✅ Available locations: $locations');
+      print('✅ Available & Approved categories: $categories');
+      print('✅ Available & Approved locations: $locations');
     } catch (e) {
       errorHandler.handleGeneralError(
         context: 'Failed to extract filter options',
@@ -151,11 +157,16 @@ class CustomerBookingController extends GetxController {
       print('🎯 Selected category: ${selectedCategory.value}');
       print('🎯 Selected location: ${selectedLocation.value}');
 
-      // ✅ FILTER HANYA YANG AVAILABLE
+      // ✅ FILTER: status = 'available' DAN is_verified_admin = 'approved'
       var results = allCourts
-          .where((court) => court.status == 'available')
+          .where(
+            (court) =>
+                court.status == 'available' &&
+                court.isVerifiedAdmin == 'approved',
+          )
           .toList();
-      print('✅ Available courts: ${results.length}');
+
+      print('✅ Available & Approved courts: ${results.length}');
 
       // Step 2: Apply category filter jika ada
       if (selectedCategory.value.isNotEmpty) {
@@ -205,7 +216,7 @@ class CustomerBookingController extends GetxController {
       }
 
       filteredCourts.assignAll(results);
-      print('🎯 Final filtered courts: ${filteredCourts.length}');
+      print('🎯 Final filtered courts: ${results.length}');
     } catch (e) {
       errorHandler.handleGeneralError(
         context: 'Failed to filter courts',
@@ -269,21 +280,25 @@ class CustomerBookingController extends GetxController {
       searchController.clear();
       selectedCategory.value = '';
       selectedLocation.value = '';
-      locationController.clear(); // ✅ CLEAR LOCATION CONTROLLER
+      locationController.clear();
       minPriceController.clear();
       maxPriceController.clear();
 
-      // ✅ PASTIKAN HANYA AVAILABLE YANG DITAMPILKAN
-      final availableCourts = allCourts
-          .where((court) => court.status == 'available')
+      // ✅ FILTER: status = 'available' DAN is_verified_admin = 'approved'
+      final availableAndApprovedCourts = allCourts
+          .where(
+            (court) =>
+                court.status == 'available' &&
+                court.isVerifiedAdmin == 'approved',
+          )
           .toList();
-      filteredCourts.assignAll(availableCourts);
 
+      filteredCourts.assignAll(availableAndApprovedCourts);
       refreshFilterChips();
       update(['courts_list']);
       errorHandler.showSuccessMessage('All filters cleared');
       print(
-        '✅ Filters cleared, showing ${filteredCourts.length} available courts',
+        '✅ Filters cleared, showing ${filteredCourts.length} available & approved courts',
       );
     } catch (e) {
       errorHandler.handleGeneralError(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
+import '../../data/helper/error_helper.dart';
 import '../login/login_controller.dart';
 import '../register/customer_register_controller.dart';
 import '../register/fieldManager_register_controller.dart';
@@ -299,30 +301,36 @@ class _LoginTabContent extends StatelessWidget {
                     // Error Message
                     Obx(() {
                       final error = controller.errorMessage.value;
-                      if (error == null) return const SizedBox.shrink();
+                      if (error == null || error.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
+                      // Get user-friendly error message
+                      final friendlyError = ErrorHandler()
+                          .getSimpleErrorMessage(error);
 
                       return Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red[50],
+                            color: Colors.red.shade50,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red[200]!),
+                            border: Border.all(color: Colors.red.shade200),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.error_outline,
-                                color: Colors.red[700],
+                                color: Colors.red.shade700,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  error,
+                                  friendlyError, // <-- Sekarang user-friendly
                                   style: TextStyle(
-                                    color: Colors.red[700],
+                                    color: Colors.red.shade700,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -729,6 +737,68 @@ class _CustomerRegisterForm extends GetView<CustomerRegisterController> {
                         ),
                       ),
                       validator: controller.validateEmail,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Phone Number Field
+                    TextFormField(
+                      controller: controller.phoneController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 13,
+
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        hintText: 'Enter your phone number',
+                        prefixIcon: const Icon(Icons.phone_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF2563EB),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Phone number is required';
+                        }
+                        if (v.length < 10) {
+                          return 'Phone number must be at least 10 digits';
+                        }
+                        if (!RegExp(r'^[0-9]+$').hasMatch(v)) {
+                          return 'Phone number must contain only digits';
+                        }
+                        return null;
+                      },
                     ),
 
                     const SizedBox(height: 16),
@@ -1411,6 +1481,66 @@ class _FieldManagerRegisterForm
                         ),
                       ),
                       validator: controller.validateEmail,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: controller.phoneController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 13,
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        hintText: 'Enter your phone number',
+                        prefixIcon: const Icon(Icons.phone_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF2563EB),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Phone number is required';
+                        }
+                        if (v.length < 10) {
+                          return 'Phone number must be at least 10 digits';
+                        }
+                        if (!RegExp(r'^[0-9]+$').hasMatch(v)) {
+                          return 'Phone number must contain only digits';
+                        }
+                        return null;
+                      },
                     ),
 
                     const SizedBox(height: 16),
