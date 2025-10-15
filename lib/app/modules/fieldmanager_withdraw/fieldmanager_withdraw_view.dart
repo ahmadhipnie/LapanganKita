@@ -246,7 +246,7 @@ class _AutoWithdrawInfo extends StatelessWidget {
         ? Icons.task_alt_rounded
         : Icons.lock_clock_rounded;
     final statusLabel = canWithdraw
-        ? 'Balance ready for withdrawal $thresholdDisplay'
+        ? 'balance has reached the minimum limit for withdrawal $thresholdDisplay'
         : 'Balance must reach at least $thresholdDisplay';
 
     return Container(

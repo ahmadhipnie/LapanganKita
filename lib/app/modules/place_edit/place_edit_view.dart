@@ -239,6 +239,21 @@ class PlaceEditView extends GetView<PlaceEditController> {
           child: Image.network(
             url,
             fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.transparent,
+                child: const Center(
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            },
             errorBuilder: (_, __, ___) => _photoPlaceholder(),
           ),
         ),
@@ -495,6 +510,25 @@ class PlaceEditView extends GetView<PlaceEditController> {
                   width: 72,
                   height: 72,
                   fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return SizedBox(
+                      width: 72,
+                      height: 72,
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                   errorBuilder: (_, __, ___) => _addOnPhotoPlaceholder(),
                 ),
               ),
