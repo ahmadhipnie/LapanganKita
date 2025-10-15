@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs_controller.dart/fieldadmin_field_controller.dart';
 import 'package:lapangan_kita/app/data/models/field_model.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
+import 'package:lapangan_kita/app/data/network/api_client.dart';
 
 class FieldadminFieldView extends GetView<FieldadminFieldController> {
   const FieldadminFieldView({super.key});
@@ -13,13 +14,12 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
     }
     if (imagePath.startsWith('http')) return imagePath;
     
-    const baseUrl = 'https://51b6a505d9ba.ngrok-free.app';
     String cleanPath = imagePath;
     if (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.substring(1);
     }
     
-    return '$baseUrl/$cleanPath';
+    return '${ApiClient.baseUrlWithoutApi}/$cleanPath';
   }
 
   @override
@@ -158,7 +158,7 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (photoUrl != null)
+                if (photoUrl != null) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
@@ -166,6 +166,26 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
                       height: 150,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          height: 150,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: Center(
+                            child: SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                       errorBuilder: (_, __, ___) => Container(
                         height: 150,
                         width: double.infinity,
@@ -174,7 +194,8 @@ class FieldadminFieldView extends GetView<FieldadminFieldController> {
                       ),
                     ),
                   ),
-                if (photoUrl != null) const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
                 _DetailRow(label: 'Field Name', value: field.fieldName),
                 _DetailRow(label: 'Type', value: _formatFieldType(field.fieldType)),
                 _DetailRow(label: 'Price/Hour', value: controller.formatCurrency(field.pricePerHour)),
@@ -382,23 +403,49 @@ class _FieldCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (photoUrl != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        photoUrl,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported),
-                        ),
-                      ),
-                    ),
-                  if (photoUrl != null) const SizedBox(width: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: photoUrl != null
+                        ? Image.network(
+                            photoUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 60,
+                              height: 60,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image_not_supported),
+                            ),
+                          )
+                        : Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.image_not_supported),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
