@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:lapangan_kita/app/routes/app_routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_model.dart';
 
@@ -41,7 +42,7 @@ class OnboardingController extends GetxController {
   Future<void> completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool("onboarding", true);
-    Get.offAllNamed('/login');
+    Get.offAllNamed(AppRoutes.AUTH);
   }
 
   bool get isLastPage => currentSlider.value == onboardingData.length - 1;
