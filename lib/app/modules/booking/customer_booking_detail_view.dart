@@ -667,11 +667,9 @@ class CustomerBookingDetailView
               ),
             ),
 
-            SizedBox(
-              width: _isSmallScreen ? 6 : 8,
-            ), // ✅ PERBAIKI: Reduced spacing
-            // ✅ PERBAIKI: Price and Quantity Section - WRAPPED WITH FLEXIBLE
+            SizedBox(width: _isSmallScreen ? 12 : 16),
             Flexible(
+              fit: FlexFit.tight,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
