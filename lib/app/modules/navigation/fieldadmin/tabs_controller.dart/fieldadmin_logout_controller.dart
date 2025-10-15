@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lapangan_kita/app/routes/app_routes.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
 class FieldadminLogoutController extends GetxController {
@@ -30,7 +29,7 @@ class FieldadminLogoutController extends GetxController {
     isLoggingOut.value = true;
     try {
       await _localStorage.logout();
-      Get.offAllNamed(AppRoutes.LOGIN);
+      Get.offAllNamed("/auth");
       Get.snackbar(
         'Success',
         'You have logged out of your account.',

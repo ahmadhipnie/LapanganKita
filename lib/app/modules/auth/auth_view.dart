@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import '../../data/helper/error_helper.dart';
+import '../../routes/app_routes.dart';
 import '../login/login_controller.dart';
 import '../register/customer_register_controller.dart';
 import '../register/fieldManager_register_controller.dart';
@@ -247,7 +248,7 @@ class _LoginTabContent extends StatelessWidget {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () => Get.toNamed(AppRoutes.FORGOT_PASSWORD),
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFF2563EB),
                         ),

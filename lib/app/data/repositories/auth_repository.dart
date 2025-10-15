@@ -273,6 +273,45 @@ class AuthRepository {
     }
   }
 
+  Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        'users/forgot-password',
+        data: {'email': email},
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      final body = response.data;
+
+      if (statusCode >= 200 && statusCode < 300 && body != null) {
+        return body;
+      }
+
+      final message =
+          _extractMessage(body) ??
+          'Forgot password failed with status $statusCode';
+      throw AuthException(message);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const AuthException(
+          'Unable to reach the server. Check connection.',
+        );
+      }
+
+      final message =
+          _extractMessage(e.response?.data) ??
+          e.message ??
+          'Failed to send reset password email.';
+      throw AuthException(message);
+    } on FormatException catch (e) {
+      throw AuthException(e.message);
+    }
+  }
+
   String? _extractMessage(dynamic data) {
     if (data == null) return null;
     if (data is Map) {
