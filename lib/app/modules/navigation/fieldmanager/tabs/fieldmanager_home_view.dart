@@ -720,8 +720,26 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                                 width: 96,
                                 height: 96,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    _placePlaceholder(),
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return SizedBox(
+                                    width: 96,
+                                    height: 96,
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (_, __, ___) => _placePlaceholder(),
                               )
                             : _placePlaceholder(),
                       ),
@@ -1311,6 +1329,25 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
         width: 96,
         height: 72,
         fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return SizedBox(
+            width: 96,
+            height: 72,
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            ),
+          );
+        },
         errorBuilder: (_, __, ___) => Image.asset(
           'assets/images/onboarding1.jpg',
           width: 96,
@@ -1682,25 +1719,44 @@ class FieldManagerHomeView extends GetView<FieldManagerHomeController> {
                   borderRadius: BorderRadius.circular(18),
                   child:
                       field['photo'] != null &&
-                          field['photo'].toString().isNotEmpty
-                      ? Image.network(
-                          field['photo'].toString(),
-                          width: double.infinity,
-                          height: 160,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Image.asset(
-                            'assets/images/onboarding2.jpg',
-                            width: double.infinity,
-                            height: 160,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Image.asset(
-                          'assets/images/onboarding2.jpg',
-                          width: double.infinity,
-                          height: 160,
-                          fit: BoxFit.cover,
-                        ),
+                              field['photo'].toString().isNotEmpty
+                          ? Image.network(
+                              field['photo'].toString(),
+                              width: double.infinity,
+                              height: 160,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return SizedBox(
+                                  width: double.infinity,
+                                  height: 160,
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 28,
+                                      height: 28,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        value: loadingProgress.expectedTotalBytes != null
+                                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (_, __, ___) => Image.asset(
+                                'assets/images/onboarding2.jpg',
+                                width: double.infinity,
+                                height: 160,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Image.asset(
+                              'assets/images/onboarding2.jpg',
+                              width: double.infinity,
+                              height: 160,
+                              fit: BoxFit.cover,
+                            ),
                 ),
                 const SizedBox(height: 16),
                 Text(

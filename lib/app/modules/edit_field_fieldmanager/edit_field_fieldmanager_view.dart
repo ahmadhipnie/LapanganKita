@@ -255,8 +255,26 @@ class EditFieldFieldmanagerView
                                           width: 140,
                                           height: 140,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              _photoPlaceholder(),
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return SizedBox(
+                                              width: 140,
+                                              height: 140,
+                                              child: Center(
+                                                child: SizedBox(
+                                                  width: 24,
+                                                  height: 24,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                        : null,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (_, __, ___) => _photoPlaceholder(),
                                         ),
                                       ),
                                       Container(
