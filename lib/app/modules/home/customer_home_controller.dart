@@ -121,16 +121,21 @@ class CustomerHomeController extends GetxController {
   List<Map<String, dynamic>> get popularCategoriesWithIcon {
     try {
       final bookingController = Get.find<CustomerBookingController>();
-
       if (bookingController.allCourts.isEmpty) return [];
 
       final Map<String, int> categoryCount = {};
 
-      final availableCourts = bookingController.allCourts
-          .where((court) => court.status == 'available')
+      // ✅ FILTER: status = 'available' DAN is_verified_admin = 'approved'
+      final availableAndApprovedCourts = bookingController.allCourts
+          .where(
+            (court) =>
+                court.status == 'available' &&
+                court.isVerifiedAdmin == 'approved',
+          )
           .toList();
 
-      for (final court in availableCourts) {
+      // Count categories dari available & approved courts
+      for (final court in availableAndApprovedCourts) {
         for (final type in court.types) {
           categoryCount[type] = (categoryCount[type] ?? 0) + 1;
         }

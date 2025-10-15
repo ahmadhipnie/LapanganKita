@@ -557,15 +557,15 @@ class CustomerBookingDetailView
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: EdgeInsets.all(
-          _isSmallScreen ? 16 : 20,
-        ), // PERBAIKAN: Padding responsif
+          _isSmallScreen ? 12 : 16,
+        ), // ✅ PERBAIKI: Reduced padding
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section - PERBAIKAN: Size responsif
+            // Image Section
             Container(
-              width: _isSmallScreen ? 70 : 80,
-              height: _isSmallScreen ? 70 : 80,
+              width: _isSmallScreen ? 60 : 70, // ✅ PERBAIKI: Smaller image
+              height: _isSmallScreen ? 60 : 70,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 color: Colors.grey[100],
@@ -580,9 +580,7 @@ class CustomerBookingDetailView
                           color: Colors.grey[200],
                           child: Icon(
                             Icons.local_offer,
-                            size: _isSmallScreen
-                                ? 28
-                                : 32, // PERBAIKAN: Icon size responsif
+                            size: _isSmallScreen ? 24 : 28,
                             color: Colors.grey,
                           ),
                         ),
@@ -590,9 +588,7 @@ class CustomerBookingDetailView
                           color: Colors.grey[200],
                           child: Icon(
                             Icons.local_offer,
-                            size: _isSmallScreen
-                                ? 28
-                                : 32, // PERBAIKAN: Icon size responsif
+                            size: _isSmallScreen ? 24 : 28,
                             color: Colors.grey,
                           ),
                         ),
@@ -600,15 +596,13 @@ class CustomerBookingDetailView
                     )
                   : Icon(
                       Icons.local_offer,
-                      size: _isSmallScreen
-                          ? 28
-                          : 32, // PERBAIKAN: Icon size responsif
+                      size: _isSmallScreen ? 24 : 28,
                       color: Colors.grey,
                     ),
             ),
             SizedBox(
-              width: _isSmallScreen ? 12 : 16,
-            ), // PERBAIKAN: Spacing responsif
+              width: _isSmallScreen ? 8 : 12,
+            ), // ✅ PERBAIKI: Reduced spacing
             // Content Section
             Expanded(
               child: Column(
@@ -618,34 +612,33 @@ class CustomerBookingDetailView
                     addOn.name,
                     style: TextStyle(
                       fontSize: _isSmallScreen
-                          ? 16
-                          : 18, // PERBAIKAN: Font size responsif
+                          ? 14
+                          : 16, // ✅ PERBAIKI: Smaller font
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: _isSmallScreen ? 4 : 6),
+                  SizedBox(height: 4),
                   Text(
                     addOn.description,
                     style: TextStyle(
                       fontSize: _isSmallScreen
-                          ? 13
-                          : 15, // PERBAIKAN: Font size responsif
+                          ? 11
+                          : 13, // ✅ PERBAIKI: Smaller font
                       color: Colors.grey,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: _isSmallScreen ? 6 : 8),
+                  SizedBox(height: 6),
+                  // Stock badge
                   Row(
                     children: [
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: _isSmallScreen
-                              ? 8
-                              : 10, // PERBAIKAN: Padding responsif
-                          vertical: _isSmallScreen ? 2 : 4,
+                          horizontal: _isSmallScreen ? 6 : 8,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: isOutOfStock
@@ -662,9 +655,7 @@ class CustomerBookingDetailView
                               ? 'Out of stock'
                               : 'Stock: $availableStock',
                           style: TextStyle(
-                            fontSize: _isSmallScreen
-                                ? 11
-                                : 13, // PERBAIKAN: Font size responsif
+                            fontSize: 10,
                             color: isOutOfStock ? Colors.red : Colors.green,
                             fontWeight: FontWeight.w600,
                           ),
@@ -675,95 +666,115 @@ class CustomerBookingDetailView
                 ],
               ),
             ),
+
             SizedBox(
-              width: _isSmallScreen ? 12 : 16,
-            ), // PERBAIKAN: Spacing responsif
-            // Price and Quantity Section
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  controller.formatRupiah(addOn.price.toDouble()),
-                  style: TextStyle(
-                    fontSize: _isSmallScreen
-                        ? 15
-                        : 17, // PERBAIKAN: Font size responsif
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+              width: _isSmallScreen ? 6 : 8,
+            ), // ✅ PERBAIKI: Reduced spacing
+            // ✅ PERBAIKI: Price and Quantity Section - WRAPPED WITH FLEXIBLE
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Price
+                  Text(
+                    controller.formatRupiah(addOn.price.toDouble()),
+                    style: TextStyle(
+                      fontSize: _isSmallScreen ? 12 : 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                SizedBox(height: _isSmallScreen ? 8 : 12),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.remove,
-                          size: _isSmallScreen
-                              ? 18
-                              : 20, // PERBAIKAN: Icon size responsif
-                        ),
-                        padding: EdgeInsets.all(
-                          _isSmallScreen ? 6 : 8,
-                        ), // PERBAIKAN: Padding responsif
-                        constraints: BoxConstraints(
-                          minWidth: _isSmallScreen
-                              ? 32
-                              : 36, // PERBAIKAN: Size responsif
-                          minHeight: _isSmallScreen ? 32 : 36,
-                        ),
-                        onPressed: quantity <= 0
-                            ? null
-                            : () => controller.decrementAddOn(addOn.name),
-                        color: quantity <= 0 ? Colors.grey : AppColors.primary,
-                      ),
-                      Container(
-                        width: _isSmallScreen
-                            ? 30
-                            : 36, // PERBAIKAN: Width responsif
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$quantity',
-                          style: TextStyle(
-                            fontSize: _isSmallScreen
-                                ? 14
-                                : 16, // PERBAIKAN: Font size responsif
-                            fontWeight: FontWeight.w600,
+                  SizedBox(height: 6),
+                  // Quantity controls
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Minus button
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: quantity > 0
+                                  ? () => controller.decrementAddOn(addOn.name)
+                                  : null,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                                bottomLeft: Radius.circular(6),
+                              ),
+                              child: Container(
+                                width: _isSmallScreen
+                                    ? 26
+                                    : 30, // ✅ PERBAIKI: Smaller
+                                height: _isSmallScreen ? 26 : 30,
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.remove,
+                                  size: _isSmallScreen
+                                      ? 14
+                                      : 16, // ✅ PERBAIKI: Smaller icon
+                                  color: quantity > 0
+                                      ? AppColors.primary
+                                      : Colors.grey,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                          // Quantity display
+                          Container(
+                            width: _isSmallScreen ? 24 : 28,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border.symmetric(
+                                vertical: BorderSide(color: Colors.grey[300]!),
+                              ),
+                            ),
+                            child: Text(
+                              '$quantity',
+                              style: TextStyle(
+                                fontSize: _isSmallScreen ? 12 : 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          // Plus button
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: isOutOfStock || availableStock == 0
+                                  ? null
+                                  : () => controller.incrementAddOn(addOn.name),
+                              borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(6),
+                                bottomRight: Radius.circular(6),
+                              ),
+                              child: Container(
+                                width: _isSmallScreen ? 26 : 30,
+                                height: _isSmallScreen ? 26 : 30,
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.add,
+                                  size: _isSmallScreen ? 14 : 16,
+                                  color: isOutOfStock || availableStock == 0
+                                      ? Colors.grey
+                                      : AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.add,
-                          size: _isSmallScreen
-                              ? 18
-                              : 20, // PERBAIKAN: Icon size responsif
-                        ),
-                        padding: EdgeInsets.all(
-                          _isSmallScreen ? 6 : 8,
-                        ), // PERBAIKAN: Padding responsif
-                        constraints: BoxConstraints(
-                          minWidth: _isSmallScreen
-                              ? 32
-                              : 36, // PERBAIKAN: Size responsif
-                          minHeight: _isSmallScreen ? 32 : 36,
-                        ),
-                        onPressed: isOutOfStock || availableStock <= 0
-                            ? null
-                            : () => controller.incrementAddOn(addOn.name),
-                        color: (isOutOfStock || availableStock <= 0)
-                            ? Colors.grey
-                            : AppColors.primary,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -778,9 +789,7 @@ class CustomerBookingDetailView
         Text(
           'Additional Services',
           style: TextStyle(
-            fontSize: _isSmallScreen
-                ? 18
-                : 20, // PERBAIKAN: Font size responsif
+            fontSize: _isSmallScreen ? 18 : 20,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -798,9 +807,162 @@ class CustomerBookingDetailView
             return _buildNoAddOnsAvailable();
           }
 
-          return _buildAddOnsList();
+          return _buildAddOnsWithCategories();
         }),
       ],
+    );
+  }
+
+  Widget _buildAddOnsWithCategories() {
+    return Obx(() {
+      // Group add-ons by category
+      final Map<String, List<AddOnModel>> groupedAddOns = {};
+      for (final addOn in controller.availableAddOns) {
+        final category = addOn.category;
+        if (!groupedAddOns.containsKey(category)) {
+          groupedAddOns[category] = [];
+        }
+        groupedAddOns[category]!.add(addOn);
+      }
+
+      final categories = groupedAddOns.keys.toList();
+
+      // If only one category, no need for tabs
+      if (categories.length == 1) {
+        return _buildAddOnsList();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Category Tabs - RESPONSIVE
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Obx(
+              () => Row(
+                children: categories.asMap().entries.map((entry) {
+                  final category = entry.value;
+                  final isSelected =
+                      controller.selectedAddOnCategory.value == category;
+
+                  return Padding(
+                    padding: EdgeInsets.only(right: _isSmallScreen ? 8 : 12),
+                    child: FilterChip(
+                      label: Text(
+                        _formatCategoryName(category),
+                        style: TextStyle(
+                          fontSize: _isSmallScreen ? 13 : 15,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        controller.selectedAddOnCategory.value = category;
+                      },
+                      backgroundColor: Colors.grey[200],
+                      selectedColor: AppColors.secondary,
+                      checkmarkColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _isSmallScreen ? 12 : 16,
+                        vertical: _isSmallScreen ? 8 : 10,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+
+          SizedBox(height: _isSmallScreen ? 12 : 16),
+
+          // Add-ons list filtered by category
+          Obx(() {
+            final filteredAddOns =
+                groupedAddOns[controller.selectedAddOnCategory.value] ?? [];
+
+            if (filteredAddOns.isEmpty) {
+              return _buildNoAddOnsInCategory();
+            }
+
+            return Container(
+              constraints: BoxConstraints(maxHeight: _screenHeight * 0.4),
+              child: ListView.builder(
+                physics: const ClampingScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: filteredAddOns.length,
+                itemBuilder: (context, index) {
+                  final addOn = filteredAddOns[index];
+                  return Obx(() {
+                    final quantity = controller.getAddOnQuantity(addOn.name);
+                    final isOutOfStock = addOn.stock <= 0;
+                    final availableStock = addOn.stock - quantity;
+                    return Container(
+                      margin: EdgeInsets.only(bottom: _isSmallScreen ? 8 : 12),
+                      child: _buildAddOnItem(
+                        addOn,
+                        quantity,
+                        isOutOfStock,
+                        availableStock,
+                      ),
+                    );
+                  });
+                },
+              ),
+            );
+          }),
+        ],
+      );
+    });
+  }
+
+  String _formatCategoryName(String category) {
+    switch (category.toLowerCase()) {
+      case 'once time':
+        return 'One Time';
+      case 'perday':
+        return 'Per Day';
+      case 'perhour':
+        return 'Per Hour';
+      default:
+        return category
+            .split(' ')
+            .map(
+              (word) => word.isEmpty
+                  ? ''
+                  : '${word[0].toUpperCase()}${word.substring(1)}',
+            )
+            .join(' ');
+    }
+  }
+
+  Widget _buildNoAddOnsInCategory() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: _isSmallScreen ? 16 : 20),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: _isSmallScreen ? 40 : 48,
+              color: Colors.grey,
+            ),
+            SizedBox(height: _isSmallScreen ? 8 : 12),
+            Text(
+              'No items in this category',
+              style: TextStyle(
+                fontSize: _isSmallScreen ? 14 : 16,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
