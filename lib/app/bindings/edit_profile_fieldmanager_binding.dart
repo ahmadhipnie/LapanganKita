@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import '../modules/edit_profile_fieldmanager/edit_profile_fieldmanager_controller.dart';
+import '../modules/edit_profile_fieldmanager/edit_profile_controller.dart';
 import 'auth_binding.dart';
 
 class EditProfileFieldmanagerBinding extends Bindings {

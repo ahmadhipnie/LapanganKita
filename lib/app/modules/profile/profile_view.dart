@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lapangan_kita/app/modules/profile/customer_profile_controller.dart';
+import 'package:lapangan_kita/app/modules/profile/profile_controller.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 import '../edit_profile_fieldmanager/edit_fields/change_password_view.dart';

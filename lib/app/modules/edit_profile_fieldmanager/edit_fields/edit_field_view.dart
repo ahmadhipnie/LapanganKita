@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../edit_profile_fieldmanager_controller.dart';
+import '../edit_profile_controller.dart';
 
 class EditFieldView extends StatefulWidget {
   final String title;

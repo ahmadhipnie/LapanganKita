@@ -12,7 +12,7 @@ import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controlle
 // import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs_controller/fieldmanager_profile_controller.dart';
 
 import '../data/repositories/auth_repository.dart';
-import '../modules/profile/customer_profile_controller.dart';
+import '../modules/profile/profile_controller.dart';
 
 class FieldManagerTabsBinding extends Bindings {
   @override
