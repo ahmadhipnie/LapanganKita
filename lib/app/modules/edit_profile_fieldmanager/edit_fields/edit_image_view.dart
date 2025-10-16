@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../edit_profile_fieldmanager_controller.dart';
+import '../edit_profile_controller.dart';
 
 class EditImageFieldView extends StatefulWidget {
   final String title;

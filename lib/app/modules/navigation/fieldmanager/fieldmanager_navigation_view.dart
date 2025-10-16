@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lapangan_kita/app/modules/profile/customer_profile_view.dart';
+import 'package:lapangan_kita/app/modules/profile/profile_view.dart';
 import 'fieldmanager_navigation_controller.dart';
 
 import 'package:lapangan_kita/app/modules/navigation/fieldmanager/tabs/fieldmanager_booking_view.dart';

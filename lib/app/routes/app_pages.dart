@@ -3,14 +3,14 @@ import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_navigat
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_transaction_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_promosi_binding.dart';
 import 'package:lapangan_kita/app/bindings/fieldadmin_binding/fieldadmin_withdraw_binding.dart';
-import 'package:lapangan_kita/app/bindings/test_auth_binding.dart';
+import 'package:lapangan_kita/app/bindings/all_auth_binding.dart';
 import 'package:lapangan_kita/app/bindings/forgot_password_binding.dart';
 import 'package:lapangan_kita/app/modules/auth/auth_view.dart';
 import 'package:lapangan_kita/app/modules/forgot_password/forgot_password_view.dart';
 import 'package:lapangan_kita/app/modules/booking/customer_booking_detail_view.dart';
 import 'package:lapangan_kita/app/bindings/edit_field_fieldmanager_binding.dart';
 import 'package:lapangan_kita/app/modules/edit_field_fieldmanager/edit_field_fieldmanager_view.dart';
-import 'package:lapangan_kita/app/modules/edit_profile_fieldmanager/edit_profile_fieldmanager_view.dart';
+import 'package:lapangan_kita/app/modules/edit_profile_fieldmanager/edit_profile_view.dart';
 import 'package:lapangan_kita/app/bindings/edit_profile_fieldmanager_binding.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/fieldadmin_navigation_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/fieldadmin/tabs/fieldadmin_refund_view.dart';
@@ -33,18 +33,18 @@ import 'package:lapangan_kita/app/modules/history/customer_history_view.dart';
 import 'package:lapangan_kita/app/modules/home/customer_home_view.dart';
 import 'package:lapangan_kita/app/modules/navigation/customer_navigation_view.dart';
 import 'package:lapangan_kita/app/modules/onboarding/onboarding_view.dart';
-import 'package:lapangan_kita/app/modules/profile/customer_profile_view.dart';
+import 'package:lapangan_kita/app/modules/profile/profile_view.dart';
 import 'package:lapangan_kita/app/modules/register/otp_view.dart';
-import '../modules/login/login_view.dart';
-import '../bindings/login_binding.dart';
+// import '../modules/login/login_view.dart';
+// import '../bindings/login_binding.dart';
 import 'app_routes.dart';
-import '../modules/register/register_view.dart';
-import '../bindings/register_binding.dart';
-import '../modules/register/customer_register_view.dart';
-import '../bindings/customer_register_binding.dart';
+// import '../modules/register/register_view.dart';
+// import '../bindings/register_binding.dart';
+// import '../modules/register/customer_register_view.dart';
+// import '../bindings/customer_register_binding.dart';
 
-import '../modules/register/fieldManager_register_view.dart';
-import '../bindings/fieldManager_register_binding.dart';
+// import '../modules/register/fieldManager_register_view.dart';
+// import '../bindings/fieldManager_register_binding.dart';
 
 import '../modules/place/place_form_view.dart';
 import '../bindings/place_form_binding.dart';
@@ -71,31 +71,31 @@ class AppPages {
       page: () => FieldManagerNavigationView(),
       bindings: [FieldManagerNavigationBinding(), FieldManagerTabsBinding()],
     ),
-    GetPage(
-      name: AppRoutes.LOGIN,
-      page: () => LoginView(),
-      binding: LoginBinding(),
-    ),
+    // GetPage(
+    //   name: AppRoutes.LOGIN,
+    //   page: () => LoginView(),
+    //   binding: LoginBinding(),
+    // ),
     GetPage(
       name: AppRoutes.ONBOARDING,
       page: () => OnboardingView(),
       binding: OnboardingBinding(),
     ),
-    GetPage(
-      name: AppRoutes.REGISTER,
-      page: () => RegisterView(),
-      binding: RegisterBinding(),
-    ),
-    GetPage(
-      name: AppRoutes.CUSTOMER_REGISTER,
-      page: () => CustomerRegisterView(),
-      binding: CustomerRegisterBinding(),
-    ),
-    GetPage(
-      name: AppRoutes.FIELD_MANAGER_REGISTER,
-      page: () => FieldManagerRegisterView(),
-      binding: FieldManagerRegisterBinding(),
-    ),
+    // GetPage(
+    //   name: AppRoutes.REGISTER,
+    //   page: () => RegisterView(),
+    //   binding: RegisterBinding(),
+    // ),
+    // GetPage(
+    //   name: AppRoutes.CUSTOMER_REGISTER,
+    //   page: () => CustomerRegisterView(),
+    //   binding: CustomerRegisterBinding(),
+    // ),
+    // GetPage(
+    //   name: AppRoutes.FIELD_MANAGER_REGISTER,
+    //   page: () => FieldManagerRegisterView(),
+    //   binding: FieldManagerRegisterBinding(),
+    // ),
     GetPage(name: AppRoutes.OTP, page: () => OtpView(), binding: OTPBinding()),
     GetPage(
       name: AppRoutes.PLACE_FORM,

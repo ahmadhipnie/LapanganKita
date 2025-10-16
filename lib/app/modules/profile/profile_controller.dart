@@ -3,7 +3,7 @@ import 'package:lapangan_kita/app/data/repositories/auth_repository.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 import 'package:lapangan_kita/app/data/network/api_client.dart';
 
-import '../edit_profile_fieldmanager/edit_profile_fieldmanager_controller.dart';
+import '../edit_profile_fieldmanager/edit_profile_controller.dart';
 
 class CustomerProfileController extends GetxController {
   final LocalStorageService _localStorage = LocalStorageService.instance;

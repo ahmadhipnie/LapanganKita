@@ -79,7 +79,8 @@ class CommunityPost {
             json['booking_id_booking'],
       ),
       userProfileImage: json['poster_photo']?.toString() ?? '',
-      userName: json['poster_name'] ??
+      userName:
+          json['poster_name'] ??
           json['user_name'] ??
           json['username'] ??
           json['name'] ??
@@ -93,12 +94,13 @@ class CommunityPost {
       gameDate: bookingStart,
       gameTime: _formatTime(bookingStart),
       playersNeeded: parseInt(json['max_person']),
-      totalCost: (json['total_price'] ??
-              json['total_cost'] ??
-              json['price'] ??
-              json['cost'] ??
-              0)
-          .toDouble(),
+      totalCost:
+          (json['total_price'] ??
+                  json['total_cost'] ??
+                  json['price'] ??
+                  json['cost'] ??
+                  0)
+              .toDouble(),
       joinedPlayers: parseInt(json['joined_count']),
       posterUserId: parseInt(json['poster_user_id']),
       bookingStatus: json['booking_status']?.toString() ?? 'approved',
@@ -220,7 +222,8 @@ class CommunityPostsResponse {
     return CommunityPostsResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
-      data: (json['data'] as List<dynamic>?)
+      data:
+          (json['data'] as List<dynamic>?)
               ?.map(
                 (item) => CommunityPost.fromJson(item as Map<String, dynamic>),
               )
@@ -234,12 +237,16 @@ class CommunityPostsResponse {
     return {
       'success': success,
       'message': message,
-      'data': data.map((post) => {
-            'id': post.id,
-            'bookingId': post.bookingId,
-            'userName': post.userName,
-            'courtName': post.courtName,
-          }).toList(),
+      'data': data
+          .map(
+            (post) => {
+              'id': post.id,
+              'bookingId': post.bookingId,
+              'userName': post.userName,
+              'courtName': post.courtName,
+            },
+          )
+          .toList(),
     };
   }
 

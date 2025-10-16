@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lapangan_kita/app/themes/color_theme.dart';
 import 'edit_fields/edit_image_view.dart';
-import 'edit_profile_fieldmanager_controller.dart';
+import 'edit_profile_controller.dart';
 import 'edit_fields/edit_field_view.dart';
 
 class EditProfileFieldmanagerView
