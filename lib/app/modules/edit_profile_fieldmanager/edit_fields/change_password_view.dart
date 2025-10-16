@@ -69,9 +69,9 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       );
 
       if (response.success) {
-        _errorHandler.showSuccessMessage(response.message);
-        await Future.delayed(const Duration(milliseconds: 500));
         Get.back();
+        await Future.delayed(const Duration(milliseconds: 500));
+        _errorHandler.showSuccessMessage(response.message);
       } else {
         throw AuthException(
           response.message.isNotEmpty
