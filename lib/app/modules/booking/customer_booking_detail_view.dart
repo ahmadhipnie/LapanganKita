@@ -1435,26 +1435,28 @@ class CustomerBookingDetailView
                     ),
                   ),
                   SizedBox(height: _isSmallScreen ? 4 : 6),
-                  Row(
+                  Wrap(
+                    spacing: _isSmallScreen ? 6 : 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      ...List.generate(5, (index) {
-                        return Icon(
-                          index < summary.averageRating.round()
-                              ? Icons.star
-                              : Icons.star_border,
-                          size: _isSmallScreen
-                              ? 16
-                              : 18, // PERBAIKAN: Icon size responsif
-                          color: AppColors.secondary,
-                        );
-                      }),
-                      SizedBox(width: _isSmallScreen ? 8 : 12),
+                      // Stars
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(5, (index) {
+                          return Icon(
+                            index < summary.averageRating.round()
+                                ? Icons.star
+                                : Icons.star_border,
+                            size: _isSmallScreen ? 14 : 16,
+                            color: AppColors.secondary,
+                          );
+                        }),
+                      ),
+                      // Review count
                       Text(
                         '${summary.totalReviews} review${summary.totalReviews > 1 ? 's' : ''}',
                         style: TextStyle(
-                          fontSize: _isSmallScreen
-                              ? 14
-                              : 16, // PERBAIKAN: Font size responsif
+                          fontSize: _isSmallScreen ? 12 : 14,
                           color: Colors.grey,
                         ),
                       ),
