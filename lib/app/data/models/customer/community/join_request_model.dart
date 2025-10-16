@@ -184,18 +184,6 @@ class JoinRequest {
   bool get isApproved => status == 'approved';
   bool get isRejected => status == 'rejected';
 
-  // Formatted gender
-  String get formattedGender {
-    switch (joinerGender.toLowerCase()) {
-      case 'male':
-        return 'Laki-laki';
-      case 'female':
-        return 'Perempuan';
-      default:
-        return joinerGender;
-    }
-  }
-
   // Calculate age from birth date
   int get age {
     final now = DateTime.now();

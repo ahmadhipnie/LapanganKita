@@ -641,12 +641,14 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${request.formattedGender} • ${request.age} years old',
+                      '${request.joinerGender} • ${request.age} years old',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      request.joinerPhone,
+                      request.joinerPhone.isNotEmpty
+                          ? request.joinerPhone
+                          : request.joinerEmail,
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
