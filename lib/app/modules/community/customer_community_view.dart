@@ -14,6 +14,18 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
 
   final ApiClient _apiClient = Get.find<ApiClient>();
 
+  double _getScreenWidth(BuildContext context) =>
+      MediaQuery.of(context).size.width;
+  bool _isSmallScreen(BuildContext context) => _getScreenWidth(context) < 360;
+
+  // Responsive padding
+  double _horizontalPadding(BuildContext context) =>
+      _isSmallScreen(context) ? 12 : 16;
+
+  // Responsive font sizes
+  double _smallFontSize(BuildContext context) =>
+      _isSmallScreen(context) ? 11 : 12;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,9 +36,11 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Community'),
-            const Text(
+            Text(
               'Find playing patners, and share your sports journey',
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(
+                fontSize: _smallFontSize(context),
+              ), // ✅ Use helper
               maxLines: 2,
             ),
           ],
@@ -54,7 +68,12 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             onRefresh: controller.refreshPosts,
             color: AppColors.primary,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+              padding: EdgeInsets.fromLTRB(
+                _horizontalPadding(context), // ✅ Use helper
+                20,
+                _horizontalPadding(context), // ✅ Use helper
+                32,
+              ),
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 _buildFeaturedPostSection(context),
@@ -403,20 +422,31 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
                 ),
+                overflow: TextOverflow.ellipsis, // ✅ ADD
+                maxLines: 1, // ✅ ADD
               ),
               const SizedBox(height: 4),
               Row(
+                // ✅ Keep as Row, add Flexible children
                 children: [
-                  Text(
-                    post.userPhone,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  Flexible(
+                    // ✅ ADD
+                    child: Text(
+                      post.userPhone,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      overflow: TextOverflow.ellipsis, // ✅ ADD
+                      maxLines: 1, // ✅ ADD
+                    ),
                   ),
-                  const SizedBox(width: 2),
-                  Text(' • '),
-                  const SizedBox(width: 2),
-                  Text(
-                    post.timeAgo,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  const Text(' • '),
+                  Flexible(
+                    // ✅ ADD
+                    child: Text(
+                      post.timeAgo,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      overflow: TextOverflow.ellipsis, // ✅ ADD
+                      maxLines: 1, // ✅ ADD
+                    ),
                   ),
                 ],
               ),
@@ -822,9 +852,9 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                 Icons.calendar_today,
                 DateFormat('dd MMM').format(post.gameDate),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6), // ✅ Reduce from 8
               _buildMetaChip(Icons.access_time, post.gameTime),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6), // ✅ Reduce from 8
               _buildMetaChip(
                 Icons.people_outline,
                 '${post.joinedPlayers}/${post.playersNeeded}',
@@ -903,18 +933,33 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
   }
 
   Widget _buildMetaChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.neutralColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: Colors.grey[600]),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: Colors.grey[700], fontSize: 12)),
-        ],
+    return Flexible(
+      // ✅ WRAP with Flexible
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 6,
+        ), // ✅ Reduce padding
+        decoration: BoxDecoration(
+          color: AppColors.neutralColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min, // ✅ ADD
+          children: [
+            Icon(icon, size: 14, color: Colors.grey[600]),
+            const SizedBox(width: 4), // ✅ Reduce from 6
+            Flexible(
+              // ✅ ADD
+              child: Text(
+                label,
+                style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                overflow: TextOverflow.ellipsis, // ✅ ADD
+                maxLines: 1, // ✅ ADD
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
