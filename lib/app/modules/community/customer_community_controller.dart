@@ -1,48 +1,105 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:lapangan_kita/app/modules/community/post_modal_view.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
 
+import '../../data/helper/error_helper.dart';
 import '../../data/models/customer/community/community_post_model.dart';
 import '../../data/models/customer/community/join_request_model.dart';
+import '../../data/models/customer/community/post_request.dart';
+import '../../data/models/customer/history/customer_history_model.dart';
+import '../../data/network/api_client.dart';
 import '../../data/repositories/community_repository.dart';
+import '../../data/repositories/post_repository.dart';
 
+/// Controller to manage community posts and join requests
+/// Handles CRUD posts, join game, approve/reject requests
 class CustomerCommunityController extends GetxController {
+  // ==================== Observables ====================
+
+  /// List of all community posts (from other users)
   final RxList<CommunityPost> posts = <CommunityPost>[].obs;
+
+  /// List of featured posts (user's own posts)
   final RxList<CommunityPost> featuredPosts = <CommunityPost>[].obs;
+
+  /// Join requests received by user (as poster)
+  final RxList<JoinRequest> joinRequests = <JoinRequest>[].obs;
+
+  /// Join requests made by user (as joiner)
+  final RxList<JoinRequest> userJoinRequests = <JoinRequest>[].obs;
+
+  /// Approved bookings that haven't been posted
+  final RxList<BookingHistory> approvedBookings = <BookingHistory>[].obs;
+
+  // State management
   final RxBool isScrolled = false.obs;
   final RxBool isLoading = false.obs;
   final RxBool isLoadingFeaturedPost = false.obs;
+  final RxBool isLoadingJoinRequests = false.obs;
+  final RxBool isLoadingBookings = false.obs;
+  final RxBool isCreatingPost = false.obs;
   final RxBool hasError = false.obs;
   final RxString errorMessage = ''.obs;
-  final ScrollController scrollController = ScrollController();
-  final RxMap<String, bool> _joiningStates = <String, bool>{}.obs;
-  final RxList<JoinRequest> joinRequests =
-      <JoinRequest>[].obs; // Join requests TO user's posts
-  final RxList<JoinRequest> userJoinRequests =
-      <JoinRequest>[].obs; // Join requests FROM user
-  final RxBool isLoadingJoinRequests = false.obs;
   final RxString joinRequestsError = ''.obs;
+
+  /// Track joining state per post
+  final RxMap<String, bool> _joiningStates = <String, bool>{}.obs;
+
+  /// Track decision loading state per request
   final RxMap<String, bool> _decisionLoading = <String, bool>{}.obs;
 
-  final CommunityRepository _repository;
+  // ==================== Controllers & Services ====================
+
+  final ScrollController scrollController = ScrollController();
+  final titleController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final Rx<File?> selectedImage = Rx<File?>(null);
+  final Rx<BookingHistory?> selectedBooking = Rx<BookingHistory?>(null);
+
+  late final CommunityRepository _repository;
   final LocalStorageService _localStorageService = LocalStorageService.instance;
+  final ImagePicker _imagePicker = ImagePicker();
+  final _errorHandler = ErrorHandler();
+
+  /// Lazy initialize PostRepository
+  PostRepository get _postRepository {
+    if (!Get.isRegistered<PostRepository>()) {
+      Get.lazyPut<PostRepository>(
+        () => PostRepository(Get.find<ApiClient>()),
+        fenix: true,
+      );
+    }
+    return Get.find<PostRepository>();
+  }
+
+  // ==================== Constructor ====================
 
   CustomerCommunityController({required CommunityRepository repository})
     : _repository = repository;
 
-  // Get current user ID
   int get _currentUserId => _localStorageService.userId;
   int get currentUserId => _currentUserId;
+
+  // ==================== Lifecycle ====================
 
   @override
   void onInit() {
     super.onInit();
-    print('🟡 Controller initialized, user ID: $_currentUserId');
     scrollController.addListener(_handleScroll);
 
-    // Ganti pemanggilan terpisah dengan method berurutan
+    if (!Get.isRegistered<PostRepository>()) {
+      Get.lazyPut<PostRepository>(
+        () => PostRepository(Get.find<ApiClient>()),
+        fenix: true,
+      );
+    }
+
     loadInitialData();
   }
 
@@ -56,20 +113,16 @@ class CustomerCommunityController extends GetxController {
     isScrolled.value = scrollController.offset > 50;
   }
 
+  // ==================== Data Loading ====================
+
+  /// Load all initial data: featured posts, community posts, join requests
   Future<void> loadInitialData() async {
     try {
       isLoading.value = true;
 
-      // Load featured posts terlebih dahulu
       await _loadFeaturedPosts();
-
-      // Tunggu sebentar untuk memastikan featuredPosts terisi
       await Future.delayed(const Duration(milliseconds: 100));
-
-      // Kemudian load community posts dengan filter yang tepat
       await _loadPostsFromApi();
-
-      // Load data join requests
       await loadAllJoinRequests();
       await loadUserJoinRequests();
     } catch (e) {
@@ -78,7 +131,7 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  // Method untuk load featured post (post milik user sendiri)
+  /// Load featured posts (user's own posts)
   Future<void> _loadFeaturedPosts() async {
     try {
       isLoadingFeaturedPost.value = true;
@@ -89,51 +142,31 @@ class CustomerCommunityController extends GetxController {
         return;
       }
 
-      print('🔍 Loading featured posts for user ID: $_currentUserId');
-
       final response = await _repository.getPostsByUserId(_currentUserId);
-
-      print('📥 Loaded ${response.data.length} featured posts from API');
 
       if (response.success) {
         if (response.data.isNotEmpty) {
-          // Enrich posts dengan data booking
           final enrichedPosts = await _enrichPostsWithBookingData(
             response.data,
           );
 
-          // Filter out completed bookings - don't show in featured posts
+          // Filter out completed bookings
           final activePosts = enrichedPosts
               .where((post) => post.bookingStatus.toLowerCase() != 'completed')
               .toList();
 
-          // Debug: Print filtering results
-          print('🔍 Total enriched posts: ${enrichedPosts.length}');
-          print('🔍 Active posts (excluding completed): ${activePosts.length}');
-          if (activePosts.isNotEmpty) {
-            print('🔍 First active post: ${activePosts.first.userName}');
-            print('🔍 First post status: ${activePosts.first.bookingStatus}');
-          }
-
           featuredPosts.assignAll(activePosts);
-          print(
-            '✅ Found ${activePosts.length} active featured posts for current user',
-          );
 
-          // Load join requests untuk featured post pertama jika ada
           if (activePosts.isNotEmpty) {
             await fetchJoinRequestsByBooking(activePosts.first.bookingId);
           }
         } else {
-          print('⚠️ No posts found for current user ID: $_currentUserId');
           featuredPosts.clear();
         }
       } else {
-        print('❌ API returned error: ${response.message}');
         featuredPosts.clear();
       }
     } catch (e) {
-      print('❌ Exception loading featured posts: $e');
       featuredPosts.clear();
       Get.snackbar(
         'Error',
@@ -146,7 +179,7 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  // Enrich community posts dengan data booking
+  /// Enrich posts with booking data from API
   Future<List<CommunityPost>> _enrichPostsWithBookingData(
     List<CommunityPost> posts,
   ) async {
@@ -154,25 +187,26 @@ class CustomerCommunityController extends GetxController {
 
     for (final post in posts) {
       try {
-        // Coba ambil data booking berdasarkan booking_id
-        final bookingData = await _repository.getBookingDetails(post.bookingId);
+        final bookingData = await _repository.getBookingDetails(
+          post.bookingId.toString(),
+        );
 
-        // Coba ambil data post photo dari posts API
         String postPhoto = '';
         try {
-          final postsData = await _repository.getPostDetails(post.id);
+          final postsData = await _repository.getPostDetails(
+            post.id.toString(),
+          );
           if (postsData != null && postsData['success'] == true) {
             final postInfo = postsData['data'];
             postPhoto = postInfo?['post_photo']?.toString() ?? '';
           }
         } catch (e) {
-          print('⚠️ Could not fetch post photo for post ${post.id}: $e');
+          // Silent fail for post photo
         }
 
         if (bookingData != null && bookingData['success'] == true) {
           final bookingInfo = bookingData['data'];
           if (bookingInfo != null) {
-            // Buat post baru dengan data booking yang diperbarui menggunakan copyWith
             final enrichedPost = post.copyWith(
               userName: bookingInfo['user_name']?.toString() ?? post.userName,
               totalCost: (bookingInfo['total_price'] ?? post.totalCost)
@@ -184,21 +218,16 @@ class CustomerCommunityController extends GetxController {
               postPhoto: postPhoto,
             );
 
-            print(
-              '✅ Enriched post ${post.id}: ${enrichedPost.userName} - ${enrichedPost.totalCost} - Status: ${enrichedPost.bookingStatus} - Photo: ${postPhoto.isNotEmpty ? 'Yes' : 'No'}',
-            );
             enrichedPosts.add(enrichedPost);
           } else {
             final enrichedPost = post.copyWith(postPhoto: postPhoto);
             enrichedPosts.add(enrichedPost);
           }
         } else {
-          print('⚠️ No booking data found for booking ID: ${post.bookingId}');
           final enrichedPost = post.copyWith(postPhoto: postPhoto);
           enrichedPosts.add(enrichedPost);
         }
       } catch (e) {
-        print('❌ Error enriching post ${post.id}: $e');
         enrichedPosts.add(post);
       }
     }
@@ -206,49 +235,37 @@ class CustomerCommunityController extends GetxController {
     return enrichedPosts;
   }
 
+  /// Load community posts (from other users)
   Future<void> _loadPostsFromApi() async {
     try {
       isLoading.value = true;
       hasError.value = false;
       errorMessage.value = '';
-
-      // Clear existing posts to ensure fresh data
       posts.clear();
 
       final response = await _repository.getCommunityPosts();
 
       if (response.success) {
-        // PERBAIKAN: Tunggu featuredPosts selesai load sebelum filter
-        // Tunggu hingga featuredPosts sudah terisi (tidak loading)
+        // Wait for featured posts to finish loading
         while (isLoadingFeaturedPost.value) {
           await Future.delayed(const Duration(milliseconds: 100));
         }
 
-        // Filter out posts yang sudah ada di featured posts
-        final Set<String> featuredPostIds = featuredPosts
-            .map((p) => p.id)
-            .toSet();
+        // Filter posts from other users
+        final Set<int> featuredPostIds = featuredPosts.map((p) => p.id).toSet();
 
         final otherUsersPosts = response.data.where((post) {
-          // Filter berdasarkan user ID DAN post ID untuk menghindari duplikasi
           final isNotCurrentUser = post.posterUserId != _currentUserId;
           final isNotInFeatured = !featuredPostIds.contains(post.id);
           return isNotCurrentUser && isNotInFeatured;
         }).toList();
 
-        print(
-          '👥 Community posts: ${otherUsersPosts.length} posts from other users (filtered from ${response.data.length} total)',
-        );
-        print('🎯 Featured posts count: ${featuredPosts.length}');
-        print('🎯 Featured post IDs: $featuredPostIds');
-        print('🔍 Current user ID: $_currentUserId');
-
-        // Enrich community posts dengan data booking
         final enrichedCommunityPosts = await _enrichPostsWithBookingData(
           otherUsersPosts,
         );
         posts.assignAll(enrichedCommunityPosts);
 
+        // Set error messages for empty states
         if (response.data.isEmpty) {
           errorMessage.value = 'No community posts available yet.';
           hasError.value = true;
@@ -268,49 +285,35 @@ class CustomerCommunityController extends GetxController {
       errorMessage.value =
           'Connection error: Please check your internet connection';
       hasError.value = true;
-      print('Error loading posts: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Update refreshPosts method
+  /// Refresh all posts and join requests
   Future<void> refreshPosts() async {
     try {
-      print('🔄 Starting refresh posts...');
-
-      // Clear error states when starting refresh
       hasError.value = false;
       errorMessage.value = '';
 
-      // Clear join requests cache to ensure fresh data
       joinRequests.clear();
       userJoinRequests.clear();
 
-      // Load featured posts dulu dan TUNGGU selesai
       await _loadFeaturedPosts();
-
-      // Pastikan featuredPosts sudah terisi sebelum melanjutkan
       await Future.delayed(const Duration(milliseconds: 200));
-
-      // Sekarang load community posts dengan filter yang akurat
       await _loadPostsFromApi();
-
-      // PERBAIKAN: Load semua join requests secara parallel
       await Future.wait([loadAllJoinRequests(), loadUserJoinRequests()]);
 
-      // Refresh join requests for the first featured post if available
       if (featuredPosts.isNotEmpty) {
         await fetchJoinRequestsByBooking(featuredPosts.first.bookingId);
       }
-
-      print('✅ Posts refresh completed successfully');
     } catch (e) {
-      print('❌ Error during refresh: $e');
       hasError.value = true;
       errorMessage.value = 'Failed to refresh posts. Please try again.';
     }
   }
+
+  // ==================== Join Game ====================
 
   bool isJoining(String postId) => _joiningStates[postId] ?? false;
 
@@ -322,10 +325,11 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  Future<void> joinGame(String postId) async {
-    if (isJoining(postId)) return;
+  /// Join game - send join request to post
+  Future<void> joinGame(int postId) async {
+    if (isJoining(postId.toString())) return;
 
-    // Cari post di community posts atau featured posts
+    // Find post
     CommunityPost? post;
     int postIndex = posts.indexWhere((post) => post.id == postId);
 
@@ -341,61 +345,41 @@ class CustomerCommunityController extends GetxController {
     }
 
     if (post == null) {
-      Get.snackbar(
-        'Error',
-        'Post not found',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage('Post not found');
       return;
     }
 
-    // Cek apakah user mencoba join post milik sendiri
+    // Validation
     if (post.posterUserId == _currentUserId) {
-      Get.snackbar(
-        'Error',
-        'You cannot join your own post',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage('You cannot join your own post');
       return;
     }
 
     if (post.joinedPlayers >= post.playersNeeded) {
-      Get.snackbar(
-        'Full',
-        'This game is already full',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage('This game is already full');
       return;
     }
 
     final userId = _localStorageService.userId;
     if (userId <= 0) {
-      Get.snackbar(
-        'Error',
-        'Please sign in to join a game.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage('Please sign in to join a game.');
       return;
     }
 
-    if (post.bookingId.isEmpty) {
-      Get.snackbar(
-        'Error',
+    if (post.bookingId <= 0) {
+      _errorHandler.showErrorMessage(
         'Booking information is unavailable for this post.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
       );
       return;
     }
 
-    _setJoining(postId, true);
+    _setJoining(postId.toString(), true);
 
     try {
-      final response = await _repository.joinGame(userId, post.bookingId);
+      final response = await _repository.joinGame(
+        userId,
+        post.bookingId.toString(),
+      );
 
       final statusCode = response.statusCode ?? 0;
       final responseBody = response.data;
@@ -417,7 +401,7 @@ class CustomerCommunityController extends GetxController {
             joinedPlayers: post.joinedPlayers + 1,
           );
 
-          // Update post di list yang sesuai
+          // Update post in list
           if (postIndex != -1) {
             posts[postIndex] = updatedPost;
           } else {
@@ -429,7 +413,6 @@ class CustomerCommunityController extends GetxController {
             }
           }
 
-          // PERBAIKAN: Langsung refresh user join requests untuk update status button
           await loadUserJoinRequests();
 
           Get.snackbar(
@@ -438,110 +421,148 @@ class CustomerCommunityController extends GetxController {
             backgroundColor: Colors.green,
             colorText: Colors.white,
           );
-        } else {
-          Get.snackbar(
-            'Failed',
-            message,
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
         }
-      } else {
-        Get.snackbar(
-          'Failed',
-          'Server error: $statusCode',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
       }
     } on DioException catch (e) {
       final message =
           _extractMessage(e.response?.data) ??
           (e.message ?? 'Failed to join game.');
-      Get.snackbar(
-        'Error',
-        message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage(message);
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Terjadi kesalahan. Silakan coba lagi.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage('An error occurred. Please try again.');
     } finally {
-      _setJoining(postId, false);
+      _setJoining(postId.toString(), false);
     }
   }
 
-  bool isProcessingDecision(String requestId) =>
-      _decisionLoading[requestId] ?? false;
+  // ==================== Join Requests ====================
 
-  Future<void> fetchJoinRequestsByBooking(String bookingId) async {
+  /// Load all join requests for user's posts
+  Future<void> loadAllJoinRequests() async {
     try {
       isLoadingJoinRequests.value = true;
       joinRequestsError.value = '';
 
-      print('🔍 Fetching join requests for booking ID: $bookingId');
-
-      final response = await _repository.getJoinRequestsByBooking(bookingId);
-
-      print('✅ Parsed ${response.data.length} join requests');
+      final response = await _repository.getAllJoinRequests();
 
       if (response.success) {
-        joinRequests.assignAll(response.data);
+        final myPostJoinRequests = response.data
+            .where((request) => request.posterUserId == _currentUserId)
+            .toList();
 
-        if (response.data.isEmpty) {
-          joinRequestsError.value = 'Belum ada permintaan bergabung.';
-        } else {
-          print(
-            '🎯 Loaded ${response.data.length} join requests for booking $bookingId',
-          );
-        }
+        joinRequests.assignAll(myPostJoinRequests);
       } else {
-        joinRequests.clear();
-        joinRequestsError.value = response.message.isEmpty
-            ? 'Gagal memuat data permintaan.'
-            : response.message;
-        print('❌ API Error: ${response.message}');
+        joinRequestsError.value = response.message;
       }
     } catch (e) {
-      joinRequests.clear();
-      joinRequestsError.value =
-          'Tidak dapat memuat permintaan. Periksa koneksi internet Anda.';
-      print('❌ Exception: $e');
+      joinRequestsError.value = 'Failed to load join requests';
     } finally {
       isLoadingJoinRequests.value = false;
     }
   }
 
+  /// Load join requests made by user (as joiner)
+  Future<void> loadUserJoinRequests() async {
+    try {
+      final response = await _repository.getJoinRequestsByUserId(
+        _currentUserId,
+      );
+
+      if (response.success) {
+        userJoinRequests.clear();
+        userJoinRequests.assignAll(response.data);
+        userJoinRequests.refresh();
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /// Fetch join requests by booking ID
+  Future<void> fetchJoinRequestsByBooking(int bookingId) async {
+    try {
+      isLoadingJoinRequests.value = true;
+      joinRequestsError.value = '';
+
+      final response = await _repository.getJoinRequestsByBooking(
+        bookingId.toString(),
+      );
+
+      if (response.success) {
+        joinRequests.assignAll(response.data);
+
+        if (response.data.isEmpty) {
+          joinRequestsError.value = 'No join requests yet.';
+        }
+      } else {
+        joinRequests.clear();
+        joinRequestsError.value = response.message.isEmpty
+            ? 'Failed to load request data.'
+            : response.message;
+      }
+    } catch (e) {
+      joinRequests.clear();
+      joinRequestsError.value =
+          'Unable to load requests. Please check your internet connection.';
+    } finally {
+      isLoadingJoinRequests.value = false;
+    }
+  }
+
+  /// Get pending join requests for specific booking
+  List<JoinRequest> getPendingJoinRequestsForBooking(int bookingId) {
+    return joinRequests
+        .where(
+          (request) =>
+              request.bookingId == bookingId && request.status == 'pending',
+        )
+        .toList();
+  }
+
+  /// Get user's join request status for specific booking
+  String? getUserJoinStatusForBooking(int bookingId) {
+    try {
+      final userRequest = userJoinRequests.firstWhereOrNull(
+        (request) => request.bookingId == bookingId,
+      );
+
+      return userRequest?.status;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  bool isProcessingDecision(int requestId) =>
+      _decisionLoading[requestId.toString()] ?? false;
+
+  /// Approve join request
   Future<void> approveJoinRequest(JoinRequest request) async {
     await _updateJoinRequestStatus(request, 'approved');
   }
 
+  /// Reject join request
   Future<void> rejectJoinRequest(JoinRequest request) async {
     await _updateJoinRequestStatus(request, 'rejected');
   }
 
+  /// Update join request status (approve/reject)
   Future<void> _updateJoinRequestStatus(
     JoinRequest request,
     String status,
   ) async {
     if (isProcessingDecision(request.id)) return;
 
-    _decisionLoading[request.id] = true;
+    _decisionLoading[request.id.toString()] = true;
 
     try {
       final response = await _repository.updateJoinRequestStatus(
-        request.id,
+        request.id.toString(),
         status,
       );
 
       final responseBody = response.data;
       final message =
-          _extractMessage(responseBody) ?? 'Permintaan berhasil diperbarui';
+          _extractMessage(responseBody) ?? 'Request updated successfully';
 
       if (response.statusCode != null &&
           response.statusCode! >= 200 &&
@@ -553,108 +574,38 @@ class CustomerCommunityController extends GetxController {
         }
 
         Get.snackbar(
-          'Berhasil',
+          'Success',
           message,
           backgroundColor: status == 'approved' ? Colors.green : Colors.orange,
-          colorText: Colors.white,
-        );
-      } else {
-        Get.snackbar(
-          'Gagal',
-          'Server error: ${response.statusCode}',
-          backgroundColor: Colors.red,
           colorText: Colors.white,
         );
       }
     } on DioException catch (e) {
       final message =
           _extractMessage(e.response?.data) ??
-          (e.message ?? 'Gagal memperbarui status.');
-      Get.snackbar(
-        'Error',
-        message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+          (e.message ?? 'Failed to update status.');
+      _errorHandler.showErrorMessage(message);
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Terjadi kesalahan. Silakan coba lagi.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage('An error occurred. Please try again.');
     } finally {
-      _decisionLoading.remove(request.id);
+      _decisionLoading.remove(request.id.toString());
     }
   }
 
-  String formatRupiah(double amount) {
-    final format = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp',
-      decimalDigits: 0,
-    );
-    return format.format(amount);
-  }
-
-  // Load all join requests for the current user's posts (as poster)
-  Future<void> loadAllJoinRequests() async {
-    try {
-      isLoadingJoinRequests.value = true;
-      joinRequestsError.value = '';
-
-      final response = await _repository.getAllJoinRequests();
-
-      if (response.success) {
-        // Filter join requests where current user is the poster
-        final myPostJoinRequests = response.data
-            .where((request) => request.posterUserId == _currentUserId)
-            .toList();
-
-        joinRequests.assignAll(myPostJoinRequests);
-        print(
-          '✅ Loaded ${myPostJoinRequests.length} join requests for user posts',
-        );
-      } else {
-        joinRequestsError.value = response.message;
-        print('❌ Failed to load join requests: ${response.message}');
-      }
-    } catch (e) {
-      joinRequestsError.value = 'Failed to load join requests';
-      print('❌ Exception loading join requests: $e');
-    } finally {
-      isLoadingJoinRequests.value = false;
-    }
-  }
-
-  // Get pending join requests for a specific booking
-  List<JoinRequest> getPendingJoinRequestsForBooking(String bookingId) {
-    return joinRequests
-        .where(
-          (request) =>
-              request.bookingId == bookingId && request.status == 'pending',
-        )
-        .toList();
-  }
-
-  // Handle approve/reject action
-  Future<void> handleJoinRequestAction(String joinId, String action) async {
-    if (_decisionLoading[joinId] == true) return;
+  /// Handle approve/reject action by join request ID
+  Future<void> handleJoinRequestAction(int joinId, String action) async {
+    if (_decisionLoading[joinId.toString()] == true) return;
 
     try {
-      _decisionLoading[joinId] = true;
-
-      print('🔄 Handling join request action: $joinId -> $action');
+      _decisionLoading[joinId.toString()] = true;
 
       final response = await _repository.updateJoinRequestStatusById(
-        joinId,
+        joinId.toString(),
         action,
       );
 
-      print('📥 Response status: ${response.statusCode}');
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // PERBAIKAN: Update local join request status di SEMUA list
+        // Update local state
         final requestIndex = joinRequests.indexWhere((req) => req.id == joinId);
         if (requestIndex != -1) {
           final updatedRequest = joinRequests[requestIndex].copyWith(
@@ -663,7 +614,6 @@ class CustomerCommunityController extends GetxController {
           joinRequests[requestIndex] = updatedRequest;
         }
 
-        // PERBAIKAN: Juga update di userJoinRequests jika ada
         final userRequestIndex = userJoinRequests.indexWhere(
           (req) => req.id == joinId,
         );
@@ -673,11 +623,9 @@ class CustomerCommunityController extends GetxController {
           userJoinRequests[userRequestIndex] = updatedUserRequest;
         }
 
-        // PERBAIKAN: Force refresh untuk update UI
         userJoinRequests.refresh();
         joinRequests.refresh();
 
-        // PERBAIKAN: Reload data untuk memastikan konsistensi
         await Future.wait([_loadFeaturedPosts(), loadUserJoinRequests()]);
 
         final message = action == 'approved'
@@ -690,98 +638,236 @@ class CustomerCommunityController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-
-        print('✅ Join request $joinId $action successfully');
       } else {
         throw Exception('Failed to update join request status');
       }
     } catch (e) {
       final message =
           'Failed to ${action == 'approved' ? 'approve' : 'reject'} join request';
-      Get.snackbar(
-        'Error',
-        message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      print('❌ Error ${action}ing join request: $e');
+      _errorHandler.showErrorMessage(message);
     } finally {
-      _decisionLoading.remove(joinId);
+      _decisionLoading.remove(joinId.toString());
     }
   }
 
-  // Load current user's own join requests (where user is the joiner)
-  Future<void> loadUserJoinRequests() async {
-    try {
-      print('🔄 Loading user join requests for user ID: $_currentUserId');
+  // ==================== Create Post ====================
 
-      final response = await _repository.getJoinRequestsByUserId(
-        _currentUserId,
+  /// Load approved bookings that haven't been posted
+  Future<void> loadApprovedBookings() async {
+    try {
+      isLoadingBookings.value = true;
+      final userId = _localStorageService.userId;
+      final apiClient = Get.find<ApiClient>();
+
+      // Load all posts to get booking IDs that have been posted
+      final postsResponse = await apiClient.get<Map<String, dynamic>>('posts');
+
+      final Set<int> postedBookingIds = {};
+
+      if (postsResponse.statusCode == 200 && postsResponse.data != null) {
+        final data = postsResponse.data!;
+
+        if (data['success'] == true && data['data'] != null) {
+          final List<dynamic> allPosts = data['data'] as List<dynamic>;
+
+          for (var post in allPosts) {
+            final idBooking = post['id_booking'];
+            if (idBooking != null) {
+              final bookingId = int.tryParse(idBooking.toString());
+              if (bookingId != null) {
+                postedBookingIds.add(bookingId);
+              }
+            }
+          }
+        }
+      }
+
+      // Load user bookings
+      final bookingsResponse = await apiClient.raw.get<Map<String, dynamic>>(
+        'bookings/me/bookings',
+        queryParameters: {'user_id': userId},
       );
 
-      if (response.success) {
-        // PERBAIKAN: Clear dulu lalu assign untuk memastikan data fresh
-        userJoinRequests.clear();
-        userJoinRequests.assignAll(response.data);
+      if (bookingsResponse.statusCode == 200 && bookingsResponse.data != null) {
+        final data = bookingsResponse.data!;
 
-        // PERBAIKAN: Force refresh observable list
-        userJoinRequests.refresh();
+        if (data['success'] == true && data['data'] != null) {
+          final List<dynamic> bookingsList = data['data'] as List<dynamic>;
 
-        print('✅ Loaded ${response.data.length} user join requests');
+          final allBookings = bookingsList
+              .map(
+                (json) => BookingHistory.fromApiResponse(
+                  json as Map<String, dynamic>,
+                ),
+              )
+              .toList();
 
-        // PERBAIKAN: Debug print untuk melihat status
-        for (final request in response.data) {
-          print(
-            '🔍 User Join Request - ID: ${request.id}, Status: ${request.status}, Booking: ${request.bookingId}',
-          );
+          // Filter approved + NOT posted
+          final availableBookings = allBookings.where((booking) {
+            final isApproved = booking.status.toLowerCase() == 'approved';
+            final notPosted = !postedBookingIds.contains(booking.id);
+            return isApproved && notPosted;
+          }).toList();
+
+          approvedBookings.assignAll(availableBookings);
+        }
+      }
+    } catch (e) {
+      approvedBookings.clear();
+    } finally {
+      isLoadingBookings.value = false;
+    }
+  }
+
+  /// Open create post bottom sheet
+  void openCreatePostBottomSheet() {
+    _resetCreatePostForm();
+    loadApprovedBookings();
+
+    Get.bottomSheet(
+      CreatePostBottomSheet(controller: this),
+      isScrollControlled: true,
+      enableDrag: true,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  void selectBooking(BookingHistory? booking) {
+    selectedBooking.value = booking;
+
+    if (booking != null) {
+      titleController.text = 'Looking for players at ${booking.courtName}';
+    } else {
+      titleController.clear();
+    }
+  }
+
+  /// Pick image from gallery
+  Future<void> pickImage() async {
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        selectedImage.value = File(pickedFile.path);
+        _errorHandler.showSuccessMessage('Image selected');
+      }
+    } catch (e) {
+      _errorHandler.showErrorMessage('Failed to pick image');
+    }
+  }
+
+  void removeImage() {
+    selectedImage.value = null;
+  }
+
+  /// Submit create post
+  Future<void> submitCreatePost() async {
+    // Validation
+    if (selectedBooking.value == null) {
+      _errorHandler.showErrorMessage('Please select a booking');
+      return;
+    }
+
+    if (titleController.text.trim().isEmpty) {
+      _errorHandler.showErrorMessage('Please enter a title');
+      return;
+    }
+
+    if (descriptionController.text.trim().isEmpty) {
+      _errorHandler.showErrorMessage('Please enter a description');
+      return;
+    }
+
+    if (selectedImage.value == null) {
+      _errorHandler.showErrorMessage('Please select a photo');
+      return;
+    }
+
+    try {
+      isCreatingPost.value = true;
+
+      final request = PostRequest(
+        idBooking: selectedBooking.value!.id,
+        title: titleController.text.trim(),
+        description: descriptionController.text.trim(),
+      );
+
+      final response = await _postRepository.createPost(
+        request: request,
+        photoFile: selectedImage.value!,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        String successMessage = 'Post created successfully!';
+
+        if (response.data is Map && response.data['message'] != null) {
+          successMessage = response.data['message'].toString();
+        }
+
+        Future.delayed(Duration(milliseconds: 1000));
+        Get.back();
+
+        _errorHandler.showSuccessMessage(successMessage);
+
+        _resetCreatePostForm();
+        await refreshPosts();
+        await loadApprovedBookings();
+      } else {
+        String errorMsg = 'Failed to create post';
+        if (response.data is Map && response.data['message'] != null) {
+          errorMsg = response.data['message'].toString();
+        }
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      String errorMsg = 'Failed to create post';
+
+      if (e is DioException) {
+        if (e.response?.data is Map) {
+          final data = e.response!.data as Map;
+          if (data['message'] != null) {
+            errorMsg = data['message'].toString();
+          } else if (data['error'] != null) {
+            errorMsg = data['error'].toString();
+          }
+        } else if (e.message != null) {
+          errorMsg = e.message!;
         }
       } else {
-        print('❌ Failed to load user join requests: ${response.message}');
+        errorMsg = e.toString().replaceAll('Exception: ', '');
       }
-    } catch (e) {
-      print('❌ Exception loading user join requests: $e');
+
+      _errorHandler.showErrorMessage(errorMsg);
+    } finally {
+      isCreatingPost.value = false;
     }
   }
 
-  String? getUserJoinStatusForBooking(String bookingId) {
-    try {
-      final userRequest = userJoinRequests.firstWhereOrNull(
-        (request) => request.bookingId == bookingId,
-      );
-
-      if (userRequest != null) {
-        print(
-          '🎯 Found join status for booking $bookingId: ${userRequest.status}',
-        );
-        return userRequest.status;
-      } else {
-        print('🎯 No join request found for booking $bookingId');
-        return null;
-      }
-    } catch (e) {
-      print('❌ Error getting user join status for booking $bookingId: $e');
-      return null;
-    }
+  void _resetCreatePostForm() {
+    selectedBooking.value = null;
+    titleController.clear();
+    descriptionController.clear();
+    selectedImage.value = null;
   }
 
-  // Get user's own join request status for a specific booking
-  Future<String?> getUserJoinStatus(String bookingId) async {
-    try {
-      final response = await _repository.getJoinRequestsByUserId(
-        _currentUserId,
-      );
-      if (response.success) {
-        final userRequest = response.data.firstWhereOrNull(
-          (request) => request.bookingId == bookingId,
-        );
-        return userRequest?.status;
-      }
-    } catch (e) {
-      print('❌ Error getting user join status: $e');
-    }
-    return null;
+  // ==================== Utilities ====================
+
+  String formatRupiah(double amount) {
+    final format = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
+    return format.format(amount);
   }
 
+  /// Extract message from response body
   String? _extractMessage(dynamic data) {
     if (data is Map<String, dynamic>) {
       final message = data['message'];

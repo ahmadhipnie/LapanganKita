@@ -57,11 +57,9 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                // SECTION 1: Featured Post by ID dari local storage
                 _buildFeaturedPostSection(context),
                 const SizedBox(height: 24),
 
-                // SECTION 2: All Community Posts (tanpa featured post)
                 Text(
                   'Community Posts',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -81,6 +79,15 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           );
         }),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => controller.openCreatePostBottomSheet(),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Create Post',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+      ),
     );
   }
 
@@ -94,7 +101,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             Icon(Icons.wifi_off, size: 48, color: Colors.grey[500]),
             const SizedBox(height: 12),
             Text(
-              message.isEmpty ? 'Tidak dapat memuat data community.' : message,
+              message.isEmpty ? 'Unable to load community data.' : message,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14),
             ),
@@ -129,7 +136,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
     );
   }
 
-  // SECTION 1: Featured Post by ID dari local storage
   Widget _buildFeaturedPostSection(BuildContext context) {
     return Obx(() {
       if (controller.isLoadingFeaturedPost.value) {
@@ -141,7 +147,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header section
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Row(
@@ -186,7 +191,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
               ),
             ),
 
-            // Featured posts list
             ...featuredPosts.map((post) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16),
@@ -218,7 +222,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Skeleton header
           Row(
             children: [
               CircleAvatar(radius: 24, backgroundColor: Colors.grey[300]),
@@ -302,7 +305,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Featured badge untuk setiap post
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -403,9 +405,20 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                post.timeAgo,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              Row(
+                children: [
+                  Text(
+                    post.userPhone,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(' • '),
+                  const SizedBox(width: 2),
+                  Text(
+                    post.timeAgo,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                ],
               ),
             ],
           ),
@@ -483,7 +496,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           children: [
             _buildMetaItem(
               Icons.people_alt,
-              '${post.joinedPlayers}/${post.playersNeeded} pemain',
+              '${post.joinedPlayers}/${post.playersNeeded} players',
               infoTextStyle,
             ),
           ],
@@ -512,7 +525,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           children: [
             const Expanded(
               child: Text(
-                'Permintaan Bergabung',
+                'Join Requests',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
@@ -529,7 +542,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.refresh),
-                tooltip: 'Muat ulang',
+                tooltip: 'Reload',
               );
             }),
           ],
@@ -540,7 +553,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           final allRequests = controller.joinRequests;
           final errorMessage = controller.joinRequestsError.value;
 
-          // Filter join requests for this specific booking
           final bookingRequests = allRequests
               .where((request) => request.bookingId == post.bookingId)
               .toList();
@@ -563,7 +575,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
               child: Text(
                 errorMessage.isNotEmpty
                     ? errorMessage
-                    : 'Belum ada permintaan bergabung.',
+                    : 'No join requests yet.',
                 style: TextStyle(color: Colors.grey[700], fontSize: 13),
               ),
             );
@@ -587,7 +599,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
   Widget _buildJoinRequestTile(JoinRequest request) {
     final formattedTime = DateFormat(
       'dd MMM yyyy, HH:mm',
-    ).format(request.requestedAt);
+    ).format(request.createdAt);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -609,14 +621,14 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAvatar(request.avatarUrl ?? '', radius: 20),
+              _buildAvatar(request.joinerPhoto ?? '', radius: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      request.userName,
+                      request.joinerName,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -629,20 +641,14 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${request.formattedGender} • ${request.age} tahun • ${request.userEmail}',
+                      '${request.formattedGender} • ${request.age} years old',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
-                    if (request.note?.isNotEmpty == true) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        request.note!,
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 13,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      request.joinerPhone,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
                   ],
                 ),
               ),
@@ -670,7 +676,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
+                                valueColor: AlwaysStoppedAnimation(
                                   Colors.white,
                                 ),
                               ),
@@ -871,9 +877,20 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                post.timeAgo,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              Row(
+                children: [
+                  Text(
+                    post.userPhone,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(' • '),
+                  const SizedBox(width: 2),
+                  Text(
+                    post.timeAgo,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                ],
               ),
             ],
           ),
@@ -902,19 +919,13 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
 
   Widget _buildJoinButton(CommunityPost post) {
     return Obx(() {
-      final isJoining = controller.isJoining(post.id);
+      final isJoining = controller.isJoining(post.id.toString());
       final isFull = post.joinedPlayers >= post.playersNeeded;
 
-      // PERBAIKAN: Gunakan method real-time untuk mendapatkan status
       final userJoinStatus = controller.getUserJoinStatusForBooking(
         post.bookingId,
       );
 
-      print(
-        '🎯 Join Button Debug - Post: ${post.id}, Booking: ${post.bookingId}, Status: $userJoinStatus, isFull: $isFull',
-      );
-
-      // Determine button state based on join request status
       String buttonText;
       Color backgroundColor;
       Color foregroundColor;
@@ -1025,10 +1036,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
   }
 
   Widget _buildPostImage(String imagePath) {
-    // PERBAIKAN: Gunakan ApiClient yang sudah diperbaiki
     final imageUrl = _apiClient.getImageUrl(imagePath);
-
-    print('🖼️ Post image URL: $imageUrl (from path: $imagePath)');
 
     return Container(
       width: double.infinity,
@@ -1047,7 +1055,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
             child: const Center(child: CircularProgressIndicator()),
           ),
           errorWidget: (context, url, error) {
-            print('❌ Error loading image: $error, URL: $url');
             return SizedBox();
           },
         ),
@@ -1058,10 +1065,7 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
   Widget _buildCompactPostImage(CommunityPost post) {
     if (post.postPhoto.isEmpty) return const SizedBox.shrink();
 
-    // PERBAIKAN: Gunakan ApiClient yang sudah diperbaiki
     final imageUrl = _apiClient.getImageUrl(post.postPhoto);
-
-    print('🖼️ Compact image URL: $imageUrl (from path: ${post.postPhoto})');
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -1080,7 +1084,6 @@ class CustomerCommunityView extends GetView<CustomerCommunityController> {
           child: const Icon(Icons.image, color: Colors.grey, size: 24),
         ),
         errorWidget: (context, url, error) {
-          print('❌ Error loading compact image: $error, URL: $url');
           return SizedBox();
         },
       ),

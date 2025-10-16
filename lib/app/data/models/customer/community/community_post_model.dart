@@ -1,10 +1,11 @@
 import 'package:intl/intl.dart';
 
 class CommunityPost {
-  final String id;
-  final String bookingId;
+  final int id; // ✅ Ubah dari String ke int
+  final int bookingId; // ✅ Ubah dari String ke int
   final String userProfileImage;
   final String userName;
+  final String userPhone;
   final DateTime postTime;
   final String category;
   final String title;
@@ -26,6 +27,7 @@ class CommunityPost {
     required this.bookingId,
     required this.userProfileImage,
     required this.userName,
+    required this.userPhone,
     required this.postTime,
     required this.category,
     required this.title,
@@ -44,7 +46,12 @@ class CommunityPost {
   });
 
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
-    String parseId(dynamic value) => value?.toString() ?? '';
+    // ✅ Helper untuk parse int
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      return int.tryParse(value.toString()) ?? 0;
+    }
 
     DateTime parseDateTime(dynamic value) {
       if (value == null) {
@@ -52,12 +59,9 @@ class CommunityPost {
       }
 
       try {
-        // Parse as UTC first
         final utcDateTime = DateTime.parse(value.toString()).toUtc();
-        // Convert to local time
         return utcDateTime.toLocal();
       } catch (e) {
-        print('❌ Error parsing date: $value, error: $e');
         return DateTime.now();
       }
     }
@@ -65,21 +69,22 @@ class CommunityPost {
     final bookingStart = parseDateTime(json['booking_datetime_start']);
 
     return CommunityPost(
-      id: parseId(json['id']),
-      bookingId: parseId(
+      // ✅ Parse id sebagai int
+      id: parseInt(json['id']),
+      // ✅ Parse bookingId sebagai int
+      bookingId: parseInt(
         json['booking_id'] ??
             json['id_booking'] ??
             json['booking']?['id'] ??
-            json['booking_id_booking'] ??
-            json['id'],
+            json['booking_id_booking'],
       ),
-      userProfileImage: json['post_photo'] ?? '',
-      userName:
-          json['poster_name'] ??
+      userProfileImage: json['poster_photo']?.toString() ?? '',
+      userName: json['poster_name'] ??
           json['user_name'] ??
           json['username'] ??
           json['name'] ??
           'Unknown User',
+      userPhone: json['poster_phone']?.toString() ?? '',
       postTime: parseDateTime(json['created_at']),
       category: json['field_type'] ?? 'General',
       title: json['post_title'] ?? '',
@@ -87,17 +92,15 @@ class CommunityPost {
       courtName: json['field_name'] ?? '',
       gameDate: bookingStart,
       gameTime: _formatTime(bookingStart),
-      playersNeeded: json['max_person'] ?? 0,
-      totalCost:
-          (json['total_price'] ??
-                  json['total_cost'] ??
-                  json['price'] ??
-                  json['cost'] ??
-                  0)
-              .toDouble(),
-      joinedPlayers: json['joined_count'] ?? 0,
-      posterUserId:
-          int.tryParse(json['poster_user_id']?.toString() ?? '0') ?? 0,
+      playersNeeded: parseInt(json['max_person']),
+      totalCost: (json['total_price'] ??
+              json['total_cost'] ??
+              json['price'] ??
+              json['cost'] ??
+              0)
+          .toDouble(),
+      joinedPlayers: parseInt(json['joined_count']),
+      posterUserId: parseInt(json['poster_user_id']),
       bookingStatus: json['booking_status']?.toString() ?? 'approved',
       placeAddress: json['place_address']?.toString() ?? '',
       placeName: json['place_name']?.toString() ?? '',
@@ -106,7 +109,6 @@ class CommunityPost {
   }
 
   static String _formatTime(DateTime dateTime) {
-    // dateTime sudah dalam local time, jadi langsung format saja
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
@@ -125,28 +127,26 @@ class CommunityPost {
     }
   }
 
-  // Method untuk mendapatkan formatted date yang user-friendly
   String get formattedGameDate {
     return '${gameDate.day}/${gameDate.month}/${gameDate.year}';
   }
 
-  // Method untuk mendapatkan full datetime yang formatted
   String get formattedGameDateTime {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
     return dateFormat.format(gameDate);
   }
 
-  // Method untuk mendapatkan post time yang formatted
   String get formattedPostTime {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
     return dateFormat.format(postTime);
   }
 
   CommunityPost copyWith({
-    String? id,
-    String? bookingId,
+    int? id, // ✅ Ubah dari String ke int
+    int? bookingId, // ✅ Ubah dari String ke int
     String? userProfileImage,
     String? userName,
+    String? userPhone,
     DateTime? postTime,
     String? category,
     String? title,
@@ -168,6 +168,7 @@ class CommunityPost {
       bookingId: bookingId ?? this.bookingId,
       userProfileImage: userProfileImage ?? this.userProfileImage,
       userName: userName ?? this.userName,
+      userPhone: userPhone ?? this.userPhone,
       postTime: postTime ?? this.postTime,
       category: category ?? this.category,
       title: title ?? this.title,
@@ -185,6 +186,23 @@ class CommunityPost {
       postPhoto: postPhoto ?? this.postPhoto,
     );
   }
+
+  // ✅ TAMBAH: Helper untuk toString (debugging)
+  @override
+  String toString() {
+    return 'CommunityPost(id: $id, bookingId: $bookingId, userName: $userName, '
+        'courtName: $courtName, joinedPlayers: $joinedPlayers/$playersNeeded)';
+  }
+
+  // ✅ TAMBAH: Equality operator
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is CommunityPost && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class CommunityPostsResponse {
@@ -202,13 +220,32 @@ class CommunityPostsResponse {
     return CommunityPostsResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
-      data:
-          (json['data'] as List<dynamic>?)
+      data: (json['data'] as List<dynamic>?)
               ?.map(
                 (item) => CommunityPost.fromJson(item as Map<String, dynamic>),
               )
               .toList() ??
           [],
     );
+  }
+
+  // ✅ TAMBAH: toJson untuk debugging
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'message': message,
+      'data': data.map((post) => {
+            'id': post.id,
+            'bookingId': post.bookingId,
+            'userName': post.userName,
+            'courtName': post.courtName,
+          }).toList(),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'CommunityPostsResponse(success: $success, message: $message, '
+        'dataCount: ${data.length})';
   }
 }
