@@ -318,23 +318,70 @@ class CustomerBookingDetailView
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Select Date',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: _isSmallScreen
-                ? 14
-                : 16, // PERBAIKAN: Font size responsif
-          ),
+        Row(
+          children: [
+            Text(
+              'Select Date',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: _isSmallScreen ? 14 : 16,
+              ),
+            ),
+            SizedBox(width: 4),
+            // Info icon button with tooltip
+            Tooltip(
+              message: 'You must make a booking at least one day in advance',
+              padding: EdgeInsets.all(12),
+              margin: EdgeInsets.symmetric(horizontal: 16),
+              textStyle: TextStyle(color: Colors.white, fontSize: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: InkWell(
+                onTap: () {
+                  // Show dialog with booking policy information
+                  Get.dialog(
+                    AlertDialog(
+                      title: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.redAccent),
+                          SizedBox(width: 8),
+                          Text(
+                            'Booking Policy',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        ],
+                      ),
+                      content: Text(
+                        'You must make a booking at least one day in advance. Same-day bookings are not available.',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Get.back(),
+                          child: Text('Got it'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Icon(
+                  Icons.info_outline,
+                  size: _isSmallScreen ? 16 : 18,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
         ),
         SizedBox(height: _isSmallScreen ? 8 : 12),
         Obx(
           () => InkWell(
             onTap: () => _showDatePicker(),
             child: Container(
-              padding: EdgeInsets.all(
-                _isSmallScreen ? 12 : 16,
-              ), // PERBAIKAN: Padding responsif
+              padding: EdgeInsets.all(_isSmallScreen ? 12 : 16),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
@@ -344,18 +391,9 @@ class CustomerBookingDetailView
                 children: [
                   Text(
                     '${controller.selectedDate.value.day}/${controller.selectedDate.value.month}/${controller.selectedDate.value.year}',
-                    style: TextStyle(
-                      fontSize: _isSmallScreen
-                          ? 16
-                          : 18, // PERBAIKAN: Font size responsif
-                    ),
+                    style: TextStyle(fontSize: _isSmallScreen ? 16 : 18),
                   ),
-                  Icon(
-                    Icons.calendar_today,
-                    size: _isSmallScreen
-                        ? 20
-                        : 24, // PERBAIKAN: Icon size responsif
-                  ),
+                  Icon(Icons.calendar_today, size: _isSmallScreen ? 20 : 24),
                 ],
               ),
             ),
@@ -1435,26 +1473,28 @@ class CustomerBookingDetailView
                     ),
                   ),
                   SizedBox(height: _isSmallScreen ? 4 : 6),
-                  Row(
+                  Wrap(
+                    spacing: _isSmallScreen ? 6 : 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      ...List.generate(5, (index) {
-                        return Icon(
-                          index < summary.averageRating.round()
-                              ? Icons.star
-                              : Icons.star_border,
-                          size: _isSmallScreen
-                              ? 16
-                              : 18, // PERBAIKAN: Icon size responsif
-                          color: AppColors.secondary,
-                        );
-                      }),
-                      SizedBox(width: _isSmallScreen ? 8 : 12),
+                      // Stars
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(5, (index) {
+                          return Icon(
+                            index < summary.averageRating.round()
+                                ? Icons.star
+                                : Icons.star_border,
+                            size: _isSmallScreen ? 14 : 16,
+                            color: AppColors.secondary,
+                          );
+                        }),
+                      ),
+                      // Review count
                       Text(
                         '${summary.totalReviews} review${summary.totalReviews > 1 ? 's' : ''}',
                         style: TextStyle(
-                          fontSize: _isSmallScreen
-                              ? 14
-                              : 16, // PERBAIKAN: Font size responsif
+                          fontSize: _isSmallScreen ? 12 : 14,
                           color: Colors.grey,
                         ),
                       ),

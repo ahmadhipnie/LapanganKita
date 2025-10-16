@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:lapangan_kita/app/data/repositories/auth_repository.dart';
 import 'package:lapangan_kita/app/data/models/change_password_request.dart';
 import 'package:lapangan_kita/app/services/local_storage_service.dart';
+import 'package:lapangan_kita/app/themes/color_theme.dart';
 
 import '../../../data/helper/error_helper.dart';
 
@@ -92,6 +93,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.neutralColor,
       appBar: AppBar(
         title: const Text('Change Password'),
         backgroundColor: const Color(0xFF2563EB),

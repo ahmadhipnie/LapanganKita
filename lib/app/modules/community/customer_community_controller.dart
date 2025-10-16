@@ -20,21 +20,49 @@ import '../../data/repositories/post_repository.dart';
 /// Controller to manage community posts and join requests
 /// Handles CRUD posts, join game, approve/reject requests
 class CustomerCommunityController extends GetxController {
+  // ==================== User-Friendly Messages ====================
+
+  static const Map<String, String> _userMessages = {
+    // Join game messages
+    'join_success': 'You have successfully joined this game!',
+    'join_already_full': 'This game is already full',
+    'join_own_post': 'You cannot join your own game',
+    'join_already_joined': 'You have already joined this game',
+    'join_failed': 'Unable to join game. Please try again.',
+
+    // Join request messages
+    'request_approve_success': 'Join request approved successfully!',
+    'request_reject_success': 'Join request declined',
+    'request_update_failed': 'Unable to process request. Please try again.',
+
+    // Post creation messages
+    'post_create_success': 'Your post has been created successfully!',
+    'post_create_failed': 'Unable to create post. Please try again.',
+    'post_missing_booking': 'Please select a booking',
+    'post_missing_title': 'Please enter a title for your post',
+    'post_missing_description': 'Please add a description',
+    'post_missing_photo': 'Please add a photo',
+
+    // Loading messages
+    'load_failed': 'Unable to load data. Please try again.',
+    'refresh_failed': 'Unable to refresh. Please check your connection.',
+    'load_posts_error': 'Failed to load your posts',
+
+    // Validation messages
+    'signin_required': 'Please sign in to continue',
+    'booking_unavailable': 'Booking information is not available',
+  };
+
+  String _getUserMessage(String key) {
+    return _userMessages[key] ?? 'Something went wrong';
+  }
+
   // ==================== Observables ====================
 
-  /// List of all community posts (from other users)
   final RxList<CommunityPost> posts = <CommunityPost>[].obs;
-
-  /// List of featured posts (user's own posts)
   final RxList<CommunityPost> featuredPosts = <CommunityPost>[].obs;
-
-  /// Join requests received by user (as poster)
   final RxList<JoinRequest> joinRequests = <JoinRequest>[].obs;
-
-  /// Join requests made by user (as joiner)
   final RxList<JoinRequest> userJoinRequests = <JoinRequest>[].obs;
-
-  /// Approved bookings that haven't been posted
   final RxList<BookingHistory> approvedBookings = <BookingHistory>[].obs;
 
   // State management
@@ -48,10 +76,7 @@ class CustomerCommunityController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxString joinRequestsError = ''.obs;
 
-  /// Track joining state per post
   final RxMap<String, bool> _joiningStates = <String, bool>{}.obs;
-
-  /// Track decision loading state per request
   final RxMap<String, bool> _decisionLoading = <String, bool>{}.obs;
 
   // ==================== Controllers & Services ====================
@@ -67,7 +92,6 @@ class CustomerCommunityController extends GetxController {
   final ImagePicker _imagePicker = ImagePicker();
   final _errorHandler = ErrorHandler();
 
-  /// Lazy initialize PostRepository
   PostRepository get _postRepository {
     if (!Get.isRegistered<PostRepository>()) {
       Get.lazyPut<PostRepository>(
@@ -115,7 +139,6 @@ class CustomerCommunityController extends GetxController {
 
   // ==================== Data Loading ====================
 
-  /// Load all initial data: featured posts, community posts, join requests
   Future<void> loadInitialData() async {
     try {
       isLoading.value = true;
@@ -127,11 +150,10 @@ class CustomerCommunityController extends GetxController {
       await loadUserJoinRequests();
     } catch (e) {
       hasError.value = true;
-      errorMessage.value = 'Failed to load data. Please try again.';
+      errorMessage.value = _getUserMessage('load_failed');
     }
   }
 
-  /// Load featured posts (user's own posts)
   Future<void> _loadFeaturedPosts() async {
     try {
       isLoadingFeaturedPost.value = true;
@@ -150,7 +172,6 @@ class CustomerCommunityController extends GetxController {
             response.data,
           );
 
-          // Filter out completed bookings
           final activePosts = enrichedPosts
               .where((post) => post.bookingStatus.toLowerCase() != 'completed')
               .toList();
@@ -168,18 +189,12 @@ class CustomerCommunityController extends GetxController {
       }
     } catch (e) {
       featuredPosts.clear();
-      Get.snackbar(
-        'Error',
-        'Failed to load your posts',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _errorHandler.showErrorMessage(_getUserMessage('load_posts_error'));
     } finally {
       isLoadingFeaturedPost.value = false;
     }
   }
 
-  /// Enrich posts with booking data from API
   Future<List<CommunityPost>> _enrichPostsWithBookingData(
     List<CommunityPost> posts,
   ) async {
@@ -235,7 +250,6 @@ class CustomerCommunityController extends GetxController {
     return enrichedPosts;
   }
 
-  /// Load community posts (from other users)
   Future<void> _loadPostsFromApi() async {
     try {
       isLoading.value = true;
@@ -246,12 +260,10 @@ class CustomerCommunityController extends GetxController {
       final response = await _repository.getCommunityPosts();
 
       if (response.success) {
-        // Wait for featured posts to finish loading
         while (isLoadingFeaturedPost.value) {
           await Future.delayed(const Duration(milliseconds: 100));
         }
 
-        // Filter posts from other users
         final Set<int> featuredPostIds = featuredPosts.map((p) => p.id).toSet();
 
         final otherUsersPosts = response.data.where((post) {
@@ -265,7 +277,6 @@ class CustomerCommunityController extends GetxController {
         );
         posts.assignAll(enrichedCommunityPosts);
 
-        // Set error messages for empty states
         if (response.data.isEmpty) {
           errorMessage.value = 'No community posts available yet.';
           hasError.value = true;
@@ -278,7 +289,7 @@ class CustomerCommunityController extends GetxController {
           hasError.value = true;
         }
       } else {
-        errorMessage.value = 'Failed to load posts: ${response.message}';
+        errorMessage.value = _getUserMessage('load_failed');
         hasError.value = true;
       }
     } catch (e) {
@@ -290,7 +301,6 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  /// Refresh all posts and join requests
   Future<void> refreshPosts() async {
     try {
       hasError.value = false;
@@ -309,7 +319,7 @@ class CustomerCommunityController extends GetxController {
       }
     } catch (e) {
       hasError.value = true;
-      errorMessage.value = 'Failed to refresh posts. Please try again.';
+      errorMessage.value = _getUserMessage('refresh_failed');
     }
   }
 
@@ -325,11 +335,9 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  /// Join game - send join request to post
   Future<void> joinGame(int postId) async {
     if (isJoining(postId.toString())) return;
 
-    // Find post
     CommunityPost? post;
     int postIndex = posts.indexWhere((post) => post.id == postId);
 
@@ -345,31 +353,28 @@ class CustomerCommunityController extends GetxController {
     }
 
     if (post == null) {
-      _errorHandler.showErrorMessage('Post not found');
+      _errorHandler.showErrorMessage(_getUserMessage('join_failed'));
       return;
     }
 
-    // Validation
     if (post.posterUserId == _currentUserId) {
-      _errorHandler.showErrorMessage('You cannot join your own post');
+      _errorHandler.showErrorMessage(_getUserMessage('join_own_post'));
       return;
     }
 
     if (post.joinedPlayers >= post.playersNeeded) {
-      _errorHandler.showErrorMessage('This game is already full');
+      _errorHandler.showErrorMessage(_getUserMessage('join_already_full'));
       return;
     }
 
     final userId = _localStorageService.userId;
     if (userId <= 0) {
-      _errorHandler.showErrorMessage('Please sign in to join a game.');
+      _errorHandler.showErrorMessage(_getUserMessage('signin_required'));
       return;
     }
 
     if (post.bookingId <= 0) {
-      _errorHandler.showErrorMessage(
-        'Booking information is unavailable for this post.',
-      );
+      _errorHandler.showErrorMessage(_getUserMessage('booking_unavailable'));
       return;
     }
 
@@ -382,54 +387,32 @@ class CustomerCommunityController extends GetxController {
       );
 
       final statusCode = response.statusCode ?? 0;
-      final responseBody = response.data;
 
       if (statusCode >= 200 && statusCode < 300) {
-        final bool success;
-        if (responseBody is Map<String, dynamic>) {
-          success =
-              (responseBody['success'] == true) ||
-              (responseBody['status'] == true);
+        final updatedPost = post.copyWith(
+          joinedPlayers: post.joinedPlayers + 1,
+        );
+
+        if (postIndex != -1) {
+          posts[postIndex] = updatedPost;
         } else {
-          success = true;
-        }
-
-        final message = _extractMessage(responseBody) ?? 'You joined the game!';
-
-        if (success) {
-          final updatedPost = post.copyWith(
-            joinedPlayers: post.joinedPlayers + 1,
-          );
-
-          // Update post in list
-          if (postIndex != -1) {
-            posts[postIndex] = updatedPost;
-          } else {
-            final featuredIndex = featuredPosts.indexWhere(
-              (p) => p.id == postId,
-            );
-            if (featuredIndex != -1) {
-              featuredPosts[featuredIndex] = updatedPost;
-            }
+          final featuredIndex = featuredPosts.indexWhere((p) => p.id == postId);
+          if (featuredIndex != -1) {
+            featuredPosts[featuredIndex] = updatedPost;
           }
-
-          await loadUserJoinRequests();
-
-          Get.snackbar(
-            'Success',
-            message,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
         }
+
+        await loadUserJoinRequests();
+
+        _errorHandler.showSuccessMessage(_getUserMessage('join_success'));
+      } else {
+        throw Exception(_getUserMessage('join_failed'));
       }
     } on DioException catch (e) {
-      final message =
-          _extractMessage(e.response?.data) ??
-          (e.message ?? 'Failed to join game.');
-      _errorHandler.showErrorMessage(message);
+      final friendlyMessage = _errorHandler.getSimpleErrorMessage(e);
+      _errorHandler.showErrorMessage(friendlyMessage);
     } catch (e) {
-      _errorHandler.showErrorMessage('An error occurred. Please try again.');
+      _errorHandler.showErrorMessage(_getUserMessage('join_failed'));
     } finally {
       _setJoining(postId.toString(), false);
     }
@@ -437,7 +420,6 @@ class CustomerCommunityController extends GetxController {
 
   // ==================== Join Requests ====================
 
-  /// Load all join requests for user's posts
   Future<void> loadAllJoinRequests() async {
     try {
       isLoadingJoinRequests.value = true;
@@ -461,7 +443,6 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  /// Load join requests made by user (as joiner)
   Future<void> loadUserJoinRequests() async {
     try {
       final response = await _repository.getJoinRequestsByUserId(
@@ -478,7 +459,6 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  /// Fetch join requests by booking ID
   Future<void> fetchJoinRequestsByBooking(int bookingId) async {
     try {
       isLoadingJoinRequests.value = true;
@@ -509,7 +489,6 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  /// Get pending join requests for specific booking
   List<JoinRequest> getPendingJoinRequestsForBooking(int bookingId) {
     return joinRequests
         .where(
@@ -519,7 +498,6 @@ class CustomerCommunityController extends GetxController {
         .toList();
   }
 
-  /// Get user's join request status for specific booking
   String? getUserJoinStatusForBooking(int bookingId) {
     try {
       final userRequest = userJoinRequests.firstWhereOrNull(
@@ -535,17 +513,14 @@ class CustomerCommunityController extends GetxController {
   bool isProcessingDecision(int requestId) =>
       _decisionLoading[requestId.toString()] ?? false;
 
-  /// Approve join request
   Future<void> approveJoinRequest(JoinRequest request) async {
     await _updateJoinRequestStatus(request, 'approved');
   }
 
-  /// Reject join request
   Future<void> rejectJoinRequest(JoinRequest request) async {
     await _updateJoinRequestStatus(request, 'rejected');
   }
 
-  /// Update join request status (approve/reject)
   Future<void> _updateJoinRequestStatus(
     JoinRequest request,
     String status,
@@ -560,10 +535,6 @@ class CustomerCommunityController extends GetxController {
         status,
       );
 
-      final responseBody = response.data;
-      final message =
-          _extractMessage(responseBody) ?? 'Request updated successfully';
-
       if (response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300) {
@@ -573,26 +544,21 @@ class CustomerCommunityController extends GetxController {
           joinRequests[index] = updated;
         }
 
-        Get.snackbar(
-          'Success',
-          message,
-          backgroundColor: status == 'approved' ? Colors.green : Colors.orange,
-          colorText: Colors.white,
-        );
+        final messageKey = status == 'approved'
+            ? 'request_approve_success'
+            : 'request_reject_success';
+        _errorHandler.showSuccessMessage(_getUserMessage(messageKey));
       }
     } on DioException catch (e) {
-      final message =
-          _extractMessage(e.response?.data) ??
-          (e.message ?? 'Failed to update status.');
-      _errorHandler.showErrorMessage(message);
+      final friendlyMessage = _errorHandler.getSimpleErrorMessage(e);
+      _errorHandler.showErrorMessage(friendlyMessage);
     } catch (e) {
-      _errorHandler.showErrorMessage('An error occurred. Please try again.');
+      _errorHandler.showErrorMessage(_getUserMessage('request_update_failed'));
     } finally {
       _decisionLoading.remove(request.id.toString());
     }
   }
 
-  /// Handle approve/reject action by join request ID
   Future<void> handleJoinRequestAction(int joinId, String action) async {
     if (_decisionLoading[joinId.toString()] == true) return;
 
@@ -605,7 +571,6 @@ class CustomerCommunityController extends GetxController {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Update local state
         final requestIndex = joinRequests.indexWhere((req) => req.id == joinId);
         if (requestIndex != -1) {
           final updatedRequest = joinRequests[requestIndex].copyWith(
@@ -628,23 +593,18 @@ class CustomerCommunityController extends GetxController {
 
         await Future.wait([_loadFeaturedPosts(), loadUserJoinRequests()]);
 
-        final message = action == 'approved'
-            ? 'Join request approved successfully!'
-            : 'Join request rejected successfully!';
-
-        Get.snackbar(
-          'Success',
-          message,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+        final messageKey = action == 'approved'
+            ? 'request_approve_success'
+            : 'request_reject_success';
+        _errorHandler.showSuccessMessage(_getUserMessage(messageKey));
       } else {
-        throw Exception('Failed to update join request status');
+        throw Exception(_getUserMessage('request_update_failed'));
       }
+    } on DioException catch (e) {
+      final friendlyMessage = _errorHandler.getSimpleErrorMessage(e);
+      _errorHandler.showErrorMessage(friendlyMessage);
     } catch (e) {
-      final message =
-          'Failed to ${action == 'approved' ? 'approve' : 'reject'} join request';
-      _errorHandler.showErrorMessage(message);
+      _errorHandler.showErrorMessage(_getUserMessage('request_update_failed'));
     } finally {
       _decisionLoading.remove(joinId.toString());
     }
@@ -652,14 +612,12 @@ class CustomerCommunityController extends GetxController {
 
   // ==================== Create Post ====================
 
-  /// Load approved bookings that haven't been posted
   Future<void> loadApprovedBookings() async {
     try {
       isLoadingBookings.value = true;
       final userId = _localStorageService.userId;
       final apiClient = Get.find<ApiClient>();
 
-      // Load all posts to get booking IDs that have been posted
       final postsResponse = await apiClient.get<Map<String, dynamic>>('posts');
 
       final Set<int> postedBookingIds = {};
@@ -682,7 +640,6 @@ class CustomerCommunityController extends GetxController {
         }
       }
 
-      // Load user bookings
       final bookingsResponse = await apiClient.raw.get<Map<String, dynamic>>(
         'bookings/me/bookings',
         queryParameters: {'user_id': userId},
@@ -702,7 +659,6 @@ class CustomerCommunityController extends GetxController {
               )
               .toList();
 
-          // Filter approved + NOT posted
           final availableBookings = allBookings.where((booking) {
             final isApproved = booking.status.toLowerCase() == 'approved';
             final notPosted = !postedBookingIds.contains(booking.id);
@@ -719,7 +675,6 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  /// Open create post bottom sheet
   void openCreatePostBottomSheet() {
     _resetCreatePostForm();
     loadApprovedBookings();
@@ -743,7 +698,6 @@ class CustomerCommunityController extends GetxController {
     }
   }
 
-  /// Pick image from gallery
   Future<void> pickImage() async {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -766,26 +720,27 @@ class CustomerCommunityController extends GetxController {
     selectedImage.value = null;
   }
 
-  /// Submit create post
   Future<void> submitCreatePost() async {
     // Validation
     if (selectedBooking.value == null) {
-      _errorHandler.showErrorMessage('Please select a booking');
+      _errorHandler.showErrorMessage(_getUserMessage('post_missing_booking'));
       return;
     }
 
     if (titleController.text.trim().isEmpty) {
-      _errorHandler.showErrorMessage('Please enter a title');
+      _errorHandler.showErrorMessage(_getUserMessage('post_missing_title'));
       return;
     }
 
     if (descriptionController.text.trim().isEmpty) {
-      _errorHandler.showErrorMessage('Please enter a description');
+      _errorHandler.showErrorMessage(
+        _getUserMessage('post_missing_description'),
+      );
       return;
     }
 
     if (selectedImage.value == null) {
-      _errorHandler.showErrorMessage('Please select a photo');
+      _errorHandler.showErrorMessage(_getUserMessage('post_missing_photo'));
       return;
     }
 
@@ -804,46 +759,37 @@ class CustomerCommunityController extends GetxController {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        String successMessage = 'Post created successfully!';
+        // ✅ RESET LOADING STATE
+        isCreatingPost.value = false;
 
-        if (response.data is Map && response.data['message'] != null) {
-          successMessage = response.data['message'].toString();
-        }
-
-        Future.delayed(Duration(milliseconds: 1000));
-        Get.back();
-
-        _errorHandler.showSuccessMessage(successMessage);
-
+        // ✅ RESET FORM FIRST
         _resetCreatePostForm();
-        await refreshPosts();
-        await loadApprovedBookings();
-      } else {
-        String errorMsg = 'Failed to create post';
-        if (response.data is Map && response.data['message'] != null) {
-          errorMsg = response.data['message'].toString();
+
+        // ✅ SMALL DELAY BEFORE CLOSE
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // ✅ CLOSE MODAL
+        if (Get.isBottomSheetOpen == true) {
+          Get.back();
         }
-        throw Exception(errorMsg);
+
+        // ✅ SHOW SUCCESS MESSAGE AFTER CLOSE
+        await Future.delayed(const Duration(milliseconds: 500));
+        _errorHandler.showSuccessMessage(
+          _getUserMessage('post_create_success'),
+        );
+
+        // ✅ REFRESH IN BACKGROUND
+        refreshPosts();
+        loadApprovedBookings();
+      } else {
+        throw Exception(_getUserMessage('post_create_failed'));
       }
+    } on DioException catch (e) {
+      final friendlyMessage = _errorHandler.getSimpleErrorMessage(e);
+      _errorHandler.showErrorMessage(friendlyMessage);
     } catch (e) {
-      String errorMsg = 'Failed to create post';
-
-      if (e is DioException) {
-        if (e.response?.data is Map) {
-          final data = e.response!.data as Map;
-          if (data['message'] != null) {
-            errorMsg = data['message'].toString();
-          } else if (data['error'] != null) {
-            errorMsg = data['error'].toString();
-          }
-        } else if (e.message != null) {
-          errorMsg = e.message!;
-        }
-      } else {
-        errorMsg = e.toString().replaceAll('Exception: ', '');
-      }
-
-      _errorHandler.showErrorMessage(errorMsg);
+      _errorHandler.showErrorMessage(_getUserMessage('post_create_failed'));
     } finally {
       isCreatingPost.value = false;
     }
@@ -865,39 +811,5 @@ class CustomerCommunityController extends GetxController {
       decimalDigits: 0,
     );
     return format.format(amount);
-  }
-
-  /// Extract message from response body
-  String? _extractMessage(dynamic data) {
-    if (data is Map<String, dynamic>) {
-      final message = data['message'];
-      if (message is String && message.isNotEmpty) {
-        return message;
-      }
-
-      final errors = data['errors'];
-      if (errors is List && errors.isNotEmpty) {
-        return errors.map((e) => e.toString()).join(', ');
-      }
-
-      if (errors is Map) {
-        final buffer = <String>[];
-        errors.forEach((key, value) {
-          if (value is Iterable) {
-            buffer.addAll(value.map((e) => e.toString()));
-          } else if (value != null) {
-            buffer.add(value.toString());
-          }
-        });
-
-        if (buffer.isNotEmpty) {
-          return buffer.join(', ');
-        }
-      }
-    } else if (data is String && data.isNotEmpty) {
-      return data;
-    }
-
-    return null;
   }
 }

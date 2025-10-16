@@ -41,9 +41,6 @@ class ApiClient {
   }
 
   String getImageUrl(String imagePath) {
-    if (imagePath.isEmpty) {
-      return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=300&fit=crop';
-    }
     if (imagePath.startsWith('http')) return imagePath;
 
     String cleanPath = imagePath;
