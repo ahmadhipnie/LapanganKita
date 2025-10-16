@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lapangan_kita/app/modules/profile/customer_profile_controller.dart';
@@ -44,20 +45,34 @@ class CustomerProfileView extends GetView<CustomerProfileController> {
                       child: Row(
                         children: [
                           Obx(
-                            () => CircleAvatar(
-                              radius: 32,
-                              backgroundColor: Colors.grey[300],
-                              backgroundImage:
-                                  controller.avatarUrl.value.isNotEmpty
-                                  ? NetworkImage(controller.avatarUrl.value)
-                                  : null,
-                              child: controller.avatarUrl.value.isEmpty
-                                  ? const Icon(
+                            () => CachedNetworkImage(
+                              imageUrl: controller.avatarUrl.value,
+                              imageBuilder: (context, provider) => CircleAvatar(
+                                radius: 32,
+                                backgroundImage: provider,
+                                backgroundColor: Colors.grey[300],
+                              ),
+                              placeholder: (context, url) => CircleAvatar(
+                                radius: 32,
+                                backgroundColor: Colors.grey[200],
+                                child: const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  CircleAvatar(
+                                    radius: 32,
+                                    backgroundColor: Colors.grey[300],
+                                    child: const Icon(
                                       Icons.person,
                                       size: 40,
                                       color: Colors.white,
-                                    )
-                                  : null,
+                                    ),
+                                  ),
                             ),
                           ),
                           const SizedBox(width: 16),
