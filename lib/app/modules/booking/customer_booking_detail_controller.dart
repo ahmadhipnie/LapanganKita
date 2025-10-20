@@ -643,11 +643,23 @@ class CustomerBookingDetailController extends GetxController {
           ),
         );
         if (addOn.id != 0 && addOn.price > 0) {
+          // Calculate final price based on category
+          int finalPrice = addOn.price.toInt();
+          int finalQuantity = quantity;
+
+          if (addOn.category.toLowerCase() == 'per hour') {
+            // For per hour, multiply price by duration and keep quantity as is
+            finalPrice = (addOn.price * int.parse(selectedDuration.value))
+                .toInt();
+          }
+
           items.add({
             'id': 'addon_${addOn.id}',
-            'price': addOn.price.toInt(),
-            'quantity': quantity,
-            'name': addOn.name,
+            'price': finalPrice,
+            'quantity': finalQuantity,
+            'name': addOn.category.toLowerCase() == 'per hour'
+                ? '${addOn.name} (${selectedDuration.value} hours)'
+                : addOn.name,
           });
         }
       }
