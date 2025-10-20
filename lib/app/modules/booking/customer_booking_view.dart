@@ -70,7 +70,7 @@ class CustomerBookingView extends GetView<CustomerBookingController> {
                             key: ValueKey('${court.id}_$index'),
                             image: _buildCachedImage(court.imageUrl),
                             title: court.name,
-                            location: court.placeName,
+                            location: court.location,
                             types: court.types,
                             prefixText: 'Start from ',
                             price: court.price,
