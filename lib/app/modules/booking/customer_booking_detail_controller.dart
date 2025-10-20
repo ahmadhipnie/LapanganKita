@@ -382,6 +382,7 @@ class CustomerBookingDetailController extends GetxController {
   }
 
   /// Calculate total booking price including equipment and add-ons
+  /// Calculate total booking price including equipment and add-ons
   void _calculateTotalPrice() {
     double basePrice = court.price * int.parse(selectedDuration.value);
 
@@ -408,7 +409,16 @@ class CustomerBookingDetailController extends GetxController {
             description: '',
           ),
         );
-        addOnPrice += addOn.price * quantity;
+
+        // Check if add-on is per hour type
+        if (addOn.category.toLowerCase() == 'per hour') {
+          // Multiply by duration for per hour add-ons
+          addOnPrice +=
+              addOn.price * quantity * int.parse(selectedDuration.value);
+        } else {
+          // One-time charge for other categories
+          addOnPrice += addOn.price * quantity;
+        }
       }
     });
 
