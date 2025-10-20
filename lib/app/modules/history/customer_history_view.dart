@@ -526,32 +526,69 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
 
   /// Price breakdown content
   Widget _buildPriceBreakdown(BookingHistory booking, bool isSmallScreen) {
+    final perHourItems = booking.perHourDetails;
+    final onceTimeItems = booking.onceTimeDetails;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Court price
         _buildPriceRow(
           'Court (${booking.duration} hour${booking.duration > 1 ? 's' : ''})',
           booking.courtTotal,
           isSmallScreen,
         ),
-        if (booking.details.isNotEmpty) ...[
-          SizedBox(height: isSmallScreen ? 6 : 8),
+
+        // ✅ Per Hour Services Section
+        if (perHourItems.isNotEmpty) ...[
+          SizedBox(height: isSmallScreen ? 8 : 12),
           Padding(
             padding: EdgeInsets.only(bottom: isSmallScreen ? 4 : 6),
             child: Text(
-              'Additional Services:',
+              'Per Hour Services:',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: isSmallScreen ? 13 : 14,
+                fontSize: isSmallScreen ? 12 : 13,
+                color: Colors.blue[700],
               ),
             ),
           ),
-          ...booking.details.map((detail) {
+          ...perHourItems.map((detail) {
+            return _buildPriceRow(
+              '${detail.addOnName} (x${detail.quantity}) - ${booking.duration}h',
+              detail.totalPrice,
+              isSmallScreen,
+              subtitle: '${_formatCurrency(detail.pricePerHour)}/hour',
+            );
+          }),
+        ],
+
+        // ✅ Once Time Services Section
+        if (onceTimeItems.isNotEmpty) ...[
+          SizedBox(height: isSmallScreen ? 8 : 12),
+          Padding(
+            padding: EdgeInsets.only(bottom: isSmallScreen ? 4 : 6),
+            child: Text(
+              'One-time Services:',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: isSmallScreen ? 12 : 13,
+                color: Colors.green[700],
+              ),
+            ),
+          ),
+          ...onceTimeItems.map((detail) {
             return _buildPriceRow(
               '${detail.addOnName} (x${detail.quantity})',
               detail.totalPrice,
               isSmallScreen,
             );
           }),
+        ],
+
+        // Total additional services (jika ada)
+        if (booking.details.isNotEmpty) ...[
+          Divider(height: isSmallScreen ? 16 : 20),
           _buildPriceRow(
             'Total Additional Services',
             booking.equipmentTotal,
@@ -562,37 +599,60 @@ class CustomerHistoryView extends GetView<CustomerHistoryController> {
     );
   }
 
-  /// Single price row
+  /// Single price row dengan optional subtitle
   Widget _buildPriceRow(
     String label,
     double amount,
     bool isSmallScreen, {
     bool isTotal = false,
+    bool isBold = false,
+    String? subtitle,
   }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 2 : 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-                fontSize: isSmallScreen ? 12 : 14,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: (isTotal || isBold)
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    fontSize: isSmallScreen ? 12 : 14,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+              SizedBox(width: isSmallScreen ? 8 : 12),
+              Text(
+                _formatCurrency(amount),
+                style: TextStyle(
+                  fontWeight: (isTotal || isBold)
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  fontSize: isSmallScreen ? 12 : 14,
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: isSmallScreen ? 8 : 12),
-          Text(
-            _formatCurrency(amount),
-            style: TextStyle(
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              fontSize: isSmallScreen ? 12 : 14,
+          // ✅ Tampilkan subtitle untuk per hour items
+          if (subtitle != null) ...[
+            SizedBox(height: isSmallScreen ? 2 : 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 10 : 12,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

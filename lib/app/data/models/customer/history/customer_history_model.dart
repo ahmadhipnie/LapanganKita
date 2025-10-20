@@ -36,7 +36,7 @@ class BookingHistory {
   final int duration;
   final double totalAmount;
   final String status;
-  final String note; // ✅ Tambahkan field note
+  final String note;
   final List<BookingDetail> details;
   final double courtPrice;
   final double equipmentTotal;
@@ -53,7 +53,7 @@ class BookingHistory {
     required this.duration,
     required this.totalAmount,
     required this.status,
-    required this.note, // ✅ Tambahkan di constructor
+    required this.note,
     required this.details,
     required this.courtPrice,
     required this.equipmentTotal,
@@ -207,6 +207,14 @@ class BookingHistory {
       '${(int.parse(startTime.split(':')[0]) + duration).toString().padLeft(2, '0')}:00';
   String get formattedTimeRange => '$startTime - $endTime';
 
+  List<BookingDetail> get perHourDetails {
+    return details.where((detail) => detail.isPerHour).toList();
+  }
+
+  List<BookingDetail> get onceTimeDetails {
+    return details.where((detail) => detail.isOnceTime).toList();
+  }
+
   // ✅ Tambahkan copyWith method untuk memudahkan update
   BookingHistory copyWith({
     int? id,
@@ -253,7 +261,8 @@ class BookingDetail {
   final double totalPrice;
   final String addOnName;
   final String addOnDescription;
-  final double pricePerHour;
+  final double price; // ✅ Ini adalah price dasar dari API
+  final String category; // ✅ "per hour" atau "once time"
 
   BookingDetail({
     required this.id,
@@ -263,7 +272,8 @@ class BookingDetail {
     required this.totalPrice,
     required this.addOnName,
     required this.addOnDescription,
-    required this.pricePerHour,
+    required this.price,
+    required this.category,
   });
 
   factory BookingDetail.fromApiResponse(Map<String, dynamic> data) {
@@ -275,10 +285,20 @@ class BookingDetail {
       totalPrice: (data['total_price'] ?? 0).toDouble(),
       addOnName: data['add_on_name']?.toString() ?? '',
       addOnDescription: data['add_on_description']?.toString() ?? '',
-      pricePerHour: (data['price_per_hour'] ?? 0).toDouble(),
+      price: (data['price'] ?? 0).toDouble(), // ✅ Ambil dari API
+      category:
+          data['category']?.toString().toLowerCase() ??
+          'once time', // ✅ Ambil dari API
     );
   }
 
-  // Price per item (totalPrice / quantity)
+  // ✅ Helper methods
+  bool get isPerHour => category == 'per hour';
+  bool get isOnceTime => category == 'once time';
+
+  // Price per item (untuk once time)
   double get pricePerItem => quantity > 0 ? totalPrice / quantity : 0;
+
+  // Price per hour (untuk per hour items)
+  double get pricePerHour => price; // Ini adalah harga dasar per jam
 }
